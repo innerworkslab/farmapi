@@ -65,6 +65,38 @@ class ApiAuthenticationTest extends TestCase
             ->assertJsonPath('user.username', 'owner');
     }
 
+
+    public function test_inactive_user_cannot_login_even_with_correct_credentials(): void
+    {
+        User::factory()->create([
+            'email' => 'inactive@example.com',
+            'username' => 'inactive',
+            'password' => 'secret-password',
+            'account_status' => 'inactive',
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'login' => 'inactive@example.com',
+            'password' => 'secret-password',
+            'device_name' => 'feature-test',
+        ])->assertForbidden()
+            ->assertJsonPath('message', "You've been deactivated.");
+    }
+
+    public function test_deactivated_authenticated_user_cannot_take_further_actions(): void
+    {
+        $user = User::factory()->create([
+            'account_status' => 'active',
+        ]);
+        $token = $user->createToken('feature-test')->plainTextToken;
+
+        $user->forceFill(['account_status' => 'inactive'])->save();
+
+        $this->withToken($token)
+            ->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath('message', "You've been deactivated.");
+    }
     public function test_login_rejects_split_identifier_fields(): void
     {
         $this->postJson('/api/v1/auth/login', [

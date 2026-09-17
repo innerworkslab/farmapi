@@ -8,6 +8,7 @@ use App\Modules\Auth\Resources\AuthenticatedUserResource;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthService
 {
@@ -35,9 +36,7 @@ class AuthService
         }
 
         if ($user->account_status !== 'active') {
-            throw ValidationException::withMessages([
-                'login' => ['This account is not active.'],
-            ]);
+            throw new HttpException(403, "You've been deactivated.");
         }
 
         $this->users->recordSuccessfulLogin($user);

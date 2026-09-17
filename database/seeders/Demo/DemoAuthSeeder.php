@@ -3,10 +3,10 @@
 namespace Database\Seeders\Demo;
 
 use App\Models\User;
+use App\Modules\Setup\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class DemoAuthSeeder extends Seeder
@@ -18,6 +18,19 @@ class DemoAuthSeeder extends Seeder
         'authorization.permissions.view',
         'setup.view',
         'setup.manage',
+        'setup.branches.view',
+        'setup.branches.create',
+        'setup.branches.update',
+        'setup.branches.delete',
+        'setup.roles.view',
+        'setup.roles.create',
+        'setup.roles.update',
+        'setup.roles.delete',
+        'setup.admins.view',
+        'setup.admins.create',
+        'setup.admins.update',
+        'setup.admins.delete',
+        'setup.audit.view',
         'purchasing.view',
         'purchasing.manage',
         'inventory.view',
@@ -46,6 +59,10 @@ class DemoAuthSeeder extends Seeder
         $admin->syncPermissions([
             'authorization.permissions.view',
             'setup.view',
+            'setup.branches.view',
+            'setup.roles.view',
+            'setup.admins.view',
+            'setup.audit.view',
             'purchasing.view',
             'inventory.view',
             'farms.view',
