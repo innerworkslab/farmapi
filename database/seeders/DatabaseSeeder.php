@@ -6,6 +6,7 @@ namespace Database\Seeders;
 use Database\Seeders\Demo\DemoAuthSeeder;
 use Database\Seeders\Demo\DemoBusinessMasterSeeder;
 use Database\Seeders\Demo\DemoInventorySeeder;
+use Database\Seeders\Demo\DemoPurchasingSeeder;
 use Database\Seeders\Demo\DemoSetupSeeder;
 use Illuminate\Database\Seeder;
 
@@ -21,6 +22,7 @@ class DatabaseSeeder extends Seeder
             DemoSetupSeeder::class,
             DemoBusinessMasterSeeder::class,
             DemoInventorySeeder::class,
+            DemoPurchasingSeeder::class,
         ]);
     }
 }

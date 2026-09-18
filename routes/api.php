@@ -20,6 +20,8 @@ use App\Modules\Inventory\Controllers\InventoryBalanceController;
 use App\Modules\Inventory\Controllers\InventoryConfirmationController;
 use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use App\Modules\Inventory\Controllers\ItemController;
+use App\Modules\Purchasing\Controllers\PurchaseInvoiceController;
+use App\Modules\Purchasing\Controllers\PurchaseReceiptController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -133,6 +135,18 @@ Route::prefix('v1')->group(function (): void {
             Route::post('adjustments/{adjustment}/confirm', [OperationalInventoryAdjustmentController::class, 'confirm'])->middleware('permission:inventory.adjustments.confirm');
             Route::post('adjustments/{adjustment}/reject', [OperationalInventoryAdjustmentController::class, 'reject'])->middleware('permission:inventory.adjustments.confirm');
             Route::post('adjustments/{adjustment}/reverse', [OperationalInventoryAdjustmentController::class, 'reverse'])->middleware('permission:inventory.adjustments.reverse');
+        });
+        Route::prefix('purchasing')->group(function (): void {
+            Route::get('invoices', [PurchaseInvoiceController::class, 'index'])->middleware('permission:purchasing.invoices.view');
+            Route::post('invoices', [PurchaseInvoiceController::class, 'store'])->middleware('permission:purchasing.invoices.create');
+            Route::get('invoices/{invoice}', [PurchaseInvoiceController::class, 'show'])->middleware('permission:purchasing.invoices.view');
+            Route::post('invoices/{invoice}', [PurchaseInvoiceController::class, 'update'])->middleware('permission:purchasing.invoices.update');
+            Route::post('invoices/{invoice}/cancel', [PurchaseInvoiceController::class, 'cancel'])->middleware('permission:purchasing.invoices.cancel');
+
+            Route::get('receipts', [PurchaseReceiptController::class, 'index'])->middleware('permission:purchasing.receipts.view');
+            Route::post('receipts', [PurchaseReceiptController::class, 'store'])->middleware('permission:purchasing.receipts.create');
+            Route::get('receipts/{receipt}', [PurchaseReceiptController::class, 'show'])->middleware('permission:purchasing.receipts.view');
+            Route::post('receipts/{receipt}/confirm', [PurchaseReceiptController::class, 'confirm'])->middleware('permission:purchasing.receipts.confirm');
         });
     });
 });

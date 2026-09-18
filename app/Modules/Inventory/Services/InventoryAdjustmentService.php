@@ -5,6 +5,7 @@ namespace App\Modules\Inventory\Services;
 use App\Models\User;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryConfirmation;
+use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Setup\Models\Inventory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -269,6 +270,14 @@ class InventoryAdjustmentService
             ]);
 
             foreach ($adjustment->lines as $line) {
+                $postedLedger = InventoryLedgerEntry::query()
+                    ->where('source_type', 'adjustment')
+                    ->where('source_id', $adjustment->id)
+                    ->where('source_line_id', $line->id)
+                    ->where('posting_status', 'posted')
+                    ->latest('id')
+                    ->first();
+
                 $reversal->lines()->create([
                     'line_number' => $line->line_number,
                     'category' => $line->category,
@@ -276,8 +285,8 @@ class InventoryAdjustmentService
                     'item_id' => $line->item_id,
                     'location' => $line->location,
                     'stock_uom_id' => $line->stock_uom_id,
-                    'stock_lot_id' => $line->stock_lot_id,
-                    'equipment_instance_id' => $line->equipment_instance_id,
+                    'stock_lot_id' => $line->stock_lot_id ?: $postedLedger?->stock_lot_id,
+                    'equipment_instance_id' => $line->equipment_instance_id ?: $postedLedger?->equipment_instance_id,
                     'system_quantity' => 0,
                     'adjustment_quantity' => $line->adjustment_quantity,
                     'direction' => $line->direction === 'in' ? 'out' : 'in',

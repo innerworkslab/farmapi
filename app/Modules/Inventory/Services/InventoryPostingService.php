@@ -20,6 +20,129 @@ class InventoryPostingService
         private readonly StockIdentityService $identities,
     ) {}
 
+
+    /** @param array<string, mixed> $movement */
+    public function postInboundStock(array $movement, User $actor, ?string $postingBatchId = null): string
+    {
+        $postingBatchId ??= $this->postingBatchId();
+        $resolved = $this->items->resolve($movement['category'], (int) $movement['item_id']);
+
+        if (! in_array($movement['category'], ['food', 'medicine'], true)) {
+            throw ValidationException::withMessages([
+                'category' => 'Only food and medicine purchase receipts post to inventory stock in this implementation.',
+            ]);
+        }
+
+        if ($resolved['batch_tracking'] && empty($movement['receipt_lot_number'])) {
+            throw ValidationException::withMessages(['receipt_lot_number' => 'Receipt lot number is required.']);
+        }
+
+        if ($resolved['expiry_tracking'] && empty($movement['expiry_date'])) {
+            throw ValidationException::withMessages(['expiry_date' => 'Expiry date is required.']);
+        }
+
+        $stockQuantity = round((float) $movement['stock_quantity'], 6);
+        if ($stockQuantity <= 0) {
+            throw ValidationException::withMessages(['stock_quantity' => 'Received stock quantity must be greater than zero.']);
+        }
+
+        $lotStatus = $movement['lot_status'] ?? 'available';
+        $stockLot = StockLot::query()->create([
+            'category' => $movement['category'],
+            'item_type' => $resolved['item_type'],
+            'item_id' => $movement['item_id'],
+            'branch_id' => $movement['branch_id'],
+            'inventory_id' => $movement['inventory_id'],
+            'farm_information_id' => $movement['farm_information_id'] ?? null,
+            'location' => $movement['location'] ?? 'MAIN',
+            'stock_uom_id' => $movement['stock_uom_id'],
+            'supplier_id' => $movement['supplier_id'] ?? null,
+            'supplier_batch_number' => $movement['supplier_batch_number'] ?? null,
+            'receipt_lot_number' => $movement['receipt_lot_number'] ?? null,
+            'manufacturing_date' => $movement['manufacturing_date'] ?? null,
+            'expiry_date' => $movement['expiry_date'] ?? null,
+            'lot_status' => $lotStatus,
+            'cold_chain_required' => (bool) ($movement['cold_chain_required'] ?? $resolved['cold_chain_required']),
+            'observed_temperature' => $movement['observed_temperature'] ?? null,
+            'temperature_uom' => $movement['temperature_uom'] ?? null,
+            'cold_chain_status' => $movement['cold_chain_status'] ?? null,
+            'restriction_reason' => $movement['restriction_reason'] ?? null,
+        ]);
+
+        $identity = [
+            'category' => $movement['category'],
+            'item_type' => $resolved['item_type'],
+            'item_id' => $movement['item_id'],
+            'branch_id' => $movement['branch_id'],
+            'inventory_id' => $movement['inventory_id'],
+            'farm_information_id' => $movement['farm_information_id'] ?? null,
+            'location' => $movement['location'] ?? 'MAIN',
+            'stock_uom_id' => $movement['stock_uom_id'],
+            'stock_lot_id' => $stockLot->id,
+            'equipment_instance_id' => null,
+        ];
+        $identityKey = $this->identities->key($identity);
+
+        $balance = InventoryBalance::query()->create($identity + [
+            'identity_key' => $identityKey,
+            'on_hand_quantity' => 0,
+            'reserved_quantity' => 0,
+            'quarantined_quantity' => 0,
+            'damaged_quantity' => 0,
+            'expired_quantity' => 0,
+            'available_quantity' => 0,
+            'version' => 1,
+        ]);
+
+        $bucket = $this->restrictedBucket($lotStatus);
+        $balance->on_hand_quantity = $stockQuantity;
+        if ($bucket) {
+            $balance->{$bucket} = $stockQuantity;
+        }
+        $balance->available_quantity = $this->availableQuantity($balance);
+        $balance->version++;
+        $balance->save();
+
+        $ledger = InventoryLedgerEntry::query()->create([
+            'posting_id' => $this->postingId(),
+            'posting_batch_id' => $postingBatchId,
+            'confirmation_id' => null,
+            'source_module' => 'purchasing',
+            'source_type' => $movement['source_type'] ?? 'purchase_receipt',
+            'source_id' => $movement['source_id'],
+            'source_line_id' => $movement['source_line_id'] ?? null,
+            'transaction_type' => $movement['transaction_type'] ?? 'purchase_receipt',
+            'direction' => 'in',
+            'identity_key' => $identityKey,
+            'category' => $movement['category'],
+            'item_type' => $resolved['item_type'],
+            'item_id' => $movement['item_id'],
+            'branch_id' => $movement['branch_id'],
+            'inventory_id' => $movement['inventory_id'],
+            'farm_information_id' => $movement['farm_information_id'] ?? null,
+            'location' => $movement['location'] ?? 'MAIN',
+            'stock_uom_id' => $movement['stock_uom_id'],
+            'stock_lot_id' => $stockLot->id,
+            'equipment_instance_id' => null,
+            'original_quantity' => $movement['original_quantity'] ?? $stockQuantity,
+            'original_uom_id' => $movement['original_uom_id'] ?? $movement['stock_uom_id'],
+            'conversion_factor' => $movement['conversion_factor'] ?? 1,
+            'quantity_in' => $stockQuantity,
+            'quantity_out' => 0,
+            'balance_before' => 0,
+            'balance_after' => $stockQuantity,
+            'posting_status' => 'posted',
+            'posted_by_id' => $actor->id,
+            'posted_at' => now(),
+            'idempotency_key' => $postingBatchId.'-'.($movement['source_line_id'] ?? Str::uuid()->toString()),
+            'metadata' => $movement['metadata'] ?? null,
+        ]);
+
+        $balance->last_ledger_entry_id = $ledger->id;
+        $balance->save();
+
+        return $postingBatchId;
+    }
     public function postAdjustment(InventoryAdjustment $adjustment, InventoryConfirmation $confirmation, User $actor): string
     {
         $adjustment->load('lines');
