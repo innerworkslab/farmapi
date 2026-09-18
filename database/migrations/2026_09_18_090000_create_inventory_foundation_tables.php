@@ -35,9 +35,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['category', 'item_id', 'inventory_id']);
-            $table->index(['inventory_id', 'location', 'lot_status']);
-            $table->index(['expiry_date', 'lot_status']);
+            $table->index(['category', 'item_id', 'inventory_id'], 'inv_lots_cat_item_inv_idx');
+            $table->index(['inventory_id', 'location', 'lot_status'], 'inv_lots_inv_loc_status_idx');
+            $table->index(['expiry_date', 'lot_status'], 'inv_lots_exp_status_idx');
         });
 
         Schema::create('inventory_equipment_instances', function (Blueprint $table): void {
@@ -58,8 +58,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['equipment_id', 'inventory_id', 'lifecycle_status']);
-            $table->index(['inventory_id', 'location']);
+            $table->index(['equipment_id', 'inventory_id', 'lifecycle_status'], 'inv_eq_inst_eq_inv_status_idx');
+            $table->index(['inventory_id', 'location'], 'inv_eq_inst_inv_loc_idx');
         });
 
         Schema::create('inventory_balances', function (Blueprint $table): void {
@@ -85,9 +85,9 @@ return new class extends Migration
             $table->unsignedBigInteger('last_ledger_entry_id')->nullable();
             $table->timestamps();
 
-            $table->index(['category', 'item_id', 'inventory_id']);
-            $table->index(['inventory_id', 'location']);
-            $table->index(['stock_lot_id', 'equipment_instance_id']);
+            $table->index(['category', 'item_id', 'inventory_id'], 'inv_bal_cat_item_inv_idx');
+            $table->index(['inventory_id', 'location'], 'inv_bal_inv_loc_idx');
+            $table->index(['stock_lot_id', 'equipment_instance_id'], 'inv_bal_lot_inst_idx');
         });
 
         Schema::create('inventory_adjustments', function (Blueprint $table): void {
@@ -150,9 +150,9 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->unique(['adjustment_id', 'line_number']);
-            $table->index(['category', 'item_id']);
-            $table->index(['stock_lot_id', 'equipment_instance_id']);
+            $table->unique(['adjustment_id', 'line_number'], 'inv_adj_lines_adj_line_unique');
+            $table->index(['category', 'item_id'], 'inv_adj_lines_cat_item_idx');
+            $table->index(['stock_lot_id', 'equipment_instance_id'], 'inv_adj_lines_lot_inst_idx');
         });
 
         Schema::create('inventory_confirmations', function (Blueprint $table): void {
@@ -176,8 +176,8 @@ return new class extends Migration
             $table->json('validation_snapshot')->nullable();
             $table->timestamps();
 
-            $table->index(['source_type', 'source_id']);
-            $table->index(['source_module', 'status']);
+            $table->index(['source_type', 'source_id'], 'inv_src_type_id_idx');
+            $table->index(['source_module', 'status'], 'inv_cnf_module_status_idx');
         });
 
         Schema::create('inventory_ledger_entries', function (Blueprint $table): void {
@@ -217,9 +217,9 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['source_type', 'source_id']);
-            $table->index(['inventory_id', 'posted_at']);
-            $table->index(['category', 'item_id', 'posted_at']);
+            $table->index(['source_type', 'source_id'], 'inv_led_src_type_id_idx');
+            $table->index(['inventory_id', 'posted_at'], 'inv_led_inv_posted_idx');
+            $table->index(['category', 'item_id', 'posted_at'], 'inv_led_cat_item_posted_idx');
         });
 
         Schema::create('inventory_workflow_events', function (Blueprint $table): void {
@@ -235,8 +235,8 @@ return new class extends Migration
             $table->timestamp('occurred_at');
             $table->timestamps();
 
-            $table->index(['eventable_type', 'eventable_id']);
-            $table->index(['occurred_at', 'event_type']);
+            $table->index(['eventable_type', 'eventable_id'], 'inv_wf_eventable_idx');
+            $table->index(['occurred_at', 'event_type'], 'inv_wf_time_type_idx');
         });
     }
 
