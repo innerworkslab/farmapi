@@ -38,7 +38,7 @@ class InventoryAdjustmentRequest extends FormRequest
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.line_number' => ['sometimes', 'integer', 'min:1'],
             'lines.*.category' => ['required', 'string', Rule::in(['food', 'medicine', 'equipment'])],
-            'lines.*.item_id' => ['required', 'integer', 'min:1'],
+            'lines.*.item_id' => ['required', 'integer', 'exists:items,id'],
             'lines.*.location' => ['nullable', 'string', 'max:100'],
             'lines.*.stock_uom_id' => ['nullable', 'integer', 'exists:uoms,id'],
             'lines.*.stock_lot_id' => ['nullable', 'integer', 'exists:inventory_stock_lots,id'],

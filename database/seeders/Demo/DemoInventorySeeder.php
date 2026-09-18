@@ -5,6 +5,7 @@ namespace Database\Seeders\Demo;
 use App\Models\User;
 use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\InventoryAdjustmentService;
+use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
@@ -19,6 +20,7 @@ class DemoInventorySeeder extends Seeder
     {
         $actor = User::query()->where('email', 'admin@example.com')->firstOrFail();
         $service = app(InventoryAdjustmentService::class);
+        $items = app(ItemRegistryService::class);
 
         $yangon = Branch::query()->where('code', 'BR-YGN')->firstOrFail();
         $mandalay = Branch::query()->where('code', 'BR-MDY')->firstOrFail();
@@ -40,6 +42,7 @@ class DemoInventorySeeder extends Seeder
 
         if (! StockLot::query()->where('receipt_lot_number', 'LOT-FEED-001')->exists()) {
             $food = Food::query()->where('code', 'FOD-CATTLE-PELLET')->firstOrFail();
+            $foodItem = $items->syncFromMaster($food);
             $supplier = Supplier::query()->where('code', 'SUP-FEED-001')->firstOrFail();
 
             $adjustment = $service->create([
@@ -51,7 +54,7 @@ class DemoInventorySeeder extends Seeder
                 'reason' => 'Demo opening feed balance',
                 'lines' => [[
                     'category' => 'food',
-                    'item_id' => $food->id,
+                    'item_id' => $foodItem->id,
                     'location' => 'R1',
                     'stock_uom_id' => $kg->id,
                     'adjustment_quantity' => 1000,
@@ -71,6 +74,7 @@ class DemoInventorySeeder extends Seeder
 
         if (! StockLot::query()->where('receipt_lot_number', 'LOT-MED-001')->exists()) {
             $medicine = Medicine::query()->where('code', 'MED-IVM-001')->firstOrFail();
+            $medicineItem = $items->syncFromMaster($medicine);
             $supplier = Supplier::query()->where('code', 'SUP-MED-001')->firstOrFail();
 
             $adjustment = $service->create([
@@ -82,7 +86,7 @@ class DemoInventorySeeder extends Seeder
                 'reason' => 'Demo opening medicine balance',
                 'lines' => [[
                     'category' => 'medicine',
-                    'item_id' => $medicine->id,
+                    'item_id' => $medicineItem->id,
                     'location' => 'MED-R1',
                     'stock_uom_id' => $dose->id,
                     'adjustment_quantity' => 80,

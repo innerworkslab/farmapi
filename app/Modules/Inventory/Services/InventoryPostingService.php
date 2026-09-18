@@ -41,7 +41,7 @@ class InventoryPostingService
     ): void {
         $resolved = $this->items->resolve($line->category, (int) $line->item_id);
         $stockLot = $this->resolveStockLot($adjustment, $line, $resolved);
-        $equipmentInstance = $this->resolveEquipmentInstance($adjustment, $line, $stockLot);
+        $equipmentInstance = $this->resolveEquipmentInstance($adjustment, $line, $stockLot, $resolved);
 
         $identity = [
             'category' => $line->category,
@@ -205,7 +205,8 @@ class InventoryPostingService
         ]);
     }
 
-    private function resolveEquipmentInstance(InventoryAdjustment $adjustment, InventoryAdjustmentLine $line, ?StockLot $stockLot): ?EquipmentInstance
+    /** @param array<string, mixed> $resolved */
+    private function resolveEquipmentInstance(InventoryAdjustment $adjustment, InventoryAdjustmentLine $line, ?StockLot $stockLot, array $resolved): ?EquipmentInstance
     {
         if ($line->category !== 'equipment') {
             return null;
@@ -213,7 +214,7 @@ class InventoryPostingService
 
         if ($line->equipment_instance_id) {
             $instance = EquipmentInstance::query()->lockForUpdate()->findOrFail($line->equipment_instance_id);
-            if ((int) $instance->inventory_id !== (int) $adjustment->inventory_id || (int) $instance->equipment_id !== (int) $line->item_id) {
+            if ((int) $instance->inventory_id !== (int) $adjustment->inventory_id || (int) $instance->equipment_id !== (int) $resolved['model']->id) {
                 throw ValidationException::withMessages([
                     'equipment_instance_id' => 'The selected equipment instance does not match the adjustment item and inventory.',
                 ]);
@@ -239,7 +240,7 @@ class InventoryPostingService
         }
 
         return EquipmentInstance::query()->create([
-            'equipment_id' => $line->item_id,
+            'equipment_id' => $resolved['model']->id,
             'branch_id' => $adjustment->branch_id,
             'inventory_id' => $adjustment->inventory_id,
             'farm_information_id' => $adjustment->farm_information_id,

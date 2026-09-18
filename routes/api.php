@@ -19,6 +19,7 @@ use App\Modules\Inventory\Controllers\InventoryAdjustmentController as Operation
 use App\Modules\Inventory\Controllers\InventoryBalanceController;
 use App\Modules\Inventory\Controllers\InventoryConfirmationController;
 use App\Modules\Inventory\Controllers\InventoryLedgerController;
+use App\Modules\Inventory\Controllers\ItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -116,6 +117,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->middleware('permission:setup.audit.view');
         });
         Route::prefix('inventory')->group(function (): void {
+            Route::get('items', [ItemController::class, 'index'])->middleware('permission:inventory.items.view');
+            Route::get('items/{item}', [ItemController::class, 'show'])->middleware('permission:inventory.items.view');
             Route::get('balances', [InventoryBalanceController::class, 'index'])->middleware('permission:inventory.balances.view');
             Route::get('ledger', [InventoryLedgerController::class, 'index'])->middleware('permission:inventory.ledger.view');
 

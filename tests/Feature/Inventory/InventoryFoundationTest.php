@@ -5,7 +5,9 @@ namespace Tests\Feature\Inventory;
 use App\Models\User;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
+use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\StockLot;
+use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
@@ -34,7 +36,7 @@ class InventoryFoundationTest extends TestCase
             'reason' => 'Initial count',
             'lines' => [[
                 'category' => 'food',
-                'item_id' => $setup['food']->id,
+                'item_id' => $setup['item']->id,
                 'location' => 'R1',
                 'stock_uom_id' => $setup['kg']->id,
                 'adjustment_quantity' => 500,
@@ -76,7 +78,7 @@ class InventoryFoundationTest extends TestCase
         ]);
         $this->assertDatabaseHas('inventory_balances', [
             'category' => 'food',
-            'item_id' => $setup['food']->id,
+            'item_id' => $setup['item']->id,
             'inventory_id' => $setup['inventory']->id,
             'on_hand_quantity' => 500,
             'available_quantity' => 500,
@@ -102,7 +104,7 @@ class InventoryFoundationTest extends TestCase
             'reason' => 'Attempt too much stock out',
             'lines' => [[
                 'category' => 'food',
-                'item_id' => $setup['food']->id,
+                'item_id' => $setup['item']->id,
                 'location' => 'R1',
                 'stock_uom_id' => $setup['kg']->id,
                 'stock_lot_id' => $lot->id,
@@ -121,8 +123,52 @@ class InventoryFoundationTest extends TestCase
         $this->assertEquals(10, InventoryBalance::query()->firstOrFail()->available_quantity);
     }
 
+    public function test_setup_food_create_auto_registers_inventory_item(): void
+    {
+        $this->actingWithPermissions([
+            'setup.foods.create',
+            'setup.foods.view',
+            'inventory.items.view',
+        ]);
+
+        $setup = $this->setupFoodInventory(false);
+
+        $create = $this->postJson('/api/v1/setup/foods', [
+            'code' => 'FOD-AUTO',
+            'name' => 'Auto Registered Feed',
+            'category' => 'feed',
+            'target_animal_type' => 'cattle',
+            'purchase_uom_id' => $setup['kg']->id,
+            'stock_uom_id' => $setup['kg']->id,
+            'consumption_uom_id' => $setup['kg']->id,
+            'uom_conversion' => 1,
+            'default_supplier_id' => $setup['supplier']->id,
+            'purchase_price' => 1,
+            'batch_tracking' => true,
+            'expiry_tracking' => true,
+        ])->assertCreated();
+
+        $foodId = $create->json('data.id');
+        $this->assertDatabaseHas('items', [
+            'itemable_type' => Food::class,
+            'itemable_id' => $foodId,
+            'code' => 'FOD-AUTO',
+            'category' => 'food',
+            'stock_uom_id' => $setup['kg']->id,
+            'batch_tracking' => true,
+            'expiry_tracking' => true,
+            'status' => 'active',
+        ]);
+
+        $item = Item::query()->where('code', 'FOD-AUTO')->firstOrFail();
+        $this->getJson('/api/v1/inventory/items?search=FOD-AUTO')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $item->id)
+            ->assertJsonPath('data.0.itemable_id', $foodId);
+    }
+
     /** @return array<string, mixed> */
-    private function setupFoodInventory(): array
+    private function setupFoodInventory(bool $createFood = true): array
     {
         $branch = Branch::query()->create([
             'code' => 'BR-INV',
@@ -158,6 +204,11 @@ class InventoryFoundationTest extends TestCase
             'allowed_item_categories' => ['feed'],
             'status' => 'active',
         ]);
+
+        if (! $createFood) {
+            return compact('branch', 'kg', 'supplier', 'inventory');
+        }
+
         $food = Food::query()->create([
             'code' => 'FOD-INV',
             'name' => 'Inventory Feed',
@@ -173,8 +224,9 @@ class InventoryFoundationTest extends TestCase
             'expiry_tracking' => true,
             'status' => 'active',
         ]);
+        $item = app(ItemRegistryService::class)->syncFromMaster($food);
 
-        return compact('branch', 'kg', 'supplier', 'inventory', 'food');
+        return compact('branch', 'kg', 'supplier', 'inventory', 'food', 'item');
     }
 
     /** @param array<string, mixed> $setup */
@@ -189,7 +241,7 @@ class InventoryFoundationTest extends TestCase
             'reason' => 'Initial count',
             'lines' => [[
                 'category' => 'food',
-                'item_id' => $setup['food']->id,
+                'item_id' => $setup['item']->id,
                 'location' => 'R1',
                 'stock_uom_id' => $setup['kg']->id,
                 'adjustment_quantity' => $quantity,
@@ -213,7 +265,8 @@ class InventoryFoundationTest extends TestCase
 
     private function actingWithInventoryPermissions(): User
     {
-        $permissions = [
+        return $this->actingWithPermissions([
+            'inventory.items.view',
             'inventory.balances.view',
             'inventory.ledger.view',
             'inventory.confirmations.view',
@@ -223,8 +276,12 @@ class InventoryFoundationTest extends TestCase
             'inventory.adjustments.submit',
             'inventory.adjustments.confirm',
             'inventory.adjustments.reverse',
-        ];
+        ]);
+    }
 
+    /** @param list<string> $permissions */
+    private function actingWithPermissions(array $permissions): User
+    {
         foreach ($permissions as $permission) {
             Permission::findOrCreate($permission, 'web');
         }

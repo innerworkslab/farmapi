@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class BusinessMasterService
 {
-    public function __construct(private readonly BusinessMasterRepository $repository) {}
+    public function __construct(protected readonly BusinessMasterRepository $repository) {}
 
     /** @param array<string, mixed> $filters */
     public function paginate(array $filters): LengthAwarePaginator

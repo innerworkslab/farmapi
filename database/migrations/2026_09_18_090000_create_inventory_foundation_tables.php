@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('category')->index();
             $table->string('item_type')->index();
-            $table->unsignedBigInteger('item_id');
+            $table->foreignId('item_id')->constrained('items')->restrictOnDelete();
             $table->foreignId('branch_id')->constrained('branches')->restrictOnDelete();
             $table->foreignId('inventory_id')->constrained('inventories')->restrictOnDelete();
             $table->foreignId('farm_information_id')->nullable()->constrained('farm_information')->nullOnDelete();
@@ -67,7 +67,7 @@ return new class extends Migration
             $table->string('identity_key')->unique();
             $table->string('category')->index();
             $table->string('item_type')->index();
-            $table->unsignedBigInteger('item_id');
+            $table->foreignId('item_id')->constrained('items')->restrictOnDelete();
             $table->foreignId('branch_id')->constrained('branches')->restrictOnDelete();
             $table->foreignId('inventory_id')->constrained('inventories')->restrictOnDelete();
             $table->foreignId('farm_information_id')->nullable()->constrained('farm_information')->nullOnDelete();
@@ -127,7 +127,7 @@ return new class extends Migration
             $table->unsignedInteger('line_number');
             $table->string('category')->index();
             $table->string('item_type')->index();
-            $table->unsignedBigInteger('item_id');
+            $table->foreignId('item_id')->constrained('items')->restrictOnDelete();
             $table->string('location')->default('MAIN');
             $table->foreignId('stock_uom_id')->constrained('uoms')->restrictOnDelete();
             $table->foreignId('stock_lot_id')->nullable()->constrained('inventory_stock_lots')->nullOnDelete();
@@ -194,7 +194,7 @@ return new class extends Migration
             $table->string('identity_key')->index();
             $table->string('category')->index();
             $table->string('item_type')->index();
-            $table->unsignedBigInteger('item_id');
+            $table->foreignId('item_id')->constrained('items')->restrictOnDelete();
             $table->foreignId('branch_id')->constrained('branches')->restrictOnDelete();
             $table->foreignId('inventory_id')->constrained('inventories')->restrictOnDelete();
             $table->foreignId('farm_information_id')->nullable()->constrained('farm_information')->nullOnDelete();

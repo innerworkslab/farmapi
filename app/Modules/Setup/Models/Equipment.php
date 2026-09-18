@@ -28,6 +28,10 @@ class Equipment extends Model
         'version',
     ];
 
+    public function item(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    {
+        return $this->morphOne(\App\Modules\Inventory\Models\Item::class, 'itemable');
+    }
     public function supplier(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Supplier::class);
