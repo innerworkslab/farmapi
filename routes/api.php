@@ -15,6 +15,10 @@ use App\Modules\Setup\Controllers\MedicineController;
 use App\Modules\Setup\Controllers\AnimalController;
 use App\Modules\Setup\Controllers\EquipmentController;
 use App\Modules\Setup\Controllers\FarmInformationController;
+use App\Modules\Inventory\Controllers\InventoryAdjustmentController as OperationalInventoryAdjustmentController;
+use App\Modules\Inventory\Controllers\InventoryBalanceController;
+use App\Modules\Inventory\Controllers\InventoryConfirmationController;
+use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -111,5 +115,22 @@ Route::prefix('v1')->group(function (): void {
             Route::get('activity-logs', [ActivityLogController::class, 'index'])->middleware('permission:setup.audit.view');
             Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->middleware('permission:setup.audit.view');
         });
+        Route::prefix('inventory')->group(function (): void {
+            Route::get('balances', [InventoryBalanceController::class, 'index'])->middleware('permission:inventory.balances.view');
+            Route::get('ledger', [InventoryLedgerController::class, 'index'])->middleware('permission:inventory.ledger.view');
+
+            Route::get('confirmations', [InventoryConfirmationController::class, 'index'])->middleware('permission:inventory.confirmations.view');
+            Route::get('confirmations/{confirmation}', [InventoryConfirmationController::class, 'show'])->middleware('permission:inventory.confirmations.view');
+
+            Route::get('adjustments', [OperationalInventoryAdjustmentController::class, 'index'])->middleware('permission:inventory.adjustments.view');
+            Route::post('adjustments', [OperationalInventoryAdjustmentController::class, 'store'])->middleware('permission:inventory.adjustments.create');
+            Route::get('adjustments/{adjustment}', [OperationalInventoryAdjustmentController::class, 'show'])->middleware('permission:inventory.adjustments.view');
+            Route::post('adjustments/{adjustment}', [OperationalInventoryAdjustmentController::class, 'update'])->middleware('permission:inventory.adjustments.update');
+            Route::post('adjustments/{adjustment}/submit', [OperationalInventoryAdjustmentController::class, 'submit'])->middleware('permission:inventory.adjustments.submit');
+            Route::post('adjustments/{adjustment}/confirm', [OperationalInventoryAdjustmentController::class, 'confirm'])->middleware('permission:inventory.adjustments.confirm');
+            Route::post('adjustments/{adjustment}/reject', [OperationalInventoryAdjustmentController::class, 'reject'])->middleware('permission:inventory.adjustments.confirm');
+            Route::post('adjustments/{adjustment}/reverse', [OperationalInventoryAdjustmentController::class, 'reverse'])->middleware('permission:inventory.adjustments.reverse');
+        });
     });
 });
+
