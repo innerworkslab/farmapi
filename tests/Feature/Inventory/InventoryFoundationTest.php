@@ -8,6 +8,7 @@ use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\ItemRegistryService;
+use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
@@ -167,6 +168,45 @@ class InventoryFoundationTest extends TestCase
             ->assertJsonPath('data.0.itemable_id', $foodId);
     }
 
+    public function test_setup_animal_create_auto_registers_purchasable_item(): void
+    {
+        $this->actingWithPermissions([
+            'setup.animals.create',
+            'setup.animals.view',
+            'inventory.items.view',
+        ]);
+
+        $create = $this->postJson('/api/v1/setup/animals', [
+            'code' => 'ANI-AUTO',
+            'tracking_type' => 'batch',
+            'batch_flock_number' => 'BATCH-AUTO',
+            'name' => 'Auto Registered Batch',
+            'type' => 'cattle',
+            'category' => 'beef',
+            'breed' => 'Brahman',
+            'gender' => 'mixed',
+        ])->assertCreated();
+
+        $animalId = $create->json('data.id');
+        $this->assertDatabaseHas('items', [
+            'itemable_type' => Animal::class,
+            'itemable_id' => $animalId,
+            'code' => 'ANI-AUTO',
+            'category' => 'animal',
+            'master_category' => 'beef',
+            'batch_tracking' => true,
+            'serial_tracking' => false,
+            'asset_tracking' => true,
+            'divisible_quantity' => false,
+            'status' => 'active',
+        ]);
+
+        $item = Item::query()->where('code', 'ANI-AUTO')->firstOrFail();
+        $this->getJson('/api/v1/inventory/items?category=animal&search=ANI-AUTO')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $item->id)
+            ->assertJsonPath('data.0.itemable_id', $animalId);
+    }
     /** @return array<string, mixed> */
     private function setupFoodInventory(bool $createFood = true): array
     {

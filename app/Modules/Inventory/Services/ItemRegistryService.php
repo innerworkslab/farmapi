@@ -3,6 +3,7 @@
 namespace App\Modules\Inventory\Services;
 
 use App\Modules\Inventory\Models\Item;
+use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\Equipment;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Medicine;
@@ -126,9 +127,32 @@ class ItemRegistryService
                 'source_version' => $master->version ?? 1,
             ];
         }
-
+        if ($master instanceof Animal) {
+            return [
+                'code' => $master->code,
+                'name' => $master->name ?: $master->code,
+                'category' => 'animal',
+                'master_category' => $master->category,
+                'stock_uom_id' => null,
+                'purchase_uom_id' => null,
+                'usage_uom_id' => null,
+                'uom_conversion' => 1,
+                'batch_tracking' => $master->tracking_type === 'batch',
+                'expiry_tracking' => false,
+                'serial_tracking' => $master->tracking_type === 'individual',
+                'asset_tracking' => true,
+                'cold_chain_required' => false,
+                'divisible_quantity' => false,
+                'minimum_stock_level' => 0,
+                'maximum_stock_level' => null,
+                'reorder_level' => 0,
+                'reorder_quantity' => 0,
+                'status' => 'active',
+                'source_version' => $master->version ?? 1,
+            ];
+        }
         throw ValidationException::withMessages([
-            'itemable_type' => 'Only food, medicine, and equipment masters can be registered as inventory items.',
+            'itemable_type' => 'Only food, medicine, equipment, and animal masters can be registered as inventory items.',
         ]);
     }
 }

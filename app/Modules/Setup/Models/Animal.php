@@ -30,6 +30,11 @@ class Animal extends Model
     ];
 
 
+
+    public function item(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    {
+        return $this->morphOne(\App\Modules\Inventory\Models\Item::class, 'itemable');
+    }
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
