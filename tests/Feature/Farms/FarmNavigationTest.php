@@ -44,11 +44,34 @@ class FarmNavigationTest extends TestCase
             ->assertJsonPath('data.animals.0.tracking_type', 'batch')
             ->assertJsonPath('data.animals.0.current_quantity', 40);
 
-        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?tracking_type=individual')
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animal-view-summary')
+            ->assertOk()
+            ->assertJsonPath('data.tabs.all', 2)
+            ->assertJsonPath('data.tabs.batch', 1)
+            ->assertJsonPath('data.tabs.individual', 1)
+            ->assertJsonPath('data.filter_options.views.0', 'all')
+            ->assertJsonPath('data.filter_options.animal_types.0', 'cattle')
+            ->assertJsonPath('data.actions.row_actions.0', 'add_food');
+
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?view=batch')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.tracking_type', 'batch')
+            ->assertJsonPath('data.0.batch.batch_number', 'BATCH-001')
+            ->assertJsonPath('data.0.actions.history_details.href', '/api/v1/farms/'.$setup['farm']->id.'/animals/'.$setup['batchBalance']->id);
+
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?tracking_type=individual&search=RFID')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.tracking_type', 'individual')
-            ->assertJsonPath('data.0.rfid', 'RFID-001');
+            ->assertJsonPath('data.0.rfid', 'RFID-001')
+            ->assertJsonPath('data.0.individual.rfid', 'RFID-001');
+
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals/'.$setup['individualBalance']->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $setup['individualBalance']->id)
+            ->assertJsonPath('data.tracking_type', 'individual')
+            ->assertJsonPath('data.can_receive_operations', true);
     }
 
     public function test_farm_navigation_respects_user_branch_scope(): void
@@ -124,7 +147,7 @@ class FarmNavigationTest extends TestCase
             'current_animal_id' => $batch->id,
         ]);
 
-        InventoryBalance::query()->create([
+        $batchBalance = InventoryBalance::query()->create([
             'identity_key' => 'FARM-BATCH',
             'category' => 'animal',
             'item_type' => 'animal',
@@ -137,7 +160,7 @@ class FarmNavigationTest extends TestCase
             'on_hand_quantity' => 40,
             'available_quantity' => 40,
         ]);
-        InventoryBalance::query()->create([
+        $individualBalance = InventoryBalance::query()->create([
             'identity_key' => 'FARM-RFID',
             'category' => 'animal',
             'item_type' => 'animal',
@@ -151,7 +174,7 @@ class FarmNavigationTest extends TestCase
             'available_quantity' => 1,
         ]);
 
-        return compact('branch', 'uom', 'inventory', 'batch', 'individual', 'farm');
+        return compact('branch', 'uom', 'inventory', 'batch', 'individual', 'farm', 'batchBalance', 'individualBalance');
     }
 
     private function actingWithFarmPermissions(): User

@@ -16,6 +16,7 @@ use App\Modules\Setup\Controllers\AnimalController;
 use App\Modules\Setup\Controllers\EquipmentController;
 use App\Modules\Setup\Controllers\FarmInformationController;
 use App\Modules\Farms\Controllers\FarmController;
+use App\Modules\Farms\Controllers\FeedingController;
 use App\Modules\Inventory\Controllers\InventoryAdjustmentController as OperationalInventoryAdjustmentController;
 use App\Modules\Inventory\Controllers\InventoryBalanceController;
 use App\Modules\Inventory\Controllers\InventoryConfirmationController;
@@ -139,9 +140,19 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::prefix('farms')->group(function (): void {
             Route::get('/', [FarmController::class, 'index'])->middleware('permission:farms.view');
+            Route::get('feedings', [FeedingController::class, 'index'])->middleware('permission:farms.view');
+            Route::post('feedings', [FeedingController::class, 'store'])->middleware('permission:farms.manage');
+            Route::get('feedings/{feeding}', [FeedingController::class, 'show'])->middleware('permission:farms.view');
+            Route::post('feedings/{feeding}', [FeedingController::class, 'update'])->middleware('permission:farms.manage');
+            Route::post('feedings/{feeding}/submit', [FeedingController::class, 'submit'])->middleware('permission:farms.manage');
+            Route::post('feedings/{feeding}/confirm', [FeedingController::class, 'confirm'])->middleware('permission:farms.manage');
+            Route::post('feedings/{feeding}/reject', [FeedingController::class, 'reject'])->middleware('permission:farms.manage');
             Route::get('{farmInformation}', [FarmController::class, 'show'])->middleware('permission:farms.view');
+            Route::get('{farmInformation}/animal-view-summary', [FarmController::class, 'animalViewSummary'])->middleware('permission:farms.view');
             Route::get('{farmInformation}/animals', [FarmController::class, 'animals'])->middleware('permission:farms.view');
-        });        Route::prefix('purchasing')->group(function (): void {
+            Route::get('{farmInformation}/animals/{animalBalance}', [FarmController::class, 'animal'])->middleware('permission:farms.view');
+        });
+        Route::prefix('purchasing')->group(function (): void {
             Route::get('invoices', [PurchaseInvoiceController::class, 'index'])->middleware('permission:purchasing.invoices.view');
             Route::post('invoices', [PurchaseInvoiceController::class, 'store'])->middleware('permission:purchasing.invoices.create');
             Route::get('invoices/{invoice}', [PurchaseInvoiceController::class, 'show'])->middleware('permission:purchasing.invoices.view');
