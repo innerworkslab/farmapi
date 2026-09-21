@@ -39,6 +39,11 @@ class InventoryBalance extends Model
         return $this->belongsTo(Inventory::class);
     }
 
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class);
+    }
+
     public function stockLot(): BelongsTo
     {
         return $this->belongsTo(StockLot::class, 'stock_lot_id');
