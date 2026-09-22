@@ -88,8 +88,43 @@ class FeedingApiTest extends TestCase
         $this->assertEquals(5, InventoryBalance::query()->where('id', $setup['foodBalance']->id)->value('available_quantity'));
     }
 
+    public function test_feeding_can_consume_general_food_stock_without_farm_balance_scope(): void
+    {
+        $this->actingWithFarmPermissions();
+        $setup = $this->setupFeedingStock(925, true);
+
+        $create = $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 12, 1.5))
+            ->assertCreated();
+
+        $feedingId = $create->json('data.id');
+
+        $this->postJson("/api/v1/farms/feedings/{$feedingId}/submit")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'submitted');
+
+        $this->postJson("/api/v1/farms/feedings/{$feedingId}/confirm")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'confirmed');
+
+        $this->assertDatabaseHas('inventory_balances', [
+            'id' => $setup['foodBalance']->id,
+            'farm_information_id' => null,
+            'on_hand_quantity' => 913,
+            'available_quantity' => 913,
+        ]);
+        $this->assertDatabaseHas('inventory_ledger_entries', [
+            'source_module' => 'farms',
+            'source_type' => 'feeding',
+            'source_id' => $feedingId,
+            'transaction_type' => 'feed_consumption',
+            'farm_information_id' => null,
+            'quantity_out' => 12,
+            'balance_before' => 925,
+            'balance_after' => 913,
+        ]);
+    }
     /** @return array<string, mixed> */
-    private function setupFeedingStock(int $foodQuantity): array
+    private function setupFeedingStock(int $foodQuantity, bool $generalFoodStock = false): array
     {
         $branch = Branch::query()->create([
             'code' => 'BR-FEED',
@@ -181,7 +216,7 @@ class FeedingApiTest extends TestCase
             'item_id' => $foodItem->id,
             'branch_id' => $branch->id,
             'inventory_id' => $inventory->id,
-            'farm_information_id' => $farm->id,
+            'farm_information_id' => $generalFoodStock ? null : $farm->id,
             'location' => 'Pen F1',
             'stock_uom_id' => $uom->id,
             'supplier_id' => $supplier->id,
@@ -197,7 +232,7 @@ class FeedingApiTest extends TestCase
             'item_id' => $foodItem->id,
             'branch_id' => $branch->id,
             'inventory_id' => $inventory->id,
-            'farm_information_id' => $farm->id,
+            'farm_information_id' => $generalFoodStock ? null : $farm->id,
             'location' => 'Pen F1',
             'stock_uom_id' => $uom->id,
             'stock_lot_id' => $stockLot->id,
