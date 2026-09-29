@@ -22,6 +22,9 @@ use App\Modules\Inventory\Controllers\InventoryBalanceController;
 use App\Modules\Inventory\Controllers\InventoryConfirmationController;
 use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use App\Modules\Inventory\Controllers\ItemController;
+use App\Modules\Financial\Controllers\CashbookController;
+use App\Modules\Financial\Controllers\CashbookReportController;
+use App\Modules\Financial\Controllers\CashbookTransactionController;
 use App\Modules\Purchasing\Controllers\PurchaseInvoiceController;
 use App\Modules\Purchasing\Controllers\PurchaseReceiptController;
 use Illuminate\Support\Facades\Route;
@@ -151,6 +154,24 @@ Route::prefix('v1')->group(function (): void {
             Route::get('{farmInformation}/animal-view-summary', [FarmController::class, 'animalViewSummary'])->middleware('permission:farms.view');
             Route::get('{farmInformation}/animals', [FarmController::class, 'animals'])->middleware('permission:farms.view');
             Route::get('{farmInformation}/animals/{animalBalance}', [FarmController::class, 'animal'])->middleware('permission:farms.view');
+        });
+
+        Route::prefix('financial')->group(function (): void {
+            Route::get('cashbooks', [CashbookController::class, 'index'])->middleware('permission:financial.cashbooks.view');
+            Route::post('cashbooks', [CashbookController::class, 'store'])->middleware('permission:financial.cashbooks.create');
+            Route::get('cashbooks/{cashbook}', [CashbookController::class, 'show'])->middleware('permission:financial.cashbooks.view');
+            Route::post('cashbooks/{cashbook}', [CashbookController::class, 'update'])->middleware('permission:financial.cashbooks.update');
+            Route::post('cashbooks/{cashbook}/deactivate', [CashbookController::class, 'deactivate'])->middleware('permission:financial.cashbooks.deactivate');
+            Route::get('cashbooks/{cashbook}/ledger', [CashbookController::class, 'ledger'])->middleware('permission:financial.transactions.view');
+            Route::get('cashbooks/{cashbook}/daily-summary', [CashbookController::class, 'dailySummary'])->middleware('permission:financial.reports.view');
+
+            Route::get('cashbook-transactions', [CashbookTransactionController::class, 'index'])->middleware('permission:financial.transactions.view');
+            Route::post('cashbook-transactions', [CashbookTransactionController::class, 'store'])->middleware('permission:financial.transactions.create');
+            Route::get('cashbook-transactions/{transaction}', [CashbookTransactionController::class, 'show'])->middleware('permission:financial.transactions.view');
+            Route::post('cashbook-transactions/{transaction}', [CashbookTransactionController::class, 'update'])->middleware('permission:financial.transactions.update');
+            Route::post('cashbook-transactions/{transaction}/confirm', [CashbookTransactionController::class, 'confirm'])->middleware('permission:financial.transactions.confirm');
+            Route::post('cashbook-transactions/{transaction}/reverse', [CashbookTransactionController::class, 'reverse'])->middleware('permission:financial.transactions.reverse');
+            Route::get('cashbook-reports/consolidated', [CashbookReportController::class, 'consolidated'])->middleware('permission:financial.reports.view');
         });
         Route::prefix('purchasing')->group(function (): void {
             Route::get('invoices', [PurchaseInvoiceController::class, 'index'])->middleware('permission:purchasing.invoices.view');

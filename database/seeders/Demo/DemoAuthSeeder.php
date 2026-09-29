@@ -95,6 +95,17 @@ class DemoAuthSeeder extends Seeder
         'sales.manage',
         'financial.view',
         'financial.manage',
+        'financial.cashbooks.view',
+        'financial.cashbooks.create',
+        'financial.cashbooks.update',
+        'financial.cashbooks.deactivate',
+        'financial.cashbooks.bank-reference.view',
+        'financial.transactions.view',
+        'financial.transactions.create',
+        'financial.transactions.update',
+        'financial.transactions.confirm',
+        'financial.transactions.reverse',
+        'financial.reports.view',
     ];
 
     public function run(): void
@@ -176,6 +187,9 @@ class DemoAuthSeeder extends Seeder
             'farms.view',
             'sales.view',
             'financial.view',
+            'financial.cashbooks.view',
+            'financial.transactions.view',
+            'financial.reports.view',
         ]);
         $salesOfficer->syncPermissions([
             'sales.view',
