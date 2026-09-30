@@ -24,6 +24,7 @@ class CashbookSummaryRequest extends FormRequest
             'currency_code' => ['sometimes', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
             'status' => ['sometimes', 'in:active,inactive,draft,confirmed,reversed'],
             'direction' => ['sometimes', 'in:in,out'],
+            'category_id' => ['sometimes', 'integer', 'exists:cash_ledger_categories,id'],
             'source_type' => ['sometimes', 'string', 'max:40'],
             'search' => ['sometimes', 'string', 'max:255'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],

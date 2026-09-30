@@ -7,6 +7,7 @@ use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashbookLedgerEntry;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CashbookReportingService
@@ -106,6 +107,65 @@ class CashbookReportingService
         return ['as_of_date' => $asOf, 'currencies' => $currencyGroups->values()->all()];
     }
 
+    /** @return array<string, mixed> */
+    public function categorySummary(array $filters, User $actor): array
+    {
+        $from = CarbonImmutable::parse($filters['from_date'] ?? $filters['to_date'] ?? now()->toDateString())->toDateString();
+        $to = CarbonImmutable::parse($filters['to_date'] ?? $filters['from_date'] ?? now()->toDateString())->toDateString();
+        if ($from > $to) {
+            throw ValidationException::withMessages(['from_date' => 'Start date must be on or before end date.']);
+        }
+
+        $query = DB::table('cashbook_ledger_entries as entries')
+            ->join('cash_ledger_categories as categories', 'categories.id', '=', 'entries.category_id')
+            ->join('cashbooks', 'cashbooks.id', '=', 'entries.cashbook_id')
+            ->where('entries.source_type', '<>', 'opening_balance')
+            ->whereBetween('entries.entry_date', [$from, $to]);
+
+        if (! $actor->hasRole('super-admin')) {
+            $query->whereIn('cashbooks.branch_id', $actor->branches()->select('branches.id'));
+        }
+        if (! empty($filters['branch_id'])) {
+            $query->where('cashbooks.branch_id', $filters['branch_id']);
+        }
+        if (! empty($filters['cashbook_id'])) {
+            $query->where('cashbooks.id', $filters['cashbook_id']);
+        }
+        if (! empty($filters['currency_code'])) {
+            $query->where('cashbooks.currency_code', strtoupper($filters['currency_code']));
+        }
+        if (! empty($filters['direction'])) {
+            $query->where('entries.direction', $filters['direction']);
+        }
+        if (! empty($filters['category_id'])) {
+            $query->where('categories.id', $filters['category_id']);
+        }
+
+        $rows = $query->select([
+            'categories.id as category_id',
+            'categories.name as category_name',
+            'entries.direction',
+            'cashbooks.currency_code',
+        ])->selectRaw('SUM(entries.amount) as total_amount, COUNT(entries.id) as entry_count')
+            ->groupBy('categories.id', 'categories.name', 'entries.direction', 'cashbooks.currency_code')
+            ->orderBy('cashbooks.currency_code')->orderBy('entries.direction')->orderBy('categories.name')->get();
+
+        return [
+            'from_date' => $from,
+            'to_date' => $to,
+            'currencies' => $rows->groupBy('currency_code')->map(fn (Collection $currencyRows, string $currency) => [
+                'currency_code' => $currency,
+                'categories' => $currencyRows->map(fn ($row) => [
+                    'category_id' => (int) $row->category_id,
+                    'category_name' => $row->category_name,
+                    'direction' => $row->direction,
+                    'total_amount' => $this->decimalString((string) $row->total_amount),
+                    'entry_count' => (int) $row->entry_count,
+                ])->values()->all(),
+            ])->values()->all(),
+        ];
+    }
+
     private function netMinor(Collection $entries): int
     {
         return $entries->sum(fn ($entry) => $entry->direction === 'in' ? $this->toMinor($entry->amount) : -$this->toMinor($entry->amount));
@@ -132,5 +192,12 @@ class CashbookReportingService
         $minor = abs($minor);
 
         return ($negative ? '-' : '').intdiv($minor, 100).'.'.str_pad((string) ($minor % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    private function decimalString(string $amount): string
+    {
+        [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '');
+
+        return $whole.'.'.str_pad(substr($fraction, 0, 2), 2, '0');
     }
 }

@@ -15,4 +15,9 @@ class CashbookReportController extends Controller
     {
         return response()->json(['data' => $this->reports->consolidated($request->validated(), $request->user())]);
     }
+
+    public function categories(CashbookSummaryRequest $request): JsonResponse
+    {
+        return response()->json(['data' => $this->reports->categorySummary($request->validated(), $request->user())]);
+    }
 }

@@ -22,7 +22,7 @@ class CashbookTransaction extends Model
     public const STATUS_REVERSED = 'reversed';
 
     protected $fillable = [
-        'cashbook_id', 'reference', 'external_reference', 'idempotency_key', 'business_date', 'direction',
+        'cashbook_id', 'category_id', 'reference', 'external_reference', 'idempotency_key', 'business_date', 'direction',
         'amount', 'description', 'source_type', 'status', 'created_by_id', 'confirmed_by_id', 'confirmed_at',
         'reverses_transaction_id', 'reversed_by_id', 'reversed_at', 'reversal_reason', 'version',
     ];
@@ -40,6 +40,11 @@ class CashbookTransaction extends Model
     public function cashbook(): BelongsTo
     {
         return $this->belongsTo(Cashbook::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(CashLedgerCategory::class, 'category_id');
     }
 
     public function creator(): BelongsTo
@@ -71,7 +76,7 @@ class CashbookTransaction extends Model
     {
         return LogOptions::defaults()
             ->useLogName('financial')
-            ->logOnly(['cashbook_id', 'reference', 'external_reference', 'business_date', 'direction', 'amount', 'description', 'status', 'confirmed_by_id', 'confirmed_at', 'reverses_transaction_id', 'reversed_by_id', 'reversed_at', 'reversal_reason', 'version'])
+            ->logOnly(['cashbook_id', 'category_id', 'reference', 'external_reference', 'business_date', 'direction', 'amount', 'description', 'status', 'confirmed_by_id', 'confirmed_at', 'reverses_transaction_id', 'reversed_by_id', 'reversed_at', 'reversal_reason', 'version'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

@@ -5,25 +5,28 @@ namespace App\Modules\Financial\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class CashbookLedgerEntryResource extends JsonResource
+class StaffAdvanceLedgerEntryResource extends JsonResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
-            'cashbook_id' => $this->cashbook_id,
+            'staff_id' => $this->staff_id,
+            'staff_advance_id' => $this->staff_advance_id,
+            'staff_advance_repayment_id' => $this->staff_advance_repayment_id,
             'cashbook_transaction_id' => $this->cashbook_transaction_id,
-            'category_id' => $this->category_id,
-            'category_name' => $this->whenLoaded('category', fn () => $this->category?->name),
             'reversal_of_entry_id' => $this->reversal_of_entry_id,
             'reference' => $this->reference,
-            'entry_date' => $this->entry_date?->toDateString(),
-            'description' => $this->description,
-            'source_type' => $this->source_type,
-            'direction' => $this->direction,
+            'business_date' => $this->business_date?->toDateString(),
+            'entry_type' => $this->entry_type,
+            'effect' => $this->effect,
+            'addition' => $this->effect === 'addition' ? $this->amount : '0.00',
+            'deduction' => $this->effect === 'deduction' ? $this->amount : '0.00',
             'amount' => $this->amount,
+            'currency_code' => $this->currency_code,
             'running_balance' => $this->running_balance,
+            'description' => $this->description,
             'created_by_id' => $this->created_by_id,
             'created_at' => $this->created_at?->toISOString(),
         ];

@@ -162,10 +162,11 @@ class CashbookService
         $cashbook = $this->find($cashbook, $actor);
 
         return $cashbook->entries()
-            ->with('transaction')
+            ->with(['transaction.category', 'category'])
             ->when($filters['from_date'] ?? null, fn (Builder $q, string $date) => $q->whereDate('entry_date', '>=', $date))
             ->when($filters['to_date'] ?? null, fn (Builder $q, string $date) => $q->whereDate('entry_date', '<=', $date))
             ->when($filters['direction'] ?? null, fn (Builder $q, string $direction) => $q->where('direction', $direction))
+            ->when($filters['category_id'] ?? null, fn (Builder $q, int $categoryId) => $q->where('category_id', $categoryId))
             ->when($filters['source_type'] ?? null, fn (Builder $q, string $source) => $q->where('source_type', $source))
             ->when($filters['search'] ?? null, function (Builder $q, string $search): void {
                 $q->where(function (Builder $nested) use ($search): void {
@@ -180,7 +181,7 @@ class CashbookService
     /** @param array<string, mixed> $filters */
     public function transactions(array $filters, User $actor): LengthAwarePaginator
     {
-        $query = \App\Modules\Financial\Models\CashbookTransaction::query()->with(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+        $query = \App\Modules\Financial\Models\CashbookTransaction::query()->with(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         $query->whereHas('cashbook', function (Builder $books) use ($actor, $filters): void {
             $this->scopeToActorBranches($books, $actor);
             if (! empty($filters['cashbook_id'])) {
@@ -192,6 +193,7 @@ class CashbookService
         });
         $query->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
             ->when($filters['direction'] ?? null, fn (Builder $q, string $direction) => $q->where('direction', $direction))
+            ->when($filters['category_id'] ?? null, fn (Builder $q, int $categoryId) => $q->where('category_id', $categoryId))
             ->when($filters['from_date'] ?? null, fn (Builder $q, string $date) => $q->whereDate('business_date', '>=', $date))
             ->when($filters['to_date'] ?? null, fn (Builder $q, string $date) => $q->whereDate('business_date', '<=', $date))
             ->when($filters['search'] ?? null, function (Builder $q, string $search): void {

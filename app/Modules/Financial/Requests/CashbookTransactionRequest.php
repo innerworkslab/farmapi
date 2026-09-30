@@ -19,6 +19,7 @@ class CashbookTransactionRequest extends FormRequest
 
         return [
             'cashbook_id' => [$creating ? 'required' : 'sometimes', 'integer', 'exists:cashbooks,id'],
+            'category_id' => [$creating ? 'required' : 'sometimes', 'integer', 'exists:cash_ledger_categories,id'],
             'business_date' => ['sometimes', 'date', 'before_or_equal:today'],
             'direction' => [$creating ? 'required' : 'sometimes', Rule::in(['in', 'out'])],
             'amount' => [$creating ? 'required' : 'sometimes', 'numeric', 'gt:0', 'max:9999999999999999.99'],

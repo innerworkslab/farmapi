@@ -4,6 +4,7 @@ namespace App\Modules\Financial\Services;
 
 use App\Models\User;
 use App\Modules\Financial\Models\Cashbook;
+use App\Modules\Financial\Models\CashLedgerCategory;
 use App\Modules\Financial\Models\CashbookLedgerEntry;
 use App\Modules\Financial\Models\CashbookTransaction;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +13,11 @@ use Illuminate\Validation\ValidationException;
 
 class CashbookTransactionService
 {
-    public function __construct(private readonly CashbookService $cashbooks) {}
+    public function __construct(private readonly CashbookService $cashbooks, private readonly CashLedgerCategoryService $categories) {}
 
     public function find(CashbookTransaction $transaction, User $actor): CashbookTransaction
     {
-        $transaction = CashbookTransaction::query()->with(['cashbook', 'ledgerEntry', 'reversedByTransaction'])->findOrFail($transaction->id);
+        $transaction = CashbookTransaction::query()->with(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction'])->findOrFail($transaction->id);
         $this->cashbooks->find($transaction->cashbook, $actor);
 
         return $transaction;
@@ -31,10 +32,12 @@ class CashbookTransactionService
             if ($cashbook->status !== Cashbook::STATUS_ACTIVE) {
                 throw ValidationException::withMessages(['cashbook_id' => 'An active cashbook is required.']);
             }
+            $category = $this->categories->findActiveForDirection((int) $data['category_id'], $data['direction']);
 
             $payload = [
                 'business_date' => $data['business_date'] ?? now()->toDateString(),
                 'direction' => $data['direction'],
+                'category_id' => $category->id,
                 'amount' => $this->formatMinor($this->toMinor($data['amount'])),
                 'description' => trim($data['description']),
                 'external_reference' => $this->normalizeReference($data['external_reference'] ?? null),
@@ -46,13 +49,14 @@ class CashbookTransactionService
                     if ((int) $existing->cashbook_id !== (int) $cashbook->id ||
                         $existing->business_date->toDateString() !== $payload['business_date'] ||
                         $existing->direction !== $payload['direction'] ||
+                        (int) $existing->category_id !== (int) $payload['category_id'] ||
                         $this->toMinor($existing->amount) !== $this->toMinor($payload['amount']) ||
                         $existing->description !== $payload['description'] ||
                         $existing->external_reference !== $payload['external_reference']) {
                         throw ValidationException::withMessages(['idempotency_key' => 'This idempotency key was already used for different transaction data.']);
                     }
 
-                    return $existing->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+                    return $existing->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
                 }
             }
 
@@ -62,6 +66,7 @@ class CashbookTransactionService
 
             $transaction = $cashbook->transactions()->create([
                 'reference' => $this->newReference(),
+                'category_id' => $payload['category_id'],
                 'external_reference' => $payload['external_reference'],
                 'idempotency_key' => $data['idempotency_key'] ?? null,
                 'business_date' => $payload['business_date'],
@@ -74,7 +79,7 @@ class CashbookTransactionService
                 'version' => 1,
             ]);
 
-            return $transaction->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+            return $transaction->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         });
     }
 
@@ -102,6 +107,10 @@ class CashbookTransactionService
             if (isset($data['direction'])) {
                 $transaction->direction = $data['direction'];
             }
+            if (isset($data['category_id'])) {
+                $transaction->category_id = $data['category_id'];
+            }
+            $this->categories->findActiveForDirection((int) $transaction->category_id, $transaction->direction);
             if (isset($data['amount'])) {
                 $transaction->amount = $this->formatMinor($this->toMinor($data['amount']));
             }
@@ -112,7 +121,7 @@ class CashbookTransactionService
             $transaction->version++;
             $transaction->save();
 
-            return $transaction->refresh()->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+            return $transaction->refresh()->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         });
     }
 
@@ -124,15 +133,16 @@ class CashbookTransactionService
             $this->cashbooks->assertBranchAccess($cashbook->branch, $actor);
 
             if ($transaction->status === CashbookTransaction::STATUS_CONFIRMED) {
-                return $transaction->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+                return $transaction->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
             }
             if ($transaction->status !== CashbookTransaction::STATUS_DRAFT) {
                 throw ValidationException::withMessages(['transaction' => 'Only draft transactions can be confirmed.']);
             }
             $this->assertPostable($transaction, $cashbook);
+            $category = $this->categories->findActiveForDirection((int) $transaction->category_id, $transaction->direction);
 
             $this->postLedgerEntry($cashbook, $transaction->reference, $transaction->business_date->toDateString(),
-                $transaction->description, 'manual', $transaction->direction, $transaction->amount, $actor);
+                $transaction->description, 'manual', $transaction->direction, $transaction->amount, $actor, $category->id);
 
             $transaction->status = CashbookTransaction::STATUS_CONFIRMED;
             $transaction->confirmed_by_id = $actor->id;
@@ -140,7 +150,127 @@ class CashbookTransactionService
             $transaction->version++;
             $transaction->save();
 
-            return $transaction->refresh()->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+            return $transaction->refresh()->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    public function postForModule(array $data, string $sourceType, User $actor): CashbookTransaction
+    {
+        return DB::transaction(function () use ($data, $sourceType, $actor): CashbookTransaction {
+            $existing = CashbookTransaction::query()->where('idempotency_key', $data['idempotency_key'])->first();
+            $amount = $this->formatMinor($this->toMinor($data['amount']));
+            if ($existing) {
+                return $this->existingModulePosting($existing, $data, $sourceType, $amount);
+            }
+
+            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($data['cashbook_id']);
+            $this->cashbooks->assertBranchAccess($cashbook->branch, $actor);
+            $existing = CashbookTransaction::query()->where('idempotency_key', $data['idempotency_key'])->first();
+            if ($existing) {
+                return $this->existingModulePosting($existing, $data, $sourceType, $amount);
+            }
+            $this->categories->findActiveForDirection((int) $data['category_id'], $data['direction']);
+            if ($cashbook->status !== Cashbook::STATUS_ACTIVE) {
+                throw ValidationException::withMessages(['cashbook_id' => 'An active cashbook is required.']);
+            }
+
+            $reference = $this->newReference();
+            $transaction = $cashbook->transactions()->create([
+                'category_id' => $data['category_id'],
+                'reference' => $reference,
+                'external_reference' => $data['external_reference'] ?? null,
+                'idempotency_key' => $data['idempotency_key'],
+                'business_date' => $data['business_date'],
+                'direction' => $data['direction'],
+                'amount' => $amount,
+                'description' => trim($data['description']),
+                'source_type' => $sourceType,
+                'status' => CashbookTransaction::STATUS_CONFIRMED,
+                'created_by_id' => $actor->id,
+                'confirmed_by_id' => $actor->id,
+                'confirmed_at' => now(),
+                'version' => 1,
+            ]);
+
+            $this->assertPostable($transaction, $cashbook);
+            $this->postLedgerEntry($cashbook, $reference, $transaction->business_date->toDateString(),
+                $transaction->description, $sourceType, $transaction->direction, $transaction->amount, $actor, (int) $transaction->category_id);
+
+            return $transaction->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    private function existingModulePosting(CashbookTransaction $existing, array $data, string $sourceType, string $amount): CashbookTransaction
+    {
+        if ($existing->source_type !== $sourceType ||
+            (int) $existing->cashbook_id !== (int) $data['cashbook_id'] ||
+            (int) $existing->category_id !== (int) $data['category_id'] ||
+            $existing->direction !== $data['direction'] ||
+            $existing->business_date->toDateString() !== $data['business_date'] ||
+            $this->toMinor($existing->amount) !== $this->toMinor($amount) ||
+            $existing->description !== trim($data['description']) ||
+            $existing->external_reference !== ($data['external_reference'] ?? null)) {
+            throw ValidationException::withMessages(['idempotency_key' => 'This idempotency key was already used for different cash posting data.']);
+        }
+        if ($existing->status !== CashbookTransaction::STATUS_CONFIRMED) {
+            throw ValidationException::withMessages(['idempotency_key' => 'This cash posting key is already associated with a non-confirmed transaction.']);
+        }
+
+        return $existing->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
+    }
+
+    public function reverseForModule(CashbookTransaction $transaction, string $sourceType, string $reason, User $actor): CashbookTransaction
+    {
+        return DB::transaction(function () use ($transaction, $sourceType, $reason, $actor): CashbookTransaction {
+            $transaction = CashbookTransaction::query()->with(['ledgerEntry', 'category.reversalCategory'])->lockForUpdate()->findOrFail($transaction->id);
+            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($transaction->cashbook_id);
+            $this->cashbooks->assertBranchAccess($cashbook->branch, $actor);
+
+            if ($transaction->source_type !== $sourceType) {
+                throw ValidationException::withMessages(['transaction' => 'This transaction must be reversed through its owning module.']);
+            }
+            if ($transaction->status !== CashbookTransaction::STATUS_CONFIRMED || $transaction->reversedByTransaction()->exists()) {
+                throw ValidationException::withMessages(['transaction' => 'Only confirmed, unreversed transactions can be reversed.']);
+            }
+
+            $reverseDirection = $transaction->direction === 'in' ? 'out' : 'in';
+            $reverseCategory = $transaction->category?->reversalCategory;
+            if (! $reverseCategory || $reverseCategory->status !== CashLedgerCategory::STATUS_ACTIVE || $reverseCategory->direction !== $reverseDirection) {
+                throw ValidationException::withMessages(['category_id' => 'Configure an active opposite-direction reversal category before reversing this transaction.']);
+            }
+
+            $reference = $this->newReference();
+            $reversal = $cashbook->transactions()->create([
+                'category_id' => $reverseCategory->id,
+                'reference' => $reference,
+                'business_date' => now()->toDateString(),
+                'direction' => $reverseDirection,
+                'amount' => $transaction->amount,
+                'description' => 'Reversal of '.$transaction->reference.': '.trim($reason),
+                'source_type' => $sourceType.'_reversal',
+                'status' => CashbookTransaction::STATUS_CONFIRMED,
+                'created_by_id' => $actor->id,
+                'confirmed_by_id' => $actor->id,
+                'confirmed_at' => now(),
+                'reverses_transaction_id' => $transaction->id,
+                'version' => 1,
+            ]);
+
+            $this->assertPostable($reversal, $cashbook);
+            $this->postLedgerEntry($cashbook, $reference, $reversal->business_date->toDateString(),
+                $reversal->description, $sourceType.'_reversal', $reverseDirection, $reversal->amount, $actor,
+                (int) $reverseCategory->id, $transaction->ledgerEntry?->id);
+
+            $transaction->status = CashbookTransaction::STATUS_REVERSED;
+            $transaction->reversed_by_id = $actor->id;
+            $transaction->reversed_at = now();
+            $transaction->reversal_reason = trim($reason);
+            $transaction->version++;
+            $transaction->save();
+
+            return $reversal->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         });
     }
 
@@ -162,8 +292,14 @@ class CashbookTransactionService
             }
 
             $reverseDirection = $transaction->direction === 'in' ? 'out' : 'in';
+            $originalCategory = $this->categories->findActiveForDirection((int) $transaction->category_id, $transaction->direction);
+            $reverseCategory = $originalCategory->reversalCategory;
+            if (! $reverseCategory || $reverseCategory->status !== CashLedgerCategory::STATUS_ACTIVE || $reverseCategory->direction !== $reverseDirection) {
+                throw ValidationException::withMessages(['transaction' => 'Set an active opposite-direction reversal category before reversing this transaction.']);
+            }
             $reference = $this->newReference();
             $reversal = $cashbook->transactions()->create([
+                'category_id' => $reverseCategory->id,
                 'reference' => $reference,
                 'business_date' => now()->toDateString(),
                 'direction' => $reverseDirection,
@@ -188,6 +324,7 @@ class CashbookTransactionService
                 $reverseDirection,
                 $reversal->amount,
                 $actor,
+                $reverseCategory->id,
                 $transaction->ledgerEntry?->id
             );
 
@@ -198,7 +335,7 @@ class CashbookTransactionService
             $transaction->version++;
             $transaction->save();
 
-            return $reversal->refresh()->load(['cashbook', 'ledgerEntry', 'reversedByTransaction']);
+            return $reversal->refresh()->load(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         });
     }
 
@@ -230,6 +367,7 @@ class CashbookTransactionService
         string $direction,
         string $amount,
         User $actor,
+        int $categoryId,
         ?int $reversalOfEntryId = null
     ): CashbookLedgerEntry {
         $previousBalance = $this->currentBalanceMinor($cashbook);
@@ -245,6 +383,7 @@ class CashbookTransactionService
             'description' => $description,
             'source_type' => $source,
             'direction' => $direction,
+            'category_id' => $categoryId,
             'amount' => $this->formatMinor($minor),
             'running_balance' => $this->formatMinor($balance),
             'cashbook_transaction_id' => CashbookTransaction::query()->where('reference', $reference)->value('id'),

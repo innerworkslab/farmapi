@@ -13,6 +13,12 @@ class CashbookTransactionResource extends JsonResource
         return [
             'id' => $this->id,
             'cashbook_id' => $this->cashbook_id,
+            'category_id' => $this->category_id,
+            'category' => $this->whenLoaded('category', fn () => $this->category ? [
+                'id' => $this->category->id,
+                'name' => $this->category->name,
+                'direction' => $this->category->direction,
+            ] : null),
             'cashbook' => $this->whenLoaded('cashbook', fn () => [
                 'id' => $this->cashbook->id,
                 'name' => $this->cashbook->name,

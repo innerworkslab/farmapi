@@ -8,6 +8,7 @@ use App\Modules\Setup\Controllers\BranchController;
 use App\Modules\Setup\Controllers\RoleController;
 use App\Modules\Setup\Controllers\CustomerController;
 use App\Modules\Setup\Controllers\SupplierController;
+use App\Modules\Setup\Controllers\StaffController;
 use App\Modules\Setup\Controllers\UomController;
 use App\Modules\Setup\Controllers\InventoryController;
 use App\Modules\Setup\Controllers\FoodController;
@@ -23,6 +24,9 @@ use App\Modules\Inventory\Controllers\InventoryConfirmationController;
 use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use App\Modules\Inventory\Controllers\ItemController;
 use App\Modules\Financial\Controllers\CashbookController;
+use App\Modules\Financial\Controllers\CashLedgerCategoryController;
+use App\Modules\Financial\Controllers\StaffAdvanceController;
+use App\Modules\Financial\Controllers\StaffAdvanceRepaymentController;
 use App\Modules\Financial\Controllers\CashbookReportController;
 use App\Modules\Financial\Controllers\CashbookTransactionController;
 use App\Modules\Purchasing\Controllers\PurchaseInvoiceController;
@@ -74,6 +78,12 @@ Route::prefix('v1')->group(function (): void {
             Route::post('suppliers/{supplier}', [SupplierController::class, 'update'])->middleware('permission:setup.suppliers.update');
             Route::post('suppliers/{supplier}/toggle-status', [SupplierController::class, 'toggleStatus'])->middleware('permission:setup.suppliers.update');
             Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->middleware('permission:setup.suppliers.delete');
+
+            Route::get('staff', [StaffController::class, 'index'])->middleware('permission:setup.staff.view');
+            Route::post('staff', [StaffController::class, 'store'])->middleware('permission:setup.staff.create');
+            Route::get('staff/{staff}', [StaffController::class, 'show'])->middleware('permission:setup.staff.view');
+            Route::post('staff/{staff}', [StaffController::class, 'update'])->middleware('permission:setup.staff.update');
+            Route::post('staff/{staff}/toggle-status', [StaffController::class, 'toggleStatus'])->middleware('permission:setup.staff.update');
 
             Route::get('uoms', [UomController::class, 'index'])->middleware('permission:setup.uoms.view');
             Route::post('uoms', [UomController::class, 'store'])->middleware('permission:setup.uoms.create');
@@ -157,6 +167,28 @@ Route::prefix('v1')->group(function (): void {
         });
 
         Route::prefix('financial')->group(function (): void {
+            Route::get('staff-advance-balances', [StaffAdvanceController::class, 'balances'])->middleware('permission:financial.advances.view');
+            Route::get('staff-advance-history/{staff}', [StaffAdvanceController::class, 'history'])->middleware('permission:financial.advances.view');
+            Route::get('staff-advances', [StaffAdvanceController::class, 'index'])->middleware('permission:financial.advances.view');
+            Route::post('staff-advances', [StaffAdvanceController::class, 'store'])->middleware('permission:financial.advances.create');
+            Route::get('staff-advances/{staffAdvance}', [StaffAdvanceController::class, 'show'])->middleware('permission:financial.advances.view');
+            Route::post('staff-advances/{staffAdvance}', [StaffAdvanceController::class, 'update'])->middleware('permission:financial.advances.update');
+            Route::post('staff-advances/{staffAdvance}/confirm', [StaffAdvanceController::class, 'confirm'])->middleware('permission:financial.advances.confirm');
+            Route::post('staff-advances/{staffAdvance}/reverse', [StaffAdvanceController::class, 'reverse'])->middleware('permission:financial.advances.reverse');
+            Route::get('staff-advances/{staffAdvance}/repayments', [StaffAdvanceController::class, 'repayments'])->middleware('permission:financial.advances.view');
+            Route::post('staff-advances/{staffAdvance}/repayments', [StaffAdvanceController::class, 'storeRepayment'])->middleware('permission:financial.advance-repayments.create');
+            Route::get('staff-advance-repayments/{repayment}', [StaffAdvanceRepaymentController::class, 'show'])->middleware('permission:financial.advances.view');
+            Route::post('staff-advance-repayments/{repayment}', [StaffAdvanceRepaymentController::class, 'update'])->middleware('permission:financial.advance-repayments.update');
+            Route::post('staff-advance-repayments/{repayment}/confirm', [StaffAdvanceRepaymentController::class, 'confirm'])->middleware('permission:financial.advance-repayments.confirm');
+            Route::post('staff-advance-repayments/{repayment}/reverse', [StaffAdvanceRepaymentController::class, 'reverse'])->middleware('permission:financial.advance-repayments.reverse');
+            Route::post('staff-advance-repayments/{repayment}/cancel', [StaffAdvanceRepaymentController::class, 'cancel'])->middleware('permission:financial.advance-repayments.cancel');
+
+            Route::get('cash-ledger-categories', [CashLedgerCategoryController::class, 'index'])->middleware('permission:financial.categories.view');
+            Route::post('cash-ledger-categories', [CashLedgerCategoryController::class, 'store'])->middleware('permission:financial.categories.create');
+            Route::get('cash-ledger-categories/{category}', [CashLedgerCategoryController::class, 'show'])->middleware('permission:financial.categories.view');
+            Route::post('cash-ledger-categories/{category}', [CashLedgerCategoryController::class, 'update'])->middleware('permission:financial.categories.update');
+            Route::post('cash-ledger-categories/{category}/toggle-status', [CashLedgerCategoryController::class, 'setStatus'])->middleware('permission:financial.categories.update');
+
             Route::get('cashbooks', [CashbookController::class, 'index'])->middleware('permission:financial.cashbooks.view');
             Route::post('cashbooks', [CashbookController::class, 'store'])->middleware('permission:financial.cashbooks.create');
             Route::get('cashbooks/{cashbook}', [CashbookController::class, 'show'])->middleware('permission:financial.cashbooks.view');
@@ -172,6 +204,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('cashbook-transactions/{transaction}/confirm', [CashbookTransactionController::class, 'confirm'])->middleware('permission:financial.transactions.confirm');
             Route::post('cashbook-transactions/{transaction}/reverse', [CashbookTransactionController::class, 'reverse'])->middleware('permission:financial.transactions.reverse');
             Route::get('cashbook-reports/consolidated', [CashbookReportController::class, 'consolidated'])->middleware('permission:financial.reports.view');
+            Route::get('cashbook-reports/categories', [CashbookReportController::class, 'categories'])->middleware('permission:financial.reports.view');
         });
         Route::prefix('purchasing')->group(function (): void {
             Route::get('invoices', [PurchaseInvoiceController::class, 'index'])->middleware('permission:purchasing.invoices.view');

@@ -11,7 +11,7 @@ class CashbookLedgerEntry extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'cashbook_id', 'cashbook_transaction_id', 'reversal_of_entry_id', 'reference', 'entry_date',
+        'cashbook_id', 'cashbook_transaction_id', 'category_id', 'reversal_of_entry_id', 'reference', 'entry_date',
         'description', 'source_type', 'direction', 'amount', 'running_balance', 'created_by_id', 'created_at',
     ];
 
@@ -33,6 +33,11 @@ class CashbookLedgerEntry extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(CashbookTransaction::class, 'cashbook_transaction_id');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(CashLedgerCategory::class, 'category_id');
     }
 
     public function reversalOf(): BelongsTo
