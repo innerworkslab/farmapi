@@ -5,6 +5,7 @@ use App\Modules\Financial\Services\DepreciationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -27,3 +28,8 @@ Artisan::command('financial:post-depreciation {--date=} {--actor-id=}', function
 
     return 0;
 })->purpose('Post due single-entry depreciation cashbook deductions');
+
+Schedule::command('financial:post-depreciation')
+    ->dailyAt('00:10')
+    ->withoutOverlapping()
+    ->description('Post due single-entry depreciation cashbook deductions');
