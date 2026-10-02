@@ -5,6 +5,7 @@ namespace Database\Seeders;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Database\Seeders\Demo\DemoAuthSeeder;
 use Database\Seeders\Demo\DemoBusinessMasterSeeder;
+use Database\Seeders\Demo\DemoDepreciationPermissionsSeeder;
 use Database\Seeders\Demo\DemoInventorySeeder;
 use Database\Seeders\Demo\DemoFinancialSeeder;
 use Database\Seeders\Demo\DemoFinancialCategoryPermissionsSeeder;
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
             DemoFinancialCategoryPermissionsSeeder::class,
             DemoStaffPermissionsSeeder::class,
             DemoStaffAdvancePermissionsSeeder::class,
+            DemoDepreciationPermissionsSeeder::class,
             DemoSetupSeeder::class,
             DemoBusinessMasterSeeder::class,
             DemoInventorySeeder::class,

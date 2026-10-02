@@ -25,6 +25,8 @@ use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use App\Modules\Inventory\Controllers\ItemController;
 use App\Modules\Financial\Controllers\CashbookController;
 use App\Modules\Financial\Controllers\CashLedgerCategoryController;
+use App\Modules\Financial\Controllers\AssetCategoryController;
+use App\Modules\Financial\Controllers\DepreciationController;
 use App\Modules\Financial\Controllers\StaffAdvanceController;
 use App\Modules\Financial\Controllers\StaffAdvanceRepaymentController;
 use App\Modules\Financial\Controllers\CashbookReportController;
@@ -182,6 +184,22 @@ Route::prefix('v1')->group(function (): void {
             Route::post('staff-advance-repayments/{repayment}/confirm', [StaffAdvanceRepaymentController::class, 'confirm'])->middleware('permission:financial.advance-repayments.confirm');
             Route::post('staff-advance-repayments/{repayment}/reverse', [StaffAdvanceRepaymentController::class, 'reverse'])->middleware('permission:financial.advance-repayments.reverse');
             Route::post('staff-advance-repayments/{repayment}/cancel', [StaffAdvanceRepaymentController::class, 'cancel'])->middleware('permission:financial.advance-repayments.cancel');
+
+            Route::get('asset-categories', [AssetCategoryController::class, 'index'])->middleware('permission:financial.asset-categories.view');
+            Route::post('asset-categories', [AssetCategoryController::class, 'store'])->middleware('permission:financial.asset-categories.create');
+            Route::get('asset-categories/{assetCategory}', [AssetCategoryController::class, 'show'])->middleware('permission:financial.asset-categories.view');
+            Route::post('asset-categories/{assetCategory}', [AssetCategoryController::class, 'update'])->middleware('permission:financial.asset-categories.update');
+            Route::post('asset-categories/{assetCategory}/toggle-status', [AssetCategoryController::class, 'setStatus'])->middleware('permission:financial.asset-categories.update');
+
+            Route::get('depreciations', [DepreciationController::class, 'index'])->middleware('permission:financial.depreciations.view');
+            Route::post('depreciations', [DepreciationController::class, 'store'])->middleware('permission:financial.depreciations.create');
+            Route::get('depreciations/{depreciation}', [DepreciationController::class, 'show'])->middleware('permission:financial.depreciations.view');
+            Route::post('depreciations/{depreciation}', [DepreciationController::class, 'update'])->middleware('permission:financial.depreciations.update');
+            Route::post('depreciations/{depreciation}/activate', [DepreciationController::class, 'activate'])->middleware('permission:financial.depreciations.activate');
+            Route::post('depreciations/{depreciation}/cancel', [DepreciationController::class, 'cancel'])->middleware('permission:financial.depreciations.cancel');
+            Route::get('depreciations/{depreciation}/schedule', [DepreciationController::class, 'schedule'])->middleware('permission:financial.depreciations.view');
+            Route::post('depreciation-schedule-lines/{line}/post', [DepreciationController::class, 'postLine'])->middleware('permission:financial.depreciations.post');
+            Route::post('depreciation-schedule-lines/{line}/reverse', [DepreciationController::class, 'reverseLine'])->middleware('permission:financial.depreciations.reverse');
 
             Route::get('cash-ledger-categories', [CashLedgerCategoryController::class, 'index'])->middleware('permission:financial.categories.view');
             Route::post('cash-ledger-categories', [CashLedgerCategoryController::class, 'store'])->middleware('permission:financial.categories.create');
