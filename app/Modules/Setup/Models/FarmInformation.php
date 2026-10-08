@@ -2,8 +2,12 @@
 
 namespace App\Modules\Setup\Models;
 
+use App\Models\User;
+use App\Modules\Farms\Models\FarmSetting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -24,19 +28,24 @@ class FarmInformation extends Model
         'version',
     ];
 
-    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function setting(): HasOne
+    {
+        return $this->hasOne(FarmSetting::class, 'farm_information_id');
+    }
+
+    public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
 
-    public function currentAnimal(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function currentAnimal(): BelongsTo
     {
         return $this->belongsTo(Animal::class, 'current_animal_id');
     }
 
-    public function responsibleEmployee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function responsibleEmployee(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'responsible_employee_id');
+        return $this->belongsTo(User::class, 'responsible_employee_id');
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class PurchaseReceiptService
 {
-    public function __construct(private readonly InventoryPostingService $posting) {}
+    public function __construct(private readonly InventoryPostingService $posting, private readonly AssetReceivingService $assets) {}
 
     public function authorizeAccess(PurchaseReceipt $receipt, User $actor): void
     {
@@ -66,6 +66,9 @@ class PurchaseReceiptService
         return DB::transaction(function () use ($receipt, $actor): PurchaseReceipt {
             $receipt = PurchaseReceipt::query()->with(['invoice.lines', 'lines'])->lockForUpdate()->findOrFail($receipt->id);
             $this->authorizeAccess($receipt, $actor);
+            if ($receipt->status === PurchaseReceipt::STATUS_CONFIRMED) {
+                return $receipt->load(['invoice.supplier', 'lines.item']);
+            }
             if ($receipt->status !== PurchaseReceipt::STATUS_DRAFT) {
                 throw ValidationException::withMessages(['receipt' => 'Only draft receipts can be confirmed.']);
             }
@@ -78,8 +81,10 @@ class PurchaseReceiptService
             $postingBatchId = 'PRB-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
             foreach ($receipt->lines as $line) {
                 BranchAccess::locations($actor, (int) $invoice->branch_id, $line->target_inventory_id, $line->target_farm_information_id);
-                if (! in_array($line->category, ['food', 'medicine'], true)) {
-                    throw ValidationException::withMessages(['category' => 'Only food and medicine receipts can post to stock in this implementation.']);
+                if (in_array($line->category, ['animal', 'equipment'], true)) {
+                    $this->assets->receive($receipt, $line, $actor);
+
+                    continue;
                 }
 
                 $totalReceived = round((float) $line->accepted_quantity + (float) $line->accepted_foc_quantity, 6);
@@ -158,6 +163,9 @@ class PurchaseReceiptService
 
             BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? $invoiceLine->target_inventory_id, $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id);
 
+            if ((float) ($line['rejected_quantity'] ?? 0) > 0 && empty($line['rejection_reason'])) {
+                throw ValidationException::withMessages(['rejection_reason' => 'Rejected units require a reason.']);
+            }
             $accepted = round((float) ($line['accepted_quantity'] ?? 0), 6);
             $acceptedFoc = round((float) ($line['accepted_foc_quantity'] ?? 0), 6);
             $rejected = round((float) ($line['rejected_quantity'] ?? 0), 6);
@@ -196,11 +204,12 @@ class PurchaseReceiptService
 
     private function validateReceiptLinesAgainstRemaining(PurchaseReceipt $receipt, PurchaseInvoice $invoice): void
     {
-        foreach ($receipt->lines as $line) {
+        foreach ($receipt->lines->groupBy('purchase_invoice_line_id') as $group) {
+            $line = $group->first();
             $invoiceLine = $invoice->lines->firstWhere('id', $line->purchase_invoice_line_id);
             $remainingPaid = round((float) $invoiceLine->quantity - (float) $invoiceLine->received_quantity, 6);
             $remainingFoc = round((float) $invoiceLine->foc_quantity - (float) $invoiceLine->received_foc_quantity, 6);
-            if ((float) $line->accepted_quantity > $remainingPaid || (float) $line->accepted_foc_quantity > $remainingFoc) {
+            if ((float) $group->sum('accepted_quantity') > $remainingPaid || (float) $group->sum('accepted_foc_quantity') > $remainingFoc) {
                 throw ValidationException::withMessages(['lines' => 'Receipt quantities cannot exceed remaining purchase quantities.']);
             }
             if (in_array($line->category, ['food', 'medicine'], true) && ! $line->target_inventory_id) {

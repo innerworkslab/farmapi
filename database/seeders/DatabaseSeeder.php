@@ -6,13 +6,14 @@ namespace Database\Seeders;
 use Database\Seeders\Demo\DemoAuthSeeder;
 use Database\Seeders\Demo\DemoBusinessMasterSeeder;
 use Database\Seeders\Demo\DemoDepreciationPermissionsSeeder;
-use Database\Seeders\Demo\DemoInventorySeeder;
-use Database\Seeders\Demo\DemoFinancialSeeder;
+use Database\Seeders\Demo\DemoFarmsSeeder;
 use Database\Seeders\Demo\DemoFinancialCategoryPermissionsSeeder;
-use Database\Seeders\Demo\DemoStaffPermissionsSeeder;
-use Database\Seeders\Demo\DemoStaffAdvancePermissionsSeeder;
+use Database\Seeders\Demo\DemoFinancialSeeder;
+use Database\Seeders\Demo\DemoInventorySeeder;
 use Database\Seeders\Demo\DemoPurchasingSeeder;
 use Database\Seeders\Demo\DemoSetupSeeder;
+use Database\Seeders\Demo\DemoStaffAdvancePermissionsSeeder;
+use Database\Seeders\Demo\DemoStaffPermissionsSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -32,6 +33,7 @@ class DatabaseSeeder extends Seeder
             DemoBusinessMasterSeeder::class,
             DemoInventorySeeder::class,
             DemoPurchasingSeeder::class,
+            DemoFarmsSeeder::class,
             DemoFinancialSeeder::class,
         ]);
     }

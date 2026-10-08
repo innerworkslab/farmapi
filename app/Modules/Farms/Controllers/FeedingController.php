@@ -29,7 +29,7 @@ class FeedingController extends Controller
     {
         $this->feedings->authorizeAccess($feeding, $request->user());
 
-        return new FeedingRecordResource($feeding->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
+        return new FeedingRecordResource($feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
     }
 
     public function update(FeedingRecordRequest $request, FeedingRecord $feeding): FeedingRecordResource
@@ -45,6 +45,11 @@ class FeedingController extends Controller
     public function confirm(Request $request, FeedingRecord $feeding): FeedingRecordResource
     {
         return new FeedingRecordResource($this->feedings->confirm($feeding, $request->user()));
+    }
+
+    public function reverse(FeedingRejectRequest $request, FeedingRecord $feeding): FeedingRecordResource
+    {
+        return new FeedingRecordResource($this->feedings->reverse($feeding, $request->validated('reason'), $request->user()));
     }
 
     public function reject(FeedingRejectRequest $request, FeedingRecord $feeding): FeedingRecordResource

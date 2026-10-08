@@ -3,14 +3,18 @@
 namespace App\Modules\Farms\Services;
 
 use App\Models\User;
+use App\Modules\Farms\Models\FarmSetting;
 use App\Modules\Farms\Models\FeedingLine;
 use App\Modules\Farms\Models\FeedingRecord;
+use App\Modules\Farms\Models\FeedingTarget;
+use App\Modules\Farms\Repositories\FarmOperationRepository;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Inventory\Models\InventoryConfirmation;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\InventoryItemResolver;
 use App\Modules\Inventory\Services\StockIdentityService;
+use App\Modules\Inventory\Services\StockMovementService;
 use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\Inventory;
 use App\Support\BranchAccess;
@@ -36,9 +40,9 @@ class FeedingService
     public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
         return BranchAccess::scope(FeedingRecord::query(), $actor)
-            ->with(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation'])
+            ->with(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation'])
             ->when($filters['farm_information_id'] ?? null, fn (Builder $query, string $farmId) => $query->where('farm_information_id', $farmId))
-            ->when($filters['animal_balance_id'] ?? null, fn (Builder $query, string $animalBalanceId) => $query->where('animal_balance_id', $animalBalanceId))
+            ->when($filters['animal_balance_id'] ?? null, fn (Builder $query, string $animalBalanceId) => $query->where(fn ($q) => $q->where('animal_balance_id', $animalBalanceId)->orWhereIn('id', FeedingTarget::query()->where('animal_balance_id', $animalBalanceId)->select('feeding_id'))))
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['from_date'] ?? null, fn (Builder $query, string $date) => $query->whereDate('feeding_date', '>=', $date))
             ->when($filters['to_date'] ?? null, fn (Builder $query, string $date) => $query->whereDate('feeding_date', '<=', $date))
@@ -58,6 +62,9 @@ class FeedingService
     {
         return DB::transaction(function () use ($data, $actor): FeedingRecord {
             BranchAccess::locations($actor, (int) $data['branch_id'], null, (int) $data['farm_information_id']);
+            if (! empty($data['animal_balance_ids'])) {
+                $data['animal_balance_id'] = $data['animal_balance_ids'][0];
+            }
             $target = $this->resolveTarget($data);
 
             $record = FeedingRecord::query()->create([
@@ -80,9 +87,11 @@ class FeedingService
                 'version' => 1,
             ]);
 
+            $this->linkTargets($record, $data, $actor);
+            $this->assertLiveTargets($record, $actor);
             $this->replaceLines($record, $data['lines']);
 
-            return $record->refresh()->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $record->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -101,6 +110,9 @@ class FeedingService
             }
 
             BranchAccess::locations($actor, (int) $data['branch_id'], null, (int) $data['farm_information_id']);
+            if (! empty($data['animal_balance_ids'])) {
+                $data['animal_balance_id'] = $data['animal_balance_ids'][0];
+            }
             $target = $this->resolveTarget($data);
             $feeding->fill([
                 'feeding_date' => $data['feeding_date'],
@@ -123,10 +135,12 @@ class FeedingService
                 'version' => $feeding->version + 1,
             ])->save();
 
+            $this->linkTargets($feeding, $data, $actor);
+            $this->assertLiveTargets($feeding, $actor);
             $feeding->lines()->delete();
             $this->replaceLines($feeding, $data['lines']);
 
-            return $feeding->refresh()->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -147,6 +161,7 @@ class FeedingService
                 throw ValidationException::withMessages(['lines' => 'At least one feeding line is required.']);
             }
 
+            $this->assertLiveTargets($feeding, $actor);
             $this->revalidateRecord($feeding);
 
             $from = $feeding->status;
@@ -180,7 +195,7 @@ class FeedingService
                 ],
             ]);
 
-            return $feeding->refresh()->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -193,6 +208,9 @@ class FeedingService
                 BranchAccess::locations($actor, (int) $feeding->branch_id, $line->inventory_id);
             }
 
+            if ($feeding->status === FeedingRecord::STATUS_CONFIRMED) {
+                return $feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            }
             if ($feeding->status !== FeedingRecord::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages(['status' => 'Only submitted feeding records can be confirmed.']);
             }
@@ -205,6 +223,7 @@ class FeedingService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            $this->assertLiveTargets($feeding, $actor);
             $postingBatchId = $confirmation->posting_batch_id ?: $this->postingBatchId();
             $this->postFeedConsumption($feeding, $confirmation, $actor, $postingBatchId);
 
@@ -223,7 +242,7 @@ class FeedingService
                 'version' => $feeding->version + 1,
             ])->save();
 
-            return $feeding->refresh()->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -263,8 +282,65 @@ class FeedingService
                 'version' => $feeding->version + 1,
             ])->save();
 
-            return $feeding->refresh()->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
+    }
+
+    public function reverse(FeedingRecord $feeding, string $reason, User $actor): FeedingRecord
+    {
+        return DB::transaction(function () use ($feeding, $reason, $actor) {
+            $feeding = FeedingRecord::query()->lockForUpdate()->findOrFail($feeding->id);
+            BranchAccess::locations($actor, (int) $feeding->branch_id, null, $feeding->farm_information_id);
+            if ($feeding->status !== 'confirmed') {
+                throw ValidationException::withMessages(['status' => 'Only confirmed feeding can be reversed.']);
+            }
+            foreach (InventoryLedgerEntry::query()->where('source_type', 'feeding')->where('source_id', $feeding->id)->get() as $entry) {
+                $balance = InventoryBalance::query()->where('identity_key', $entry->identity_key)->lockForUpdate()->firstOrFail();
+                BranchAccess::locations($actor, (int) $feeding->branch_id, $balance->inventory_id);
+                $correction = app(StockMovementService::class)->post($balance, (float) $entry->quantity_out, 'feeding_reversal', $feeding->id, $actor, 'reverse-feeding-'.$entry->id, ['reason' => $reason, 'original_ledger_id' => $entry->id]);
+                $correction->original_ledger_entry_id = $entry->id;
+                $correction->save();
+            }
+            $feeding->status = 'reversed';
+            $feeding->version++;
+            $feeding->save();
+            activity('farms')->performedOn($feeding)->causedBy($actor)->withProperties(['reason' => $reason])->log('Feeding reversed');
+
+            return $feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+        });
+    }
+
+    private function linkTargets(FeedingRecord $feeding, array $data, User $actor): void
+    {
+        $ids = $data['animal_balance_ids'] ?? [$feeding->animal_balance_id];
+        $animals = app(FarmOperationRepository::class)->lockAnimals($ids, $feeding->farm_information_id, $actor);
+        if ($animals->count() !== count($ids) || $animals->contains(fn ($a) => (float) $a->on_hand_quantity <= 0 || $a->profile?->animal_state === 'dead')) {
+            throw ValidationException::withMessages(['animal_balance_ids' => 'Select live animals in the same authorized farm.']);
+        }
+        if (count($ids) > 1 && $animals->contains(fn ($a) => $a->item?->itemable?->tracking_type !== 'individual')) {
+            throw ValidationException::withMessages(['animal_balance_ids' => 'Multiple selection supports individual animals only.']);
+        }
+        FeedingTarget::query()->where('feeding_id', $feeding->id)->delete();
+        foreach ($ids as $id) {
+            if ((int) $id === (int) $feeding->animal_balance_id) {
+                continue;
+            }
+            FeedingTarget::withTrashed()->updateOrCreate(['feeding_id' => $feeding->id, 'animal_balance_id' => $id], ['deleted_at' => null]);
+        }
+        $feeding->animal_count = $animals->sum('on_hand_quantity');
+        $feeding->save();
+    }
+
+    private function assertLiveTargets(FeedingRecord $feeding, User $actor): void
+    {
+        $ids = FeedingTarget::query()->where('feeding_id', $feeding->id)->pluck('animal_balance_id')->push($feeding->animal_balance_id)->all();
+        $animals = app(FarmOperationRepository::class)->lockAnimals($ids, $feeding->farm_information_id, $actor);
+        if ($animals->count() !== count($ids) || $animals->contains(fn ($a) => (float) $a->on_hand_quantity <= 0 || $a->profile?->animal_state === 'dead')) {
+            throw ValidationException::withMessages(['animal' => 'Dead or moved animals cannot receive food.']);
+        }
+        if (FarmSetting::query()->where('farm_information_id', $feeding->farm_information_id)->where('status', 'inactive')->exists()) {
+            throw ValidationException::withMessages(['farm' => 'Inactive farms cannot receive feeding.']);
+        }
     }
 
     /** @param array<string, mixed> $data */
@@ -306,6 +382,9 @@ class FeedingService
         foreach (array_values($lines) as $index => $line) {
             $resolved = $this->items->resolve('food', (int) $line['food_item_id']);
             $stockUomId = $line['stock_uom_id'] ?? $resolved['stock_uom_id'];
+            if ($stockUomId && (int) $stockUomId !== (int) $resolved['stock_uom_id']) {
+                throw ValidationException::withMessages(['stock_uom_id' => 'Use the configured food stock UOM.']);
+            }
             if (! $stockUomId) {
                 throw ValidationException::withMessages(["lines.{$index}.stock_uom_id" => 'Stock UOM is required for this food item.']);
             }
@@ -318,6 +397,9 @@ class FeedingService
             $sourceLocation = $line['source_location'] ?? $stockLot?->location ?? 'MAIN';
             $quantity = round((float) $line['quantity'], 6);
             $wastage = round((float) ($line['wastage_quantity'] ?? 0), 6);
+            if ($wastage > $quantity) {
+                throw ValidationException::withMessages(['wastage_quantity' => 'Wastage cannot exceed total issued quantity.']);
+            }
             $quantityPerAnimal = round($quantity / max(1, (float) $feeding->animal_count), 6);
 
             $feeding->lines()->create([
@@ -391,6 +473,10 @@ class FeedingService
             $balance->version++;
             $balance->save();
 
+            $master = $this->items->resolve('food', (int) $line->food_item_id)['model'];
+            $cost = number_format(round(((float) $master->standard_cost > 0 ? (float) $master->standard_cost : (float) $master->purchase_price / max(0.000001, (float) $master->uom_conversion)) * $quantity, 2), 2, '.', '');
+            $line->metadata = array_merge($line->metadata ?? [], ['cost' => $cost]);
+            $line->save();
             $ledger = InventoryLedgerEntry::query()->create([
                 'posting_id' => $this->postingId(),
                 'posting_batch_id' => $postingBatchId,
@@ -425,6 +511,7 @@ class FeedingService
                 'idempotency_key' => $postingBatchId.'-'.$line->id,
                 'metadata' => [
                     'feeding_number' => $feeding->feeding_number,
+                    'cost' => $cost,
                     'feeding_farm_information_id' => $feeding->farm_information_id,
                     'animal_balance_id' => $feeding->animal_balance_id,
                     'animal_count' => (float) $feeding->animal_count,

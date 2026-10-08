@@ -34,6 +34,9 @@ class FeedingRecordResource extends JsonResource
                 'animal_count' => (float) $this->animal_count,
                 'location' => $this->location,
             ],
+            'additional_animal_balance_ids' => $this->targets->pluck('animal_balance_id')->all(),
+            'created_by_id' => $this->created_by_id,
+            'confirmed_by_id' => $this->confirmed_by_id,
             'status' => $this->status,
             'notes' => $this->notes,
             'totals' => [

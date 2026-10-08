@@ -2,11 +2,19 @@
 
 namespace App\Modules\Inventory\Models;
 
+use App\Modules\Farms\Models\AnimalProfile;
+use App\Modules\Farms\Models\FarmAlert;
+use App\Modules\Farms\Models\FeedingRecord;
+use App\Modules\Farms\Models\FeedingTarget;
+use App\Modules\Farms\Models\OperationTarget;
+use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Uom;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InventoryBalance extends Model
 {
@@ -33,6 +41,36 @@ class InventoryBalance extends Model
         'version',
         'last_ledger_entry_id',
     ];
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(InventoryLedgerEntry::class, 'identity_key', 'identity_key');
+    }
+
+    public function farmAlerts(): HasMany
+    {
+        return $this->hasMany(FarmAlert::class, 'animal_balance_id');
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(AnimalProfile::class, 'animal_balance_id');
+    }
+
+    public function operationTargets(): HasMany
+    {
+        return $this->hasMany(OperationTarget::class, 'animal_balance_id');
+    }
+
+    public function feedings(): HasMany
+    {
+        return $this->hasMany(FeedingRecord::class, 'animal_balance_id');
+    }
+
+    public function feedingTargets(): HasMany
+    {
+        return $this->hasMany(FeedingTarget::class, 'animal_balance_id');
+    }
 
     public function inventory(): BelongsTo
     {

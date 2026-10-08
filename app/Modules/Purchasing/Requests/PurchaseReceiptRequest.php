@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 
 class PurchaseReceiptRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -37,6 +40,23 @@ class PurchaseReceiptRequest extends FormRequest
             'lines.*.temperature_uom' => ['nullable', 'string', 'max:20'],
             'lines.*.exception_reason' => ['nullable', 'string', 'max:2000'],
             'lines.*.metadata' => ['nullable', 'array'],
+            'lines.*.metadata.tracking_mode' => ['nullable', Rule::in(['quantity', 'serial', 'asset'])],
+            'lines.*.metadata.batch_number' => ['nullable', 'string', 'max:100'],
+            'lines.*.metadata.date_of_birth' => ['nullable', 'date', 'before_or_equal:receipt_date'],
+            'lines.*.metadata.weight' => ['nullable', 'numeric', 'gt:0'],
+            'lines.*.metadata.weight_uom' => ['nullable', Rule::in(['kg', 'g', 'lb'])],
+            'lines.*.metadata.animals' => ['nullable', 'array'],
+            'lines.*.metadata.animals.*.rfid' => ['required', 'string', 'max:100', 'distinct'],
+            'lines.*.metadata.animals.*.foc' => ['sometimes', 'boolean'],
+            'lines.*.metadata.animals.*.date_of_birth' => ['nullable', 'date', 'before_or_equal:receipt_date'],
+            'lines.*.metadata.animals.*.weight' => ['nullable', 'numeric', 'gt:0'],
+            'lines.*.metadata.animals.*.weight_uom' => ['nullable', Rule::in(['kg', 'g', 'lb'])],
+            'lines.*.metadata.animals.*.gender' => ['nullable', Rule::in(['male', 'female', 'mixed', 'unknown'])],
+            'lines.*.metadata.units' => ['nullable', 'array'],
+            'lines.*.metadata.units.*.serial_number' => ['nullable', 'string', 'max:100', 'distinct'],
+            'lines.*.metadata.units.*.asset_tag' => ['nullable', 'string', 'max:100', 'distinct'],
+            'lines.*.metadata.units.*.condition' => ['nullable', Rule::in(['good', 'fair', 'damaged', 'new'])],
+            'lines.*.metadata.units.*.foc' => ['sometimes', 'boolean'],
         ];
     }
 }
