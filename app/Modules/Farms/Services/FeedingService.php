@@ -13,6 +13,7 @@ use App\Modules\Inventory\Services\InventoryItemResolver;
 use App\Modules\Inventory\Services\StockIdentityService;
 use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\Inventory;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -26,10 +27,15 @@ class FeedingService
         private readonly StockIdentityService $identities,
     ) {}
 
-    /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function authorizeAccess(FeedingRecord $feeding, User $actor): void
     {
-        return FeedingRecord::query()
+        BranchAccess::authorize($actor, $feeding->branch_id);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
+    {
+        return BranchAccess::scope(FeedingRecord::query(), $actor)
             ->with(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation'])
             ->when($filters['farm_information_id'] ?? null, fn (Builder $query, string $farmId) => $query->where('farm_information_id', $farmId))
             ->when($filters['animal_balance_id'] ?? null, fn (Builder $query, string $animalBalanceId) => $query->where('animal_balance_id', $animalBalanceId))
@@ -51,6 +57,7 @@ class FeedingService
     public function create(array $data, User $actor): FeedingRecord
     {
         return DB::transaction(function () use ($data, $actor): FeedingRecord {
+            BranchAccess::locations($actor, (int) $data['branch_id'], null, (int) $data['farm_information_id']);
             $target = $this->resolveTarget($data);
 
             $record = FeedingRecord::query()->create([
@@ -82,13 +89,18 @@ class FeedingService
     /** @param array<string, mixed> $data */
     public function update(FeedingRecord $feeding, array $data, User $actor): FeedingRecord
     {
-        return DB::transaction(function () use ($feeding, $data): FeedingRecord {
+        return DB::transaction(function () use ($feeding, $data, $actor): FeedingRecord {
             $feeding = FeedingRecord::query()->with('lines')->lockForUpdate()->findOrFail($feeding->id);
+            BranchAccess::locations($actor, (int) $feeding->branch_id, null, $feeding->farm_information_id);
+            foreach ($feeding->lines as $line) {
+                BranchAccess::locations($actor, (int) $feeding->branch_id, $line->inventory_id);
+            }
 
             if (! in_array($feeding->status, [FeedingRecord::STATUS_DRAFT, FeedingRecord::STATUS_REJECTED], true)) {
                 throw ValidationException::withMessages(['status' => 'Only draft or rejected feeding records can be edited.']);
             }
 
+            BranchAccess::locations($actor, (int) $data['branch_id'], null, (int) $data['farm_information_id']);
             $target = $this->resolveTarget($data);
             $feeding->fill([
                 'feeding_date' => $data['feeding_date'],
@@ -122,6 +134,10 @@ class FeedingService
     {
         return DB::transaction(function () use ($feeding, $actor): FeedingRecord {
             $feeding = FeedingRecord::query()->with('lines')->lockForUpdate()->findOrFail($feeding->id);
+            BranchAccess::locations($actor, (int) $feeding->branch_id, null, $feeding->farm_information_id);
+            foreach ($feeding->lines as $line) {
+                BranchAccess::locations($actor, (int) $feeding->branch_id, $line->inventory_id);
+            }
 
             if (! in_array($feeding->status, [FeedingRecord::STATUS_DRAFT, FeedingRecord::STATUS_REJECTED], true)) {
                 throw ValidationException::withMessages(['status' => 'Only draft or rejected feeding records can be submitted.']);
@@ -172,6 +188,10 @@ class FeedingService
     {
         return DB::transaction(function () use ($feeding, $actor): FeedingRecord {
             $feeding = FeedingRecord::query()->with(['lines.stockLot', 'confirmation'])->lockForUpdate()->findOrFail($feeding->id);
+            BranchAccess::locations($actor, (int) $feeding->branch_id, null, $feeding->farm_information_id);
+            foreach ($feeding->lines as $line) {
+                BranchAccess::locations($actor, (int) $feeding->branch_id, $line->inventory_id);
+            }
 
             if ($feeding->status !== FeedingRecord::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages(['status' => 'Only submitted feeding records can be confirmed.']);
@@ -211,6 +231,10 @@ class FeedingService
     {
         return DB::transaction(function () use ($feeding, $reason, $actor): FeedingRecord {
             $feeding = FeedingRecord::query()->lockForUpdate()->findOrFail($feeding->id);
+            BranchAccess::locations($actor, (int) $feeding->branch_id, null, $feeding->farm_information_id);
+            foreach ($feeding->lines as $line) {
+                BranchAccess::locations($actor, (int) $feeding->branch_id, $line->inventory_id);
+            }
 
             if ($feeding->status !== FeedingRecord::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages(['status' => 'Only submitted feeding records can be rejected.']);

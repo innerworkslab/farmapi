@@ -14,6 +14,6 @@ class InventoryBalanceController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return InventoryBalanceResource::collection($this->balances->paginate($request->query()));
+        return InventoryBalanceResource::collection($this->balances->paginate($request->query(), $request->user()));
     }
 }

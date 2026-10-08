@@ -18,7 +18,7 @@ class InventoryAdjustmentController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return InventoryAdjustmentResource::collection($this->adjustments->paginate($request->query()));
+        return InventoryAdjustmentResource::collection($this->adjustments->paginate($request->query(), $request->user()));
     }
 
     public function store(InventoryAdjustmentRequest $request): InventoryAdjustmentResource
@@ -28,8 +28,10 @@ class InventoryAdjustmentController extends Controller
         );
     }
 
-    public function show(InventoryAdjustment $adjustment): InventoryAdjustmentResource
+    public function show(Request $request, InventoryAdjustment $adjustment): InventoryAdjustmentResource
     {
+        $this->adjustments->authorizeAccess($adjustment, $request->user());
+
         return new InventoryAdjustmentResource($adjustment->load(['lines', 'confirmation']));
     }
 

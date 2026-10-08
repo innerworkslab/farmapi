@@ -24,10 +24,72 @@ class FeedingApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_feeding_confirmation_rechecks_source_inventory_branch(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $setup = $this->setupFeedingStock(100);
+        $user->branches()->attach($setup['branch']->id);
+        $id = $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 1, 0))->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/submit')->assertOk();
+        $other = Branch::query()->create(['code' => 'MOVED', 'name' => 'Moved', 'status' => 'active']);
+        $setup['inventory']->update(['branch_id' => $other->id]);
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/confirm')->assertForbidden();
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $this->assertDatabaseHas('farm_feeding_records', ['id' => $id, 'status' => 'submitted']);
+    }
+
+    public function test_branch_membership_does_not_replace_action_permission(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $setup = $this->setupFeedingStock(100);
+        $user->branches()->attach($setup['branch']->id);
+        $user->revokePermissionTo('farms.manage');
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id)->assertOk();
+        $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 1, 0))->assertForbidden();
+        $this->assertDatabaseCount('farm_feeding_records', 0);
+    }
+
+
+
+    public function test_feeding_access_is_rechecked_for_lists_details_and_every_action(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $setup = $this->setupFeedingStock(100);
+        $user->branches()->attach($setup['branch']->id);
+        $payload = $this->feedingPayload($setup, 1, 0);
+        $id = $this->postJson('/api/v1/farms/feedings', $payload)->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/submit')->assertOk();
+        foreach (['inventory.confirmations.view', 'inventory.ledger.view'] as $permission) {
+            $user->givePermissionTo(Permission::findOrCreate($permission, 'web'));
+        }
+        $confirmation = \App\Modules\Inventory\Models\InventoryConfirmation::query()->where('source_type', 'feeding')->firstOrFail();
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
+        $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
+        $user->branches()->sync([$other->id]);
+        $this->getJson('/api/v1/farms/feedings?farm_information_id='.$setup['farm']->id)->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/farms/feedings/'.$id)->assertForbidden();
+        $this->getJson('/api/v1/inventory/confirmations')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertNotFound();
+        $this->postJson('/api/v1/farms/feedings', $payload)->assertForbidden();
+        $this->postJson('/api/v1/farms/feedings/'.$id, $payload)->assertForbidden();
+        foreach (['submit', 'confirm', 'reject'] as $action) {
+            $this->postJson('/api/v1/farms/feedings/'.$id.'/'.$action, ['reason' => 'Unauthorized'])->assertForbidden();
+        }
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $this->assertDatabaseHas('farm_feeding_records', ['id' => $id, 'status' => 'submitted']);
+        $user->branches()->detach();
+        $this->getJson('/api/v1/farms/feedings')->assertOk()->assertJsonCount(0, 'data');
+        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $this->getJson('/api/v1/farms/feedings/'.$id)->assertOk();
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/confirm')->assertOk();
+    }
+
+
     public function test_feeding_confirmation_deducts_food_stock_and_posts_ledger(): void
     {
         $this->actingWithFarmPermissions();
         $setup = $this->setupFeedingStock(100);
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $create = $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 12, 1.5));
 
@@ -76,6 +138,7 @@ class FeedingApiTest extends TestCase
     {
         $this->actingWithFarmPermissions();
         $setup = $this->setupFeedingStock(5);
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $create = $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 8, 0))
             ->assertCreated();
@@ -92,6 +155,7 @@ class FeedingApiTest extends TestCase
     {
         $this->actingWithFarmPermissions();
         $setup = $this->setupFeedingStock(925, true);
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $create = $this->postJson('/api/v1/farms/feedings', $this->feedingPayload($setup, 12, 1.5))
             ->assertCreated();

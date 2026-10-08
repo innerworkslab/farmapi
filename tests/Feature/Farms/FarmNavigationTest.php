@@ -19,6 +19,42 @@ class FarmNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
+
+    public function test_no_branch_assignments_grants_no_farm_access_but_super_admin_can_access_all(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $setup = $this->setupFarmStock();
+        $this->getJson('/api/v1/farms')->assertOk()->assertJsonCount(0, 'data');
+        foreach (['', '/animals', '/animal-view-summary', '/animals/'.$setup['batchBalance']->id] as $path) {
+            $this->getJson('/api/v1/farms/'.$setup['farm']->id.$path)->assertNotFound();
+        }
+        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $this->getJson('/api/v1/farms')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals')->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_setup_location_endpoints_cannot_bypass_branch_scope(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $setup = $this->setupFarmStock();
+        foreach (['inventories', 'farm-information'] as $module) {
+            foreach (['view', 'create', 'update', 'delete'] as $action) {
+                $user->givePermissionTo(Permission::findOrCreate('setup.'.$module.'.'.$action, 'web'));
+            }
+        }
+        foreach (['inventories' => $setup['inventory']->id, 'farm-information' => $setup['farm']->id] as $module => $id) {
+            $this->getJson('/api/v1/setup/'.$module)->assertOk()->assertJsonCount(0, 'data');
+            $this->getJson('/api/v1/setup/'.$module.'/'.$id)->assertForbidden();
+            $this->deleteJson('/api/v1/setup/'.$module.'/'.$id)->assertForbidden();
+        }
+        $this->postJson('/api/v1/setup/inventories/'.$setup['inventory']->id.'/toggle-status')->assertForbidden();
+        $this->postJson('/api/v1/setup/farm-information', ['name' => 'Unauthorized farm', 'house_barn' => 'Barn', 'branch_id' => $setup['branch']->id])->assertForbidden();
+        $user->branches()->attach($setup['branch']->id);
+        $this->getJson('/api/v1/setup/farm-information')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/setup/inventories/'.$setup['inventory']->id)->assertOk();
+    }
+
+
     public function test_farm_navigation_returns_authorized_farm_summary_and_animals(): void
     {
         $user = $this->actingWithFarmPermissions();

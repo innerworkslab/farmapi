@@ -16,7 +16,7 @@ class PurchaseReceiptController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return PurchaseReceiptResource::collection($this->receipts->paginate($request->query()));
+        return PurchaseReceiptResource::collection($this->receipts->paginate($request->query(), $request->user()));
     }
 
     public function store(PurchaseReceiptRequest $request): PurchaseReceiptResource
@@ -24,8 +24,10 @@ class PurchaseReceiptController extends Controller
         return new PurchaseReceiptResource($this->receipts->create($request->validated(), $request->user()));
     }
 
-    public function show(PurchaseReceipt $receipt): PurchaseReceiptResource
+    public function show(Request $request, PurchaseReceipt $receipt): PurchaseReceiptResource
     {
+        $this->receipts->authorizeAccess($receipt, $request->user());
+
         return new PurchaseReceiptResource($receipt->load(['invoice.supplier', 'lines.item']));
     }
 

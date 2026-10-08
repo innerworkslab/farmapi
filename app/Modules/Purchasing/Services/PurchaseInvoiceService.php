@@ -7,6 +7,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Services\InventoryItemResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Setup\Models\Supplier;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +18,15 @@ class PurchaseInvoiceService
 {
     public function __construct(private readonly InventoryItemResolver $items) {}
 
-    /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function authorizeAccess(PurchaseInvoice $invoice, User $actor): void
     {
-        return PurchaseInvoice::query()
+        BranchAccess::authorize($actor, $invoice->branch_id);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
+    {
+        return BranchAccess::scope(PurchaseInvoice::query(), $actor)
             ->with(['supplier', 'lines.item'])
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where('invoice_number', 'like', "%{$search}%");
@@ -36,6 +42,7 @@ class PurchaseInvoiceService
     public function create(array $data, User $actor): PurchaseInvoice
     {
         return DB::transaction(function () use ($data, $actor): PurchaseInvoice {
+            BranchAccess::authorize($actor, (int) $data['branch_id']);
             $supplier = Supplier::query()->findOrFail($data['supplier_id']);
             $this->assertSupplierEligible($supplier);
 
@@ -51,7 +58,7 @@ class PurchaseInvoiceService
                 'version' => 1,
             ]);
 
-            $this->replaceLines($invoice, $data['lines']);
+            $this->replaceLines($invoice, $data['lines'], $actor);
             $this->recalculate($invoice);
 
             return $invoice->refresh()->load(['supplier', 'lines.item']);
@@ -59,10 +66,11 @@ class PurchaseInvoiceService
     }
 
     /** @param array<string, mixed> $data */
-    public function update(PurchaseInvoice $invoice, array $data): PurchaseInvoice
+    public function update(PurchaseInvoice $invoice, array $data, User $actor): PurchaseInvoice
     {
-        return DB::transaction(function () use ($invoice, $data): PurchaseInvoice {
+        return DB::transaction(function () use ($invoice, $data, $actor): PurchaseInvoice {
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($invoice->id);
+            $this->authorizeAccess($invoice, $actor);
             $this->assertEditable($invoice);
 
             if (isset($data['supplier_id'])) {
@@ -70,6 +78,7 @@ class PurchaseInvoiceService
                 $this->assertSupplierEligible($supplier);
             }
 
+            BranchAccess::authorize($actor, (int) ($data['branch_id'] ?? $invoice->branch_id));
             $invoice->fill([
                 'invoice_date' => $data['invoice_date'] ?? $invoice->invoice_date,
                 'supplier_id' => $data['supplier_id'] ?? $invoice->supplier_id,
@@ -80,7 +89,7 @@ class PurchaseInvoiceService
 
             if (isset($data['lines'])) {
                 $invoice->lines()->delete();
-                $this->replaceLines($invoice, $data['lines']);
+                $this->replaceLines($invoice, $data['lines'], $actor);
             }
             $this->recalculate($invoice);
 
@@ -92,6 +101,7 @@ class PurchaseInvoiceService
     {
         return DB::transaction(function () use ($invoice, $reason, $actor): PurchaseInvoice {
             $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
+            $this->authorizeAccess($invoice, $actor);
             $this->assertEditable($invoice);
 
             $invoice->fill([
@@ -108,11 +118,12 @@ class PurchaseInvoiceService
     }
 
     /** @param list<array<string, mixed>> $lines */
-    private function replaceLines(PurchaseInvoice $invoice, array $lines): void
+    private function replaceLines(PurchaseInvoice $invoice, array $lines, User $actor): void
     {
         $supplier = $invoice->supplier ?: Supplier::query()->findOrFail($invoice->supplier_id);
 
         foreach (array_values($lines) as $index => $line) {
+            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? null);
             $category = strtolower($line['category']);
             $item = Item::query()->findOrFail($line['item_id']);
             if ($item->category !== $category) {

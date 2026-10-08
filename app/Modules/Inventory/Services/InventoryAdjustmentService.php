@@ -7,6 +7,7 @@ use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryConfirmation;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Setup\Models\Inventory;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -21,14 +22,21 @@ class InventoryAdjustmentService
         private readonly InventoryWorkflowService $workflow,
     ) {}
 
-    /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function authorizeAccess(InventoryAdjustment $adjustment, User $actor): void
     {
-        return InventoryAdjustment::query()
+        BranchAccess::authorize($actor, $adjustment->branch_id);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
+    {
+        return BranchAccess::scope(InventoryAdjustment::query(), $actor)
             ->with(['lines', 'confirmation'])
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
-                $query->where('adjustment_number', 'like', "%{$search}%")
-                    ->orWhere('reason', 'like', "%{$search}%");
+                $query->where(function (Builder $searchQuery) use ($search): void {
+                    $searchQuery->where('adjustment_number', 'like', "%{$search}%")
+                        ->orWhere('reason', 'like', "%{$search}%");
+                });
             })
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['type'] ?? null, fn (Builder $query, string $type) => $query->where('type', $type))
@@ -42,6 +50,7 @@ class InventoryAdjustmentService
     public function create(array $data, User $actor): InventoryAdjustment
     {
         return DB::transaction(function () use ($data, $actor): InventoryAdjustment {
+            BranchAccess::locations($actor, (int) $data['branch_id'], (int) $data['inventory_id'], $data['farm_information_id'] ?? null);
             $inventory = Inventory::query()->findOrFail($data['inventory_id']);
             $this->assertBranchMatchesInventory((int) $data['branch_id'], $inventory);
 
@@ -73,6 +82,7 @@ class InventoryAdjustmentService
     {
         return DB::transaction(function () use ($adjustment, $data, $actor): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->lockForUpdate()->findOrFail($adjustment->id);
+            BranchAccess::locations($actor, (int) $adjustment->branch_id, $adjustment->inventory_id, $adjustment->farm_information_id);
             if (! in_array($adjustment->status, [InventoryAdjustment::STATUS_DRAFT, InventoryAdjustment::STATUS_REJECTED], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Only draft or rejected adjustments can be edited.',
@@ -84,6 +94,7 @@ class InventoryAdjustmentService
                 $this->assertBranchMatchesInventory((int) ($data['branch_id'] ?? $adjustment->branch_id), $inventory);
             }
 
+            BranchAccess::locations($actor, (int) ($data['branch_id'] ?? $adjustment->branch_id), $data['inventory_id'] ?? $adjustment->inventory_id, $data['farm_information_id'] ?? $adjustment->farm_information_id);
             $adjustment->fill([
                 'type' => $data['type'] ?? $adjustment->type,
                 'adjustment_date' => $data['adjustment_date'] ?? $adjustment->adjustment_date,
@@ -117,6 +128,7 @@ class InventoryAdjustmentService
     {
         return DB::transaction(function () use ($adjustment, $actor): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($adjustment->id);
+            BranchAccess::locations($actor, (int) $adjustment->branch_id, $adjustment->inventory_id, $adjustment->farm_information_id);
             if (! in_array($adjustment->status, [InventoryAdjustment::STATUS_DRAFT, InventoryAdjustment::STATUS_REJECTED], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Only draft or rejected adjustments can be submitted.',
@@ -166,6 +178,7 @@ class InventoryAdjustmentService
     {
         return DB::transaction(function () use ($adjustment, $actor): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with(['lines', 'confirmation'])->lockForUpdate()->findOrFail($adjustment->id);
+            BranchAccess::locations($actor, (int) $adjustment->branch_id, $adjustment->inventory_id, $adjustment->farm_information_id);
             if ($adjustment->status !== InventoryAdjustment::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages([
                     'status' => 'Only submitted adjustments can be confirmed.',
@@ -210,6 +223,7 @@ class InventoryAdjustmentService
     {
         return DB::transaction(function () use ($adjustment, $reason, $actor): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->lockForUpdate()->findOrFail($adjustment->id);
+            BranchAccess::locations($actor, (int) $adjustment->branch_id, $adjustment->inventory_id, $adjustment->farm_information_id);
             if ($adjustment->status !== InventoryAdjustment::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages([
                     'status' => 'Only submitted adjustments can be rejected.',
@@ -249,6 +263,7 @@ class InventoryAdjustmentService
     {
         return DB::transaction(function () use ($adjustment, $reason, $actor): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($adjustment->id);
+            BranchAccess::locations($actor, (int) $adjustment->branch_id, $adjustment->inventory_id, $adjustment->farm_information_id);
             if ($adjustment->status !== InventoryAdjustment::STATUS_CONFIRMED) {
                 throw ValidationException::withMessages([
                     'status' => 'Only confirmed adjustments can be reversed.',
@@ -319,6 +334,15 @@ class InventoryAdjustmentService
     private function replaceLines(InventoryAdjustment $adjustment, array $lines): void
     {
         foreach (array_values($lines) as $index => $line) {
+            foreach (['stock_lot_id' => \App\Modules\Inventory\Models\StockLot::class, 'equipment_instance_id' => \App\Modules\Inventory\Models\EquipmentInstance::class] as $field => $model) {
+                if (! empty($line[$field])) {
+                    $stock = $model::query()->findOrFail($line[$field]);
+                    if ((int) $stock->branch_id !== (int) $adjustment->branch_id || (int) $stock->inventory_id !== (int) $adjustment->inventory_id) {
+                        throw ValidationException::withMessages(["lines.{$index}.{$field}" => 'Stock must belong to the adjustment branch and inventory.']);
+                    }
+                }
+            }
+
             $resolved = $this->items->resolve($line['category'], (int) $line['item_id']);
             $stockUomId = $line['stock_uom_id'] ?? $resolved['stock_uom_id'];
             if (! $stockUomId) {

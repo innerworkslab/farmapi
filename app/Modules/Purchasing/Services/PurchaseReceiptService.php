@@ -7,6 +7,7 @@ use App\Modules\Inventory\Services\InventoryPostingService;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseReceipt;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +18,16 @@ class PurchaseReceiptService
 {
     public function __construct(private readonly InventoryPostingService $posting) {}
 
+    public function authorizeAccess(PurchaseReceipt $receipt, User $actor): void
+    {
+        BranchAccess::authorize($actor, $receipt->invoice->branch_id);
+    }
+
     /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
         return PurchaseReceipt::query()
+            ->whereIn('purchase_invoice_id', BranchAccess::scope(PurchaseInvoice::query(), $actor)->select('id'))
             ->with(['invoice.supplier', 'lines.item'])
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['purchase_invoice_id'] ?? null, fn (Builder $query, string $id) => $query->where('purchase_invoice_id', $id))
@@ -34,6 +41,7 @@ class PurchaseReceiptService
     {
         return DB::transaction(function () use ($data, $actor): PurchaseReceipt {
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($data['purchase_invoice_id']);
+            $this->authorizeInvoice($invoice, $actor);
             $this->assertReceivable($invoice);
 
             $receipt = PurchaseReceipt::query()->create([
@@ -47,7 +55,7 @@ class PurchaseReceiptService
                 'version' => 1,
             ]);
 
-            $this->replaceLines($receipt, $invoice, $data['lines']);
+            $this->replaceLines($receipt, $invoice, $data['lines'], $actor);
 
             return $receipt->refresh()->load(['invoice.supplier', 'lines.item']);
         });
@@ -57,16 +65,19 @@ class PurchaseReceiptService
     {
         return DB::transaction(function () use ($receipt, $actor): PurchaseReceipt {
             $receipt = PurchaseReceipt::query()->with(['invoice.lines', 'lines'])->lockForUpdate()->findOrFail($receipt->id);
+            $this->authorizeAccess($receipt, $actor);
             if ($receipt->status !== PurchaseReceipt::STATUS_DRAFT) {
                 throw ValidationException::withMessages(['receipt' => 'Only draft receipts can be confirmed.']);
             }
 
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($receipt->purchase_invoice_id);
+            $this->authorizeInvoice($invoice, $actor);
             $this->assertReceivable($invoice);
             $this->validateReceiptLinesAgainstRemaining($receipt, $invoice);
 
             $postingBatchId = 'PRB-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
             foreach ($receipt->lines as $line) {
+                BranchAccess::locations($actor, (int) $invoice->branch_id, $line->target_inventory_id, $line->target_farm_information_id);
                 if (! in_array($line->category, ['food', 'medicine'], true)) {
                     throw ValidationException::withMessages(['category' => 'Only food and medicine receipts can post to stock in this implementation.']);
                 }
@@ -137,13 +148,15 @@ class PurchaseReceiptService
     }
 
     /** @param list<array<string, mixed>> $lines */
-    private function replaceLines(PurchaseReceipt $receipt, PurchaseInvoice $invoice, array $lines): void
+    private function replaceLines(PurchaseReceipt $receipt, PurchaseInvoice $invoice, array $lines, User $actor): void
     {
         foreach (array_values($lines) as $index => $line) {
             $invoiceLine = $invoice->lines->firstWhere('id', (int) $line['purchase_invoice_line_id']);
             if (! $invoiceLine) {
                 throw ValidationException::withMessages(["lines.{$index}.purchase_invoice_line_id" => 'Receipt line must reference this invoice.']);
             }
+
+            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? $invoiceLine->target_inventory_id, $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id);
 
             $accepted = round((float) ($line['accepted_quantity'] ?? 0), 6);
             $acceptedFoc = round((float) ($line['accepted_foc_quantity'] ?? 0), 6);
@@ -218,6 +231,11 @@ class PurchaseReceiptService
             'delivery_status' => $status,
             'version' => $invoice->version + 1,
         ])->save();
+    }
+
+    private function authorizeInvoice(PurchaseInvoice $invoice, User $actor): void
+    {
+        BranchAccess::authorize($actor, $invoice->branch_id);
     }
 
     private function assertReceivable(PurchaseInvoice $invoice): void

@@ -23,10 +23,68 @@ class InventoryFoundationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_pending_adjustment_confirmation_is_scoped_before_ledger_posting(): void
+    {
+        $user = $this->actingWithInventoryPermissions();
+        $setup = $this->setupFoodInventory();
+        $user->branches()->attach($setup['branch']->id);
+        $payload = ['type' => 'data_correction', 'adjustment_date' => '2026-09-18', 'branch_id' => $setup['branch']->id,
+            'inventory_id' => $setup['inventory']->id, 'reason' => 'Pending count',
+            'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'stock_uom_id' => $setup['kg']->id,
+                'adjustment_quantity' => 1, 'direction' => 'in', 'new_identity' => true, 'receipt_lot_number' => 'PENDING', 'expiry_date' => '2027-09-18']]];
+        $id = $this->postJson('/api/v1/inventory/adjustments', $payload)->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/inventory/adjustments/'.$id.'/submit')->assertOk();
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $confirmation = $this->getJson('/api/v1/inventory/confirmations?status=pending')->assertOk()->assertJsonCount(1, 'data')->json('data.0.id');
+        $user->branches()->detach();
+        $this->getJson('/api/v1/inventory/confirmations?status=pending')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation)->assertNotFound();
+        $this->postJson('/api/v1/inventory/adjustments/'.$id.'/confirm')->assertForbidden();
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+    }
+
+
+
+    public function test_inventory_lists_confirmations_and_actions_respect_branch_access(): void
+    {
+        $user = $this->actingWithInventoryPermissions();
+        $setup = $this->setupFoodInventory();
+        $user->branches()->attach($setup['branch']->id);
+        $this->postOpeningBalance($setup, 10);
+        $adjustment = \App\Modules\Inventory\Models\InventoryAdjustment::query()->firstOrFail();
+        $confirmation = $adjustment->confirmation;
+        $this->getJson('/api/v1/inventory/confirmations')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
+        $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
+        $user->branches()->sync([$other->id]);
+        foreach (['balances', 'ledger', 'adjustments?search=Initial', 'confirmations'] as $path) {
+            $this->getJson('/api/v1/inventory/'.$path)->assertOk()->assertJsonCount(0, 'data');
+        }
+        $this->getJson('/api/v1/inventory/adjustments/'.$adjustment->id)->assertForbidden();
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertNotFound();
+        foreach (['submit', 'confirm', 'reject', 'reverse'] as $action) {
+            $this->postJson('/api/v1/inventory/adjustments/'.$adjustment->id.'/'.$action, ['reason' => 'Unauthorized'])->assertForbidden();
+        }
+        $payload = ['type' => 'data_correction', 'adjustment_date' => '2026-09-18', 'branch_id' => $setup['branch']->id,
+            'inventory_id' => $setup['inventory']->id, 'reason' => 'Unauthorized',
+            'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'stock_uom_id' => $setup['kg']->id, 'adjustment_quantity' => 1, 'direction' => 'in']]];
+        $this->postJson('/api/v1/inventory/adjustments', $payload)->assertForbidden();
+        $this->postJson('/api/v1/inventory/adjustments/'.$adjustment->id, $payload)->assertForbidden();
+        $this->assertDatabaseCount('inventory_ledger_entries', 1);
+        $this->assertDatabaseHas('inventory_balances', ['on_hand_quantity' => 10]);
+        $user->branches()->detach();
+        $this->getJson('/api/v1/inventory/balances')->assertOk()->assertJsonCount(0, 'data');
+        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $this->getJson('/api/v1/inventory/balances')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
+    }
+
+
     public function test_adjustment_confirmation_posts_ledger_and_current_balance(): void
     {
         $this->actingWithInventoryPermissions();
         $setup = $this->setupFoodInventory();
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $create = $this->postJson('/api/v1/inventory/adjustments', [
             'type' => 'opening_balance',
@@ -94,6 +152,7 @@ class InventoryFoundationTest extends TestCase
     {
         $this->actingWithInventoryPermissions();
         $setup = $this->setupFoodInventory();
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
         $lot = $this->postOpeningBalance($setup, 10);
 
         $create = $this->postJson('/api/v1/inventory/adjustments', [
@@ -133,6 +192,7 @@ class InventoryFoundationTest extends TestCase
         ]);
 
         $setup = $this->setupFoodInventory(false);
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $create = $this->postJson('/api/v1/setup/foods', [
             'code' => 'FOD-AUTO',

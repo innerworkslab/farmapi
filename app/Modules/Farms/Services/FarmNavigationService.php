@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\FarmInformation;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -137,11 +138,7 @@ class FarmNavigationService
 
     private function applyAuthorizedBranchScope(Builder $query, User $user): void
     {
-        $branchIds = $user->branches()->pluck('branches.id');
-
-        if ($branchIds->isNotEmpty()) {
-            $query->whereIn('farm_information.branch_id', $branchIds);
-        }
+        BranchAccess::scope($query, $user, 'farm_information.branch_id');
     }
 
     private function addAnimalCounts(Builder $query): void

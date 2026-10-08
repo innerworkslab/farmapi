@@ -14,6 +14,6 @@ class InventoryLedgerController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return InventoryLedgerEntryResource::collection($this->ledger->paginate($request->query()));
+        return InventoryLedgerEntryResource::collection($this->ledger->paginate($request->query(), $request->user()));
     }
 }
