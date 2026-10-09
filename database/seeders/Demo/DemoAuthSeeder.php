@@ -96,6 +96,7 @@ class DemoAuthSeeder extends Seeder
         'farms.manage',
         'sales.view',
         'sales.manage',
+        'sales.backdate',
         'financial.view',
         'financial.manage',
         'financial.cashbooks.view',

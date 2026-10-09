@@ -35,6 +35,7 @@ use App\Modules\Setup\Controllers\RoleController;
 use App\Modules\Setup\Controllers\StaffController;
 use App\Modules\Setup\Controllers\SupplierController;
 use App\Modules\Setup\Controllers\UomController;
+use App\Modules\Sales\Controllers\SaleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -46,6 +47,21 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/authorization/permissions', [AuthorizationController::class, 'permissions'])
             ->middleware('permission:authorization.permissions.view');
+
+        Route::prefix('sales')->group(function (): void {
+            Route::get('/', [SaleController::class, 'index'])->middleware('permission:sales.view');
+            Route::get('farms', [SaleController::class, 'farms'])->middleware('permission:sales.view');
+            Route::get('batches', [SaleController::class, 'batches'])->middleware('permission:sales.view');
+            Route::get('customers', [SaleController::class, 'customers'])->middleware('permission:sales.view');
+            Route::post('/', [SaleController::class, 'store'])->middleware('permission:sales.manage');
+            Route::get('{sale}/invoice', [SaleController::class, 'invoice'])->middleware('permission:sales.view');
+            Route::get('{sale}', [SaleController::class, 'show'])->middleware('permission:sales.view');
+            Route::post('{sale}', [SaleController::class, 'update'])->middleware('permission:sales.manage');
+            Route::delete('{sale}', [SaleController::class, 'destroy'])->middleware('permission:sales.manage');
+            Route::post('{sale}/confirm', [SaleController::class, 'confirm'])->middleware('permission:sales.manage');
+            Route::post('{sale}/receipts', [SaleController::class, 'receive'])->middleware('permission:sales.manage');
+            Route::post('{sale}/cancel', [SaleController::class, 'cancel'])->middleware('permission:sales.manage');
+        });
 
         Route::prefix('setup')->group(function (): void {
             Route::get('branches', [BranchController::class, 'index'])->middleware('permission:setup.branches.view');
