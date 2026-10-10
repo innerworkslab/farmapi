@@ -16,17 +16,22 @@ class PurchaseInvoice extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     public const STATUS_OPEN = 'open';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const DELIVERY_NOT_RECEIVED = 'not_received';
+
     public const DELIVERY_PARTIALLY_RECEIVED = 'partially_received';
+
     public const DELIVERY_FULLY_RECEIVED = 'fully_received';
+
     public const DELIVERY_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'invoice_number', 'invoice_date', 'supplier_id', 'branch_id', 'status', 'delivery_status',
         'gross_amount', 'discount_amount', 'tax_amount', 'total_amount', 'total_expected_quantity',
         'total_received_quantity', 'notes', 'cancellation_reason', 'created_by_id', 'cancelled_by_id',
-        'cancelled_at', 'version',
+        'cancelled_at', 'version', 'currency_code',
     ];
 
     public function lines(): HasMany
@@ -51,6 +56,6 @@ class PurchaseInvoice extends Model
 
     protected function casts(): array
     {
-        return ['invoice_date' => 'date', 'cancelled_at' => 'datetime'];
+        return ['invoice_date' => 'date', 'cancelled_at' => 'datetime', 'gross_amount' => 'decimal:2', 'discount_amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'total_amount' => 'decimal:2'];
     }
 }

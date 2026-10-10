@@ -6,8 +6,8 @@ use App\Models\User;
 use App\Modules\Farms\Models\AnimalProfile;
 use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashLedgerCategory;
+use App\Modules\Financial\Services\FinancialControlService;
 use App\Modules\Inventory\Models\InventoryBalance;
-use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Sales\Models\CustomerReceivableEntry;
 use App\Modules\Setup\Models\Animal;
@@ -76,7 +76,9 @@ class SaleApiTest extends TestCase
     /** @return array<string, mixed> */
     private function fixture(): array
     {
-        foreach (['sales.view', 'sales.manage', 'sales.backdate'] as $permission) Permission::findOrCreate($permission, 'web');
+        foreach (['sales.view', 'sales.manage', 'sales.backdate'] as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
         $user = User::factory()->create(['account_status' => 'active']);
         $user->givePermissionTo(['sales.view', 'sales.manage']);
         Sanctum::actingAs($user);
@@ -96,6 +98,10 @@ class SaleApiTest extends TestCase
         $cashIn = CashLedgerCategory::query()->create(['name' => 'Sale receipt', 'normalized_name' => 'sale receipt', 'direction' => 'in', 'reversal_category_id' => $cashOut->id, 'status' => 'active']);
         $cashOut->update(['reversal_category_id' => $cashIn->id]);
         $cashbook = Cashbook::query()->create(['branch_id' => $branch->id, 'type' => 'cash', 'name' => 'Sale cashbook', 'normalized_name' => 'sale cashbook', 'currency_code' => 'MMK', 'opening_balance' => '1000.00', 'effective_date' => now()->toDateString(), 'status' => 'active', 'created_by_id' => $user->id]);
+        $controls = app(FinancialControlService::class);
+        $controls->configure($branch->id, ['default_currency' => 'MMK', 'enabled_currencies' => ['MMK'], 'timezone' => config('app.timezone'), 'require_open_period' => true, 'require_approval_limit' => true], $user);
+        $controls->createPeriod(['branch_id' => $branch->id, 'name' => 'Sale test', 'from_date' => now()->toDateString(), 'to_date' => now()->toDateString()], $user);
+        $controls->setLimit($branch->id, ['user_id' => $user->id, 'currency_code' => 'MMK', 'maximum_amount' => '1000.00', 'allow_self_approval' => true], $user);
 
         return compact('user', 'branch', 'uom', 'inventory', 'animal', 'farm', 'item', 'balance', 'customer', 'cashbook', 'cashIn', 'cashOut');
     }
@@ -103,5 +109,18 @@ class SaleApiTest extends TestCase
     private function payload(array $s): array
     {
         return ['idempotency_key' => 'sale-create-1', 'branch_id' => $s['branch']->id, 'farm_information_id' => $s['farm']->id, 'inventory_balance_id' => $s['balance']->id, 'customer_id' => $s['customer']->id, 'sale_date' => now()->toDateString(), 'quantity' => 2, 'foc_quantity' => 1, 'unit_price' => '100.00', 'discount_type' => 'percentage', 'discount_value' => '10', 'paid_amount' => '30.00', 'cashbook_id' => $s['cashbook']->id, 'cash_category_id' => $s['cashIn']->id];
+    }
+
+    public function test_receipt_retries_cannot_change_cashbook_and_cross_currency_receipts_are_rejected(): void
+    {
+        $s = $this->fixture();
+        $id = $this->postJson('/api/v1/sales', $this->payload($s))->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/sales/'.$id.'/confirm')->assertOk();
+        $data = ['amount' => '10.00', 'cashbook_id' => $s['cashbook']->id, 'cash_category_id' => $s['cashIn']->id, 'idempotency_key' => 'receipt-1'];
+        $this->postJson('/api/v1/sales/'.$id.'/receipts', $data)->assertOk();
+        $other = Cashbook::query()->create(['branch_id' => $s['branch']->id, 'type' => 'bank', 'name' => 'USD bank', 'normalized_name' => 'usd bank', 'currency_code' => 'USD', 'opening_balance' => '0.00', 'effective_date' => now()->toDateString(), 'status' => 'active', 'created_by_id' => $s['user']->id]);
+        $this->postJson('/api/v1/sales/'.$id.'/receipts', array_merge($data, ['cashbook_id' => $other->id]))->assertUnprocessable()->assertJsonValidationErrors('idempotency_key');
+        $this->postJson('/api/v1/sales/'.$id.'/receipts', array_merge($data, ['cashbook_id' => $other->id, 'idempotency_key' => 'receipt-2']))->assertUnprocessable()->assertJsonValidationErrors('cashbook_id');
+        $this->assertDatabaseCount('cashbook_transactions', 2);
     }
 }

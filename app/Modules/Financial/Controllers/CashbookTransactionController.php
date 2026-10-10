@@ -7,6 +7,7 @@ use App\Modules\Financial\Models\CashbookTransaction;
 use App\Modules\Financial\Requests\CashbookReversalRequest;
 use App\Modules\Financial\Requests\CashbookSummaryRequest;
 use App\Modules\Financial\Requests\CashbookTransactionRequest;
+use App\Modules\Financial\Requests\FinancialReasonRequest;
 use App\Modules\Financial\Resources\CashbookTransactionResource;
 use App\Modules\Financial\Services\CashbookService;
 use App\Modules\Financial\Services\CashbookTransactionService;
@@ -40,6 +41,11 @@ class CashbookTransactionController extends Controller
     public function confirm(CashbookTransaction $transaction, Request $request): CashbookTransactionResource
     {
         return new CashbookTransactionResource($this->transactions->confirm($transaction, $request->user()));
+    }
+
+    public function cancel(CashbookTransaction $transaction, FinancialReasonRequest $request): CashbookTransactionResource
+    {
+        return new CashbookTransactionResource($this->transactions->cancelDraft($transaction, $request->validated('reason'), $request->user()));
     }
 
     public function reverse(CashbookReversalRequest $request, CashbookTransaction $transaction): CashbookTransactionResource

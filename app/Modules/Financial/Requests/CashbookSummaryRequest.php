@@ -22,7 +22,7 @@ class CashbookSummaryRequest extends FormRequest
             'branch_id' => ['sometimes', 'integer', 'exists:branches,id'],
             'type' => ['sometimes', 'in:cash,bank'],
             'currency_code' => ['sometimes', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
-            'status' => ['sometimes', 'in:active,inactive,draft,confirmed,reversed'],
+            'status' => ['sometimes', 'in:active,inactive,draft,confirmed,reversed,cancelled'],
             'direction' => ['sometimes', 'in:in,out'],
             'category_id' => ['sometimes', 'integer', 'exists:cash_ledger_categories,id'],
             'source_type' => ['sometimes', 'string', 'max:40'],

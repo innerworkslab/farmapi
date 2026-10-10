@@ -22,7 +22,7 @@ class CashLedgerCategory extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    protected $fillable = ['name', 'normalized_name', 'direction', 'reversal_category_id', 'status', 'created_by_id'];
+    protected $fillable = ['name', 'normalized_name', 'direction', 'reversal_category_id', 'status', 'created_by_id', 'report_treatment'];
 
     public function reversalCategory(): BelongsTo
     {
@@ -53,7 +53,7 @@ class CashLedgerCategory extends Model
     {
         return LogOptions::defaults()
             ->useLogName('financial')
-            ->logOnly(['name', 'normalized_name', 'direction', 'reversal_category_id', 'status'])
+            ->logOnly(['name', 'normalized_name', 'direction', 'reversal_category_id', 'status', 'report_treatment'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

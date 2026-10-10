@@ -14,6 +14,7 @@ class CashLedgerCategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'direction' => $this->direction,
+            'report_treatment' => $this->report_treatment,
             'reversal_category_id' => $this->reversal_category_id,
             'reversal_category' => $this->whenLoaded('reversalCategory', fn () => $this->reversalCategory ? [
                 'id' => $this->reversalCategory->id,

@@ -15,8 +15,14 @@ class StaffAdvanceLedgerEntry extends Model
     protected $fillable = [
         'staff_id', 'branch_id', 'staff_advance_id', 'staff_advance_repayment_id', 'cashbook_transaction_id',
         'reversal_of_entry_id', 'reference', 'business_date', 'entry_type', 'effect', 'amount',
-        'running_balance', 'currency_code', 'description', 'created_by_id', 'created_at',
+        'running_balance', 'currency_code', 'description', 'created_by_id', 'created_at', 'payroll_recovery_id',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new \LogicException('Posted staff ledger entries are immutable.'));
+        static::deleting(fn () => throw new \LogicException('Posted staff ledger entries cannot be deleted.'));
+    }
 
     protected function casts(): array
     {

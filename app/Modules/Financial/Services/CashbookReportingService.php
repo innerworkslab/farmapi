@@ -31,8 +31,10 @@ class CashbookReportingService
             : 0;
         $opening += $this->netMinor($before);
         $totalIn = $this->sumDirection($range, 'in');
+        $openingIntroduced = $cashbook->effective_date->toDateString() > $from && $cashbook->effective_date->toDateString() <= $to
+            ? $this->toMinor($cashbook->opening_balance) : 0;
         $totalOut = $this->sumDirection($range, 'out');
-        $closing = $opening + $totalIn - $totalOut;
+        $closing = $opening + $openingIntroduced + $totalIn - $totalOut;
 
         return [
             'cashbook_id' => $cashbook->id,
@@ -41,6 +43,7 @@ class CashbookReportingService
             'from_date' => $from,
             'to_date' => $to,
             'opening_balance' => $this->formatMinor($opening),
+            'opening_balance_introduced' => $this->formatMinor($openingIntroduced),
             'total_in' => $this->formatMinor($totalIn),
             'total_out' => $this->formatMinor($totalOut),
             'closing_balance' => $this->formatMinor($closing),
@@ -120,7 +123,7 @@ class CashbookReportingService
             ->join('cash_ledger_categories as categories', 'categories.id', '=', 'entries.category_id')
             ->join('cashbooks', 'cashbooks.id', '=', 'entries.cashbook_id')
             ->where('entries.source_type', '<>', 'opening_balance')
-            ->whereBetween('entries.entry_date', [$from, $to]);
+            ->whereDate('entries.entry_date', '>=', $from)->whereDate('entries.entry_date', '<=', $to);
 
         if (! $actor->hasRole('super-admin')) {
             $query->whereIn('cashbooks.branch_id', $actor->branches()->select('branches.id'));

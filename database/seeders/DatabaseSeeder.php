@@ -8,6 +8,7 @@ use Database\Seeders\Demo\DemoBusinessMasterSeeder;
 use Database\Seeders\Demo\DemoDepreciationPermissionsSeeder;
 use Database\Seeders\Demo\DemoFarmsSeeder;
 use Database\Seeders\Demo\DemoFinancialCategoryPermissionsSeeder;
+use Database\Seeders\Demo\DemoFinancialControlPermissionsSeeder;
 use Database\Seeders\Demo\DemoFinancialSeeder;
 use Database\Seeders\Demo\DemoInventorySeeder;
 use Database\Seeders\Demo\DemoPurchasingSeeder;
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DemoAuthSeeder::class,
             DemoFinancialCategoryPermissionsSeeder::class,
+            DemoFinancialControlPermissionsSeeder::class,
             DemoStaffPermissionsSeeder::class,
             DemoStaffAdvancePermissionsSeeder::class,
             DemoDepreciationPermissionsSeeder::class,

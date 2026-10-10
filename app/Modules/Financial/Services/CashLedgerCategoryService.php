@@ -4,9 +4,9 @@ namespace App\Modules\Financial\Services;
 
 use App\Modules\Financial\Models\CashLedgerCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Database\Eloquent\Builder;
 
 class CashLedgerCategoryService
 {
@@ -31,11 +31,13 @@ class CashLedgerCategoryService
                 'name' => trim($data['name']),
                 'normalized_name' => $this->normalizeName($data['name']),
                 'direction' => $data['direction'],
+                'report_treatment' => $data['report_treatment'] ?? 'unclassified',
                 'reversal_category_id' => $data['reversal_category_id'] ?? null,
                 'status' => CashLedgerCategory::STATUS_ACTIVE,
                 'created_by_id' => $actorId,
             ]);
             $this->validateReversalPair($category);
+            $this->validateTreatment($category);
 
             return $category->load('reversalCategory');
         });
@@ -70,6 +72,10 @@ class CashLedgerCategoryService
             if (isset($data['direction'])) {
                 $category->direction = $data['direction'];
             }
+            if (isset($data['report_treatment'])) {
+                $category->report_treatment = $data['report_treatment'];
+            }
+            $this->validateTreatment($category);
             if (array_key_exists('reversal_category_id', $data)) {
                 $category->reversal_category_id = $data['reversal_category_id'];
             }
@@ -119,6 +125,14 @@ class CashLedgerCategoryService
         }
         if ($paired->reversal_category_id && (int) $paired->reversal_category_id !== (int) $category->id) {
             throw ValidationException::withMessages(['reversal_category_id' => 'The reversal category is paired with a different category.']);
+        }
+    }
+
+    private function validateTreatment(CashLedgerCategory $category): void
+    {
+        if (($category->report_treatment === 'income' && $category->direction !== 'in') ||
+            ($category->report_treatment === 'expense' && $category->direction !== 'out')) {
+            throw ValidationException::withMessages(['report_treatment' => 'Income requires cash in; expense requires cash out. Reversals inherit the original entry classification.']);
         }
     }
 
