@@ -3,12 +3,9 @@
 namespace Tests\Feature\Purchasing;
 
 use App\Models\User;
-use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
-use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
-use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
@@ -16,18 +13,112 @@ use App\Modules\Setup\Models\Medicine;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PurchasingFoundationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_receipt_confirmation_rechecks_destination_ownership(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', [
+            'purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1, 'receipt_lot_number' => 'DESTINATION-LOT', 'manufacturing_date' => '2026-09-01', 'expiry_date' => '2027-09-01']],
+        ])->assertCreated()->json('data.id');
+        $other = Branch::query()->create(['code' => 'MOVED', 'name' => 'Moved', 'status' => 'active']);
+        $setup['inventory']->update(['branch_id' => $other->id]);
+        $this->postJson('/api/v1/purchasing/receipts/'.$receipt.'/confirm')->assertForbidden();
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $this->assertDatabaseHas('purchase_receipts', ['id' => $receipt, 'status' => 'draft']);
+    }
+
+    public function test_purchasing_denies_foreign_records_and_posting_after_branch_access_is_revoked(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
+        $id = $invoice->json('data.id');
+        $payload = [
+            'purchase_invoice_id' => $id,
+            'receipt_date' => '2026-09-18',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1]],
+        ];
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', $payload)->assertCreated()->json('data.id');
+        $this->getJson('/api/v1/purchasing/invoices')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/purchasing/receipts')->assertOk()->assertJsonCount(1, 'data');
+        $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
+        $user->branches()->sync([$other->id]);
+        $this->getJson('/api/v1/purchasing/invoices?branch_id='.$setup['branch']->id)->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/purchasing/receipts?purchase_invoice_id='.$id)->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/purchasing/invoices/'.$id)->assertForbidden();
+        $this->getJson('/api/v1/purchasing/receipts/'.$receipt)->assertForbidden();
+        $this->postJson('/api/v1/purchasing/invoices/'.$id.'/cancel', ['reason' => 'Unauthorized'])->assertForbidden();
+        $this->postJson('/api/v1/purchasing/receipts', $payload)->assertForbidden();
+        $this->postJson('/api/v1/purchasing/receipts/'.$receipt.'/confirm')->assertForbidden();
+        $this->createPurchaseInvoice($setup, ['invoice_number' => 'DENIED-NEW'])->assertForbidden();
+        $this->assertDatabaseCount('purchase_invoices', 1);
+        $this->assertDatabaseCount('purchase_receipts', 1);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $this->assertDatabaseHas('purchase_receipts', ['id' => $receipt, 'status' => 'draft']);
+        $user->branches()->detach();
+        $this->getJson('/api/v1/purchasing/invoices')->assertOk()->assertJsonCount(0, 'data');
+        $this->createPurchaseInvoice($setup, ['invoice_number' => 'DENIED-NEW'])->assertForbidden();
+        $user->assignRole(Role::findOrCreate('super-admin', 'web'));
+        $this->getJson('/api/v1/purchasing/invoices/'.$id)->assertOk();
+        $this->getJson('/api/v1/purchasing/receipts/'.$receipt)->assertOk();
+    }
+
+    public function test_purchase_destination_overrides_cannot_cross_branches(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
+        $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
+        $foreign = Inventory::query()->create(['code' => 'OTHER', 'name' => 'Other store', 'type' => 'feed', 'branch_id' => $other->id, 'status' => 'active']);
+        $badSetup = $setup;
+        $badSetup['inventory'] = $foreign;
+        $this->createPurchaseInvoice($badSetup, ['invoice_number' => 'DENIED-DESTINATION'])->assertForbidden();
+        $payload = [
+            'purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1, 'target_inventory_id' => $foreign->id]],
+        ];
+        $this->postJson('/api/v1/purchasing/receipts', $payload)->assertForbidden();
+        $user->branches()->attach($other->id);
+        $this->postJson('/api/v1/purchasing/receipts', $payload)->assertUnprocessable()->assertJsonValidationErrors('inventory_id');
+        $this->assertDatabaseCount('purchase_receipts', 0);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+    }
+
+    public function test_invoice_update_checks_both_existing_and_proposed_branch(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated()->json('data.id');
+        $payload = ['invoice_date' => '2026-09-18', 'supplier_id' => $setup['supplier']->id, 'branch_id' => $setup['branch']->id,
+            'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'quantity' => 1, 'unit_price' => 1, 'target_inventory_id' => $setup['inventory']->id]]];
+        $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
+        $this->postJson('/api/v1/purchasing/invoices/'.$invoice, array_replace($payload, ['branch_id' => $other->id]))->assertForbidden();
+        $user->branches()->sync([$other->id]);
+        $this->postJson('/api/v1/purchasing/invoices/'.$invoice, array_replace($payload, ['branch_id' => $other->id]))->assertForbidden();
+        $this->assertDatabaseHas('purchase_invoices', ['id' => $invoice, 'branch_id' => $setup['branch']->id]);
+    }
+
     public function test_purchase_invoice_save_does_not_post_inventory_until_receipt_confirmation(): void
     {
         $this->actingWithPurchasingPermissions();
         $setup = $this->setupPurchasingStock('food');
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
 
         $invoice = $this->createPurchaseInvoice($setup, [
             'invoice_number' => 'PINV-FOOD-001',
@@ -119,6 +210,7 @@ class PurchasingFoundationTest extends TestCase
     {
         $this->actingWithPurchasingPermissions();
         $setup = $this->setupPurchasingStock('food');
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
         $invoice = $this->createPurchaseInvoice($setup, [
             'invoice_number' => 'PINV-OVER-001',
             'quantity' => 25,
@@ -152,6 +244,7 @@ class PurchasingFoundationTest extends TestCase
     {
         $this->actingWithPurchasingPermissions();
         $setup = $this->setupPurchasingStock('medicine');
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
         $invoice = $this->createPurchaseInvoice($setup, [
             'invoice_number' => 'PINV-MED-001',
             'quantity' => 12,
@@ -203,7 +296,17 @@ class PurchasingFoundationTest extends TestCase
     }
 
     /** @param array<string, mixed> $overrides */
-    private function createPurchaseInvoice(array $setup, array $overrides = []): \Illuminate\Testing\TestResponse
+    public function test_purchase_prices_discounts_and_tax_round_as_exact_decimals(): void
+    {
+        $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        auth()->user()->branches()->syncWithoutDetaching([$setup['branch']->id]);
+        $this->createPurchaseInvoice($setup, ['quantity' => '4.5', 'unit_price' => '0.33', 'discount_type' => 'percentage', 'discount_value' => '10', 'tax_rate' => '7.5'])
+            ->assertCreated()->assertJsonPath('data.gross_amount', '1.49')->assertJsonPath('data.discount_amount', '0.15')
+            ->assertJsonPath('data.tax_amount', '0.10')->assertJsonPath('data.total_amount', '1.44');
+    }
+
+    private function createPurchaseInvoice(array $setup, array $overrides = []): TestResponse
     {
         return $this->postJson('/api/v1/purchasing/invoices', [
             'invoice_number' => $overrides['invoice_number'] ?? 'PINV-TEST-001',

@@ -32,7 +32,7 @@ class StaffAdvanceLedgerService
         Staff $staff,
         StaffAdvance $advance,
         ?StaffAdvanceRepayment $repayment,
-        CashbookTransaction $cashbookTransaction,
+        ?CashbookTransaction $cashbookTransaction,
         ?StaffAdvanceLedgerEntry $reversalOf,
         string $reference,
         string $businessDate,
@@ -40,7 +40,8 @@ class StaffAdvanceLedgerService
         string $effect,
         string $amount,
         string $description,
-        User $actor
+        User $actor,
+        ?int $payrollRecoveryId = null
     ): StaffAdvanceLedgerEntry {
         $amountMinor = $this->toMinor($amount);
         if ($amountMinor <= 0) {
@@ -52,13 +53,17 @@ class StaffAdvanceLedgerService
         if ($balance < 0) {
             throw ValidationException::withMessages(['amount' => 'This transaction would create a negative staff advance balance.']);
         }
+        if ($balance > 999999999999999999) {
+            throw ValidationException::withMessages(['amount' => 'The resulting staff loan balance exceeds the supported monetary range.']);
+        }
 
         return StaffAdvanceLedgerEntry::query()->create([
             'staff_id' => $staff->id,
             'branch_id' => $advance->branch_id,
             'staff_advance_id' => $advance->id,
             'staff_advance_repayment_id' => $repayment?->id,
-            'cashbook_transaction_id' => $cashbookTransaction->id,
+            'cashbook_transaction_id' => $cashbookTransaction?->id,
+            'payroll_recovery_id' => $payrollRecoveryId,
             'reversal_of_entry_id' => $reversalOf?->id,
             'reference' => $reference,
             'business_date' => $businessDate,

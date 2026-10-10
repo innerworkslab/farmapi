@@ -22,6 +22,7 @@ class CashbookLedgerEntryResource extends JsonResource
             'description' => $this->description,
             'source_type' => $this->source_type,
             'direction' => $this->direction,
+            'report_treatment' => $this->report_treatment,
             'amount' => $this->amount,
             'running_balance' => $this->running_balance,
             'created_by_id' => $this->created_by_id,

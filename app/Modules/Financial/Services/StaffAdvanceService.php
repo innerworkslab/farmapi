@@ -7,6 +7,8 @@ use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashbookTransaction;
 use App\Modules\Financial\Models\StaffAdvance;
 use App\Modules\Financial\Models\StaffAdvanceLedgerEntry;
+use App\Modules\Financial\Models\StaffAdvanceRepayment;
+use App\Modules\Financial\Models\StaffPayrollRecovery;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Staff;
 use Carbon\CarbonImmutable;
@@ -115,7 +117,7 @@ class StaffAdvanceService
 
             $staff = Staff::query()->lockForUpdate()->findOrFail($data['staff_id']);
             $branch = $this->assertStaffEligible($staff, $actor);
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($data['cashbook_id']);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($data['cashbook_id'], $actor);
             $this->assertCashbookMatchesBranch($cashbook, (int) $branch->id, $actor);
             $this->categories->findActiveForDirection((int) $data['category_id'], 'out');
             $amount = $this->ledger->formatMinor($this->ledger->toMinor((string) $data['principal_amount']));
@@ -152,7 +154,7 @@ class StaffAdvanceService
 
             $staff = Staff::query()->lockForUpdate()->findOrFail($data['staff_id'] ?? $advance->staff_id);
             $branch = $this->assertStaffEligible($staff, $actor);
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($data['cashbook_id'] ?? $advance->cashbook_id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($data['cashbook_id'] ?? $advance->cashbook_id, $actor);
             $this->assertCashbookMatchesBranch($cashbook, (int) $branch->id, $actor);
             $categoryId = (int) ($data['category_id'] ?? $advance->category_id);
             $this->categories->findActiveForDirection($categoryId, 'out');
@@ -202,7 +204,7 @@ class StaffAdvanceService
 
             $staff = Staff::query()->lockForUpdate()->findOrFail($advance->staff_id);
             $branch = $this->assertStaffEligible($staff, $actor);
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($advance->cashbook_id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($advance->cashbook_id, $actor);
             $this->assertCashbookMatchesBranch($cashbook, (int) $branch->id, $actor);
             $this->assertStaffCurrency((int) $staff->id, $cashbook->currency_code);
             $category = $this->categories->findActiveForDirection((int) $advance->category_id, 'out');
@@ -217,6 +219,7 @@ class StaffAdvanceService
                 'description' => 'Staff loan disbursement: '.$advance->description,
                 'external_reference' => $advance->reference,
                 'idempotency_key' => 'SA-DISBURSE-'.$advance->reference,
+                'created_by_id' => $advance->created_by_id,
             ], 'staff_advance_disbursement', $actor);
 
             $advance->branch_id = $branch->id;
@@ -249,6 +252,9 @@ class StaffAdvanceService
             }
             if ($advance->repayments()->whereIn('status', [StaffAdvanceRepayment::STATUS_DRAFT, StaffAdvanceRepayment::STATUS_CONFIRMED])->exists()) {
                 throw ValidationException::withMessages(['staff_advance' => 'Cancel draft repayments or reverse confirmed repayments first. This loan has dependent repayment activity.']);
+            }
+            if (StaffPayrollRecovery::query()->where('staff_advance_id', $advance->id)->whereIn('state', ['draft', 'confirmed'])->exists()) {
+                throw ValidationException::withMessages(['staff_advance' => 'Cancel or reverse dependent payroll recoveries before reversing this loan.']);
             }
 
             $staff = Staff::withTrashed()->lockForUpdate()->findOrFail($advance->staff_id);

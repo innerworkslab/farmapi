@@ -2,6 +2,7 @@
 
 namespace App\Modules\Setup\Services;
 
+use App\Models\User;
 use App\Modules\Setup\Repositories\BusinessMasterRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
@@ -12,9 +13,9 @@ class BusinessMasterService
     public function __construct(protected readonly BusinessMasterRepository $repository) {}
 
     /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, ?User $actor = null): LengthAwarePaginator
     {
-        return $this->repository->paginate($filters);
+        return $this->repository->paginate($filters, $actor);
     }
 
     /** @param array<string, mixed> $data */

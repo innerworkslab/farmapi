@@ -2,37 +2,46 @@
 
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Auth\Controllers\AuthorizationController;
-use App\Modules\Setup\Controllers\ActivityLogController;
-use App\Modules\Setup\Controllers\AdminController;
-use App\Modules\Setup\Controllers\BranchController;
-use App\Modules\Setup\Controllers\RoleController;
-use App\Modules\Setup\Controllers\CustomerController;
-use App\Modules\Setup\Controllers\SupplierController;
-use App\Modules\Setup\Controllers\StaffController;
-use App\Modules\Setup\Controllers\UomController;
-use App\Modules\Setup\Controllers\InventoryController;
-use App\Modules\Setup\Controllers\FoodController;
-use App\Modules\Setup\Controllers\MedicineController;
-use App\Modules\Setup\Controllers\AnimalController;
-use App\Modules\Setup\Controllers\EquipmentController;
-use App\Modules\Setup\Controllers\FarmInformationController;
 use App\Modules\Farms\Controllers\FarmController;
+use App\Modules\Farms\Controllers\FarmOperationController;
+use App\Modules\Farms\Controllers\FarmReportController;
 use App\Modules\Farms\Controllers\FeedingController;
+use App\Modules\Financial\Controllers\AssetCategoryController;
+use App\Modules\Financial\Controllers\CashbookController;
+use App\Modules\Financial\Controllers\CashbookReportController;
+use App\Modules\Financial\Controllers\CashbookTransactionController;
+use App\Modules\Financial\Controllers\CashbookTransferController;
+use App\Modules\Financial\Controllers\CashLedgerCategoryController;
+use App\Modules\Financial\Controllers\DepreciationController;
+use App\Modules\Financial\Controllers\FinancialControlController;
+use App\Modules\Financial\Controllers\FinancialIntegrityController;
+use App\Modules\Financial\Controllers\PayrollRecoveryController;
+use App\Modules\Financial\Controllers\StaffAdvanceController;
+use App\Modules\Financial\Controllers\StaffAdvanceRepaymentController;
+use App\Modules\Financial\Middleware\FinancialSecurityAudit;
 use App\Modules\Inventory\Controllers\InventoryAdjustmentController as OperationalInventoryAdjustmentController;
 use App\Modules\Inventory\Controllers\InventoryBalanceController;
 use App\Modules\Inventory\Controllers\InventoryConfirmationController;
 use App\Modules\Inventory\Controllers\InventoryLedgerController;
 use App\Modules\Inventory\Controllers\ItemController;
-use App\Modules\Financial\Controllers\CashbookController;
-use App\Modules\Financial\Controllers\CashLedgerCategoryController;
-use App\Modules\Financial\Controllers\AssetCategoryController;
-use App\Modules\Financial\Controllers\DepreciationController;
-use App\Modules\Financial\Controllers\StaffAdvanceController;
-use App\Modules\Financial\Controllers\StaffAdvanceRepaymentController;
-use App\Modules\Financial\Controllers\CashbookReportController;
-use App\Modules\Financial\Controllers\CashbookTransactionController;
 use App\Modules\Purchasing\Controllers\PurchaseInvoiceController;
+use App\Modules\Purchasing\Controllers\PurchasePaymentController;
 use App\Modules\Purchasing\Controllers\PurchaseReceiptController;
+use App\Modules\Sales\Controllers\SaleController;
+use App\Modules\Setup\Controllers\ActivityLogController;
+use App\Modules\Setup\Controllers\AdminController;
+use App\Modules\Setup\Controllers\AnimalController;
+use App\Modules\Setup\Controllers\BranchController;
+use App\Modules\Setup\Controllers\CustomerController;
+use App\Modules\Setup\Controllers\EquipmentController;
+use App\Modules\Setup\Controllers\FarmInformationController;
+use App\Modules\Setup\Controllers\FoodController;
+use App\Modules\Setup\Controllers\InventoryController;
+use App\Modules\Setup\Controllers\MedicineController;
+use App\Modules\Setup\Controllers\RoleController;
+use App\Modules\Setup\Controllers\StaffController;
+use App\Modules\Setup\Controllers\SupplierController;
+use App\Modules\Setup\Controllers\UomController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -44,6 +53,21 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/authorization/permissions', [AuthorizationController::class, 'permissions'])
             ->middleware('permission:authorization.permissions.view');
+
+        Route::prefix('sales')->middleware(FinancialSecurityAudit::class)->group(function (): void {
+            Route::get('/', [SaleController::class, 'index'])->middleware('permission:sales.view');
+            Route::get('farms', [SaleController::class, 'farms'])->middleware('permission:sales.view');
+            Route::get('batches', [SaleController::class, 'batches'])->middleware('permission:sales.view');
+            Route::get('customers', [SaleController::class, 'customers'])->middleware('permission:sales.view');
+            Route::post('/', [SaleController::class, 'store'])->middleware('permission:sales.manage');
+            Route::get('{sale}/invoice', [SaleController::class, 'invoice'])->middleware('permission:sales.view');
+            Route::get('{sale}', [SaleController::class, 'show'])->middleware('permission:sales.view');
+            Route::post('{sale}', [SaleController::class, 'update'])->middleware('permission:sales.manage');
+            Route::delete('{sale}', [SaleController::class, 'destroy'])->middleware('permission:sales.manage');
+            Route::post('{sale}/confirm', [SaleController::class, 'confirm'])->middleware('permission:sales.manage');
+            Route::post('{sale}/receipts', [SaleController::class, 'receive'])->middleware('permission:sales.manage');
+            Route::post('{sale}/cancel', [SaleController::class, 'cancel'])->middleware('permission:sales.manage');
+        });
 
         Route::prefix('setup')->group(function (): void {
             Route::get('branches', [BranchController::class, 'index'])->middleware('permission:setup.branches.view');
@@ -65,7 +89,6 @@ Route::prefix('v1')->group(function (): void {
             Route::get('admins/{admin}', [AdminController::class, 'show'])->middleware('permission:setup.admins.view');
             Route::post('admins/{admin}', [AdminController::class, 'update'])->middleware('permission:setup.admins.update');
             Route::delete('admins/{admin}', [AdminController::class, 'destroy'])->middleware('permission:setup.admins.delete');
-
 
             Route::get('customers', [CustomerController::class, 'index'])->middleware('permission:setup.customers.view');
             Route::post('customers', [CustomerController::class, 'store'])->middleware('permission:setup.customers.create');
@@ -155,12 +178,33 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::prefix('farms')->group(function (): void {
             Route::get('/', [FarmController::class, 'index'])->middleware('permission:farms.view');
+            Route::get('notifications', [FarmReportController::class, 'notifications'])->middleware('permission:farms.view');
+            Route::post('alerts/{alert}/investigation', [FarmReportController::class, 'investigate'])->middleware('permission:farms.manage');
+            Route::get('{farmInformation}/summary', [FarmReportController::class, 'summary'])->middleware('permission:farms.view');
+            Route::get('{farmInformation}/timeline', [FarmReportController::class, 'timeline'])->middleware('permission:farms.view');
+            Route::get('{farmInformation}/mortality', [FarmReportController::class, 'mortality'])->middleware('permission:farms.view');
+            Route::get('{farmInformation}/alerts', [FarmReportController::class, 'alerts'])->middleware('permission:farms.view');
+            Route::get('{farmInformation}/feeding-plans', [FarmReportController::class, 'plans'])->middleware('permission:farms.view');
+            Route::post('{farmInformation}/feeding-plans', [FarmReportController::class, 'savePlan'])->middleware('permission:farms.manage');
+            Route::get('{farmInformation}/settings', [FarmReportController::class, 'settings'])->middleware('permission:farms.view');
+            Route::post('{farmInformation}/settings', [FarmReportController::class, 'saveSettings'])->middleware('permission:farms.manage');
+            Route::post('{farmInformation}/toggle-status', [FarmReportController::class, 'toggleStatus'])->middleware('permission:farms.manage');
+            Route::get('operations', [FarmOperationController::class, 'index'])->middleware('permission:farms.view');
+            Route::post('operations', [FarmOperationController::class, 'store'])->middleware('permission:farms.manage');
+            Route::get('operations/{operation}', [FarmOperationController::class, 'show'])->middleware('permission:farms.view');
+            Route::post('operations/{operation}', [FarmOperationController::class, 'update'])->middleware('permission:farms.manage');
+            Route::post('operations/{operation}/submit', [FarmOperationController::class, 'submit'])->middleware('permission:farms.manage');
+            Route::post('operations/{operation}/confirm', [FarmOperationController::class, 'confirm'])->middleware('permission:farms.manage');
+            Route::post('operations/{operation}/reject', [FarmOperationController::class, 'reject'])->middleware('permission:farms.manage');
+            Route::post('operations/{operation}/complete-follow-up', [FarmOperationController::class, 'completeFollowUp'])->middleware('permission:farms.manage');
+            Route::post('operations/{operation}/reverse', [FarmOperationController::class, 'reverse'])->middleware('permission:farms.manage');
             Route::get('feedings', [FeedingController::class, 'index'])->middleware('permission:farms.view');
             Route::post('feedings', [FeedingController::class, 'store'])->middleware('permission:farms.manage');
             Route::get('feedings/{feeding}', [FeedingController::class, 'show'])->middleware('permission:farms.view');
             Route::post('feedings/{feeding}', [FeedingController::class, 'update'])->middleware('permission:farms.manage');
             Route::post('feedings/{feeding}/submit', [FeedingController::class, 'submit'])->middleware('permission:farms.manage');
             Route::post('feedings/{feeding}/confirm', [FeedingController::class, 'confirm'])->middleware('permission:farms.manage');
+            Route::post('feedings/{feeding}/reverse', [FeedingController::class, 'reverse'])->middleware('permission:farms.manage');
             Route::post('feedings/{feeding}/reject', [FeedingController::class, 'reject'])->middleware('permission:farms.manage');
             Route::get('{farmInformation}', [FarmController::class, 'show'])->middleware('permission:farms.view');
             Route::get('{farmInformation}/animal-view-summary', [FarmController::class, 'animalViewSummary'])->middleware('permission:farms.view');
@@ -168,7 +212,29 @@ Route::prefix('v1')->group(function (): void {
             Route::get('{farmInformation}/animals/{animalBalance}', [FarmController::class, 'animal'])->middleware('permission:farms.view');
         });
 
-        Route::prefix('financial')->group(function (): void {
+        Route::prefix('financial')->middleware(FinancialSecurityAudit::class)->group(function (): void {
+            Route::post('cashbook-ledger-entries/{entry}/classify', [FinancialIntegrityController::class, 'classify'])->middleware('permission:financial.reports.classify');
+            Route::get('cashbook-transfers', [CashbookTransferController::class, 'index'])->middleware('permission:financial.transfers.view');
+            Route::post('cashbook-transfers', [CashbookTransferController::class, 'store'])->middleware('permission:financial.transfers.create');
+            Route::post('cashbook-transfers/{transfer}/confirm', [CashbookTransferController::class, 'confirm'])->middleware('permission:financial.transfers.confirm');
+            Route::post('cashbook-transfers/{transfer}/reverse', [CashbookTransferController::class, 'reverse'])->middleware('permission:financial.transfers.reverse');
+            Route::post('cashbook-transfers/{transfer}/cancel', [CashbookTransferController::class, 'cancel'])->middleware('permission:financial.transfers.create');
+            Route::get('staff-advances/{staffAdvance}/payroll-recoveries', [PayrollRecoveryController::class, 'index'])->middleware('permission:financial.advances.view');
+            Route::post('staff-advances/{staffAdvance}/payroll-recoveries', [PayrollRecoveryController::class, 'store'])->middleware('permission:financial.payroll-recoveries.create');
+            Route::post('payroll-recoveries/{recovery}/confirm', [PayrollRecoveryController::class, 'confirm'])->middleware('permission:financial.payroll-recoveries.confirm');
+            Route::post('payroll-recoveries/{recovery}/reverse', [PayrollRecoveryController::class, 'reverse'])->middleware('permission:financial.payroll-recoveries.reverse');
+            Route::post('payroll-recoveries/{recovery}/cancel', [PayrollRecoveryController::class, 'cancel'])->middleware('permission:financial.payroll-recoveries.create');
+            Route::get('branch-settings/{branch}', [FinancialControlController::class, 'settings'])->middleware('permission:financial.controls.view');
+            Route::post('branch-settings/{branch}', [FinancialControlController::class, 'configure'])->middleware('permission:financial.controls.manage');
+            Route::get('posting-limits/{branch}', [FinancialControlController::class, 'limits'])->middleware('permission:financial.controls.view');
+            Route::post('posting-limits/{branch}', [FinancialControlController::class, 'setLimit'])->middleware('permission:financial.controls.manage');
+            Route::get('periods', [FinancialControlController::class, 'periods'])->middleware('permission:financial.controls.view');
+            Route::post('periods', [FinancialControlController::class, 'createPeriod'])->middleware('permission:financial.controls.manage');
+            Route::post('periods/{period}/close', [FinancialControlController::class, 'close'])->middleware('permission:financial.periods.close');
+            Route::post('periods/{period}/reopen', [FinancialControlController::class, 'reopen'])->middleware('permission:financial.periods.reopen');
+            Route::get('reconciliation', [FinancialIntegrityController::class, 'reconcile'])->middleware('permission:financial.reconciliation.view');
+            Route::get('reports/cash-result', [FinancialIntegrityController::class, 'cashResult'])->middleware('permission:financial.reports.view');
+            Route::get('reports/cash-result/export', [FinancialIntegrityController::class, 'export'])->middleware(['permission:financial.reports.export', 'permission:financial.reports.detail']);
             Route::get('staff-advance-balances', [StaffAdvanceController::class, 'balances'])->middleware('permission:financial.advances.view');
             Route::get('staff-advance-history/{staff}', [StaffAdvanceController::class, 'history'])->middleware('permission:financial.advances.view');
             Route::get('staff-advances', [StaffAdvanceController::class, 'index'])->middleware('permission:financial.advances.view');
@@ -220,11 +286,17 @@ Route::prefix('v1')->group(function (): void {
             Route::get('cashbook-transactions/{transaction}', [CashbookTransactionController::class, 'show'])->middleware('permission:financial.transactions.view');
             Route::post('cashbook-transactions/{transaction}', [CashbookTransactionController::class, 'update'])->middleware('permission:financial.transactions.update');
             Route::post('cashbook-transactions/{transaction}/confirm', [CashbookTransactionController::class, 'confirm'])->middleware('permission:financial.transactions.confirm');
+            Route::post('cashbook-transactions/{transaction}/cancel', [CashbookTransactionController::class, 'cancel'])->middleware('permission:financial.transactions.cancel');
             Route::post('cashbook-transactions/{transaction}/reverse', [CashbookTransactionController::class, 'reverse'])->middleware('permission:financial.transactions.reverse');
             Route::get('cashbook-reports/consolidated', [CashbookReportController::class, 'consolidated'])->middleware('permission:financial.reports.view');
             Route::get('cashbook-reports/categories', [CashbookReportController::class, 'categories'])->middleware('permission:financial.reports.view');
         });
-        Route::prefix('purchasing')->group(function (): void {
+        Route::prefix('purchasing')->middleware(FinancialSecurityAudit::class)->group(function (): void {
+            Route::get('invoices/{invoice}/payments', [PurchasePaymentController::class, 'index'])->middleware('permission:purchasing.payments.view');
+            Route::post('invoices/{invoice}/payments', [PurchasePaymentController::class, 'store'])->middleware('permission:purchasing.payments.create');
+            Route::post('payments/{payment}/confirm', [PurchasePaymentController::class, 'confirm'])->middleware('permission:purchasing.payments.confirm');
+            Route::post('payments/{payment}/reverse', [PurchasePaymentController::class, 'reverse'])->middleware('permission:purchasing.payments.reverse');
+            Route::post('payments/{payment}/cancel', [PurchasePaymentController::class, 'cancel'])->middleware('permission:purchasing.payments.create');
             Route::get('invoices', [PurchaseInvoiceController::class, 'index'])->middleware('permission:purchasing.invoices.view');
             Route::post('invoices', [PurchaseInvoiceController::class, 'store'])->middleware('permission:purchasing.invoices.create');
             Route::get('invoices/{invoice}', [PurchaseInvoiceController::class, 'show'])->middleware('permission:purchasing.invoices.view');
@@ -238,4 +310,3 @@ Route::prefix('v1')->group(function (): void {
         });
     });
 });
-

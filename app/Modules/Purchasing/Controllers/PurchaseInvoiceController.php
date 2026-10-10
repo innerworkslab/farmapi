@@ -17,7 +17,7 @@ class PurchaseInvoiceController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return PurchaseInvoiceResource::collection($this->invoices->paginate($request->query()));
+        return PurchaseInvoiceResource::collection($this->invoices->paginate($request->query(), $request->user()));
     }
 
     public function store(PurchaseInvoiceRequest $request): PurchaseInvoiceResource
@@ -25,14 +25,16 @@ class PurchaseInvoiceController extends Controller
         return new PurchaseInvoiceResource($this->invoices->create($request->validated(), $request->user()));
     }
 
-    public function show(PurchaseInvoice $invoice): PurchaseInvoiceResource
+    public function show(Request $request, PurchaseInvoice $invoice): PurchaseInvoiceResource
     {
+        $this->invoices->authorizeAccess($invoice, $request->user());
+
         return new PurchaseInvoiceResource($invoice->load(['supplier', 'lines.item']));
     }
 
     public function update(PurchaseInvoiceRequest $request, PurchaseInvoice $invoice): PurchaseInvoiceResource
     {
-        return new PurchaseInvoiceResource($this->invoices->update($invoice, $request->validated()));
+        return new PurchaseInvoiceResource($this->invoices->update($invoice, $request->validated(), $request->user()));
     }
 
     public function cancel(PurchaseCancelRequest $request, PurchaseInvoice $invoice): PurchaseInvoiceResource

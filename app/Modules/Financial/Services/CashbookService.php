@@ -5,6 +5,8 @@ namespace App\Modules\Financial\Services;
 use App\Models\User;
 use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashbookLedgerEntry;
+use App\Modules\Financial\Models\CashbookTransaction;
+use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Setup\Models\Branch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,6 +65,13 @@ class CashbookService
         return DB::transaction(function () use ($data, $actor): Cashbook {
             $branch = Branch::query()->where('status', Branch::STATUS_ACTIVE)->findOrFail($data['branch_id']);
             $this->assertBranchAccess($branch, $actor);
+            $controls = app(FinancialControlService::class);
+            $controls->assertDate((int) $branch->id, $data['effective_date'], $actor, false);
+            $settings = FinancialBranchSetting::query()->where('branch_id', $branch->id)->first();
+            $currency = strtoupper($data['currency_code'] ?? $settings?->default_currency ?? '');
+            if (! preg_match('/^[A-Z]{3}$/', $currency) || ($settings && ! in_array($currency, $settings->enabled_currencies, true))) {
+                throw ValidationException::withMessages(['currency_code' => 'Choose an enabled branch currency or provide a currency code for an unconfigured branch.']);
+            }
             $name = trim((string) $data['name']);
             $normalizedName = mb_strtolower($name);
 
@@ -77,7 +86,7 @@ class CashbookService
                 'name' => $name,
                 'normalized_name' => $normalizedName,
                 'bank_reference' => $data['bank_reference'] ?? null,
-                'currency_code' => strtoupper($data['currency_code']),
+                'currency_code' => $currency,
                 'opening_balance' => $openingBalance,
                 'effective_date' => $data['effective_date'],
                 'status' => Cashbook::STATUS_ACTIVE,
@@ -89,6 +98,7 @@ class CashbookService
                 'entry_date' => $cashbook->effective_date,
                 'description' => 'Opening balance',
                 'source_type' => 'opening_balance',
+                'report_treatment' => 'excluded',
                 'direction' => 'in',
                 'amount' => $openingBalance,
                 'running_balance' => $openingBalance,
@@ -103,7 +113,7 @@ class CashbookService
     public function update(Cashbook $cashbook, array $data, User $actor): Cashbook
     {
         return DB::transaction(function () use ($cashbook, $data, $actor): Cashbook {
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($cashbook->id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($cashbook->id, $actor);
             $this->assertBranchAccess($cashbook->branch, $actor);
             if ($cashbook->status !== Cashbook::STATUS_ACTIVE) {
                 throw ValidationException::withMessages(['cashbook' => 'Only active cashbooks can be edited.']);
@@ -135,7 +145,7 @@ class CashbookService
     public function deactivate(Cashbook $cashbook, string $reason, User $actor): Cashbook
     {
         return DB::transaction(function () use ($cashbook, $reason, $actor): Cashbook {
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($cashbook->id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($cashbook->id, $actor);
             $this->assertBranchAccess($cashbook->branch, $actor);
             if ($cashbook->status !== Cashbook::STATUS_ACTIVE) {
                 throw ValidationException::withMessages(['cashbook' => 'Cashbook is already inactive.']);
@@ -181,7 +191,7 @@ class CashbookService
     /** @param array<string, mixed> $filters */
     public function transactions(array $filters, User $actor): LengthAwarePaginator
     {
-        $query = \App\Modules\Financial\Models\CashbookTransaction::query()->with(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
+        $query = CashbookTransaction::query()->with(['cashbook', 'category', 'ledgerEntry.category', 'reversedByTransaction']);
         $query->whereHas('cashbook', function (Builder $books) use ($actor, $filters): void {
             $this->scopeToActorBranches($books, $actor);
             if (! empty($filters['cashbook_id'])) {

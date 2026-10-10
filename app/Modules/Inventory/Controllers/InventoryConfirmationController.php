@@ -15,11 +15,11 @@ class InventoryConfirmationController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return InventoryConfirmationResource::collection($this->confirmations->paginate($request->query()));
+        return InventoryConfirmationResource::collection($this->confirmations->paginate($request->query(), $request->user()));
     }
 
-    public function show(InventoryConfirmation $confirmation): InventoryConfirmationResource
+    public function show(Request $request, InventoryConfirmation $confirmation): InventoryConfirmationResource
     {
-        return new InventoryConfirmationResource($confirmation->load('ledgerEntries'));
+        return new InventoryConfirmationResource($this->confirmations->find($confirmation, $request->user()));
     }
 }

@@ -63,7 +63,7 @@ class StaffAdvanceRepaymentService
                 throw ValidationException::withMessages(['amount' => 'Repayment cannot exceed the loan amount still owed.']);
             }
 
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($data['cashbook_id']);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($data['cashbook_id'], $actor);
             $this->assertCashbookMatchesLoanBranch($cashbook, (int) $advance->branch_id, (string) $advance->currency_code, $actor);
             $this->categories->findActiveForDirection((int) $data['category_id'], 'in');
 
@@ -101,7 +101,7 @@ class StaffAdvanceRepaymentService
 
             $cashbookId = (int) ($data['cashbook_id'] ?? $repayment->cashbook_id);
             $categoryId = (int) ($data['category_id'] ?? $repayment->category_id);
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($cashbookId);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($cashbookId, $actor);
             $this->assertCashbookMatchesLoanBranch($cashbook, (int) $advance->branch_id, (string) $advance->currency_code, $actor);
             $this->categories->findActiveForDirection($categoryId, 'in');
 
@@ -154,7 +154,7 @@ class StaffAdvanceRepaymentService
                 throw ValidationException::withMessages(['amount' => 'Repayment must be positive and cannot exceed the loan amount still owed.']);
             }
 
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($repayment->cashbook_id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($repayment->cashbook_id, $actor);
             $this->assertCashbookMatchesLoanBranch($cashbook, (int) $advance->branch_id, (string) $advance->currency_code, $actor);
             $category = $this->categories->findActiveForDirection((int) $repayment->category_id, 'in');
 
@@ -167,6 +167,7 @@ class StaffAdvanceRepaymentService
                 'description' => 'Staff loan repayment: '.$repayment->description,
                 'external_reference' => $repayment->reference,
                 'idempotency_key' => 'SA-REPAY-'.$repayment->reference,
+                'created_by_id' => $repayment->created_by_id,
             ], 'staff_advance_repayment', $actor);
 
             $this->ledger->record($staff, $advance, $repayment, $cashbookTransaction, null,

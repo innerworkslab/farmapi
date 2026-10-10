@@ -61,7 +61,7 @@ class DepreciationService
                 return $this->find($existing, $actor);
             }
 
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($data['cashbook_id']);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($data['cashbook_id'], $actor);
             $cashbook = $this->assertCashbookUsable($cashbook, $actor);
             $assetCategory = $this->assetCategories->findActive((int) $data['asset_category_id']);
             $category = $this->categories->findActiveForDirection((int) $data['category_id'], 'out');
@@ -105,7 +105,7 @@ class DepreciationService
             $cashbookId = (int) ($data['cashbook_id'] ?? $depreciation->cashbook_id);
             $categoryId = (int) ($data['category_id'] ?? $depreciation->category_id);
             $assetCategoryId = (int) ($data['asset_category_id'] ?? $depreciation->asset_category_id);
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($cashbookId);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($cashbookId, $actor);
             $cashbook = $this->assertCashbookUsable($cashbook, $actor);
             $assetCategory = $this->assetCategories->findActive($assetCategoryId);
             $category = $this->categories->findActiveForDirection($categoryId, 'out');
@@ -160,7 +160,7 @@ class DepreciationService
                 throw ValidationException::withMessages(['depreciation' => 'Only draft depreciation records can be activated.']);
             }
 
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($depreciation->cashbook_id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($depreciation->cashbook_id, $actor);
             $this->assertCashbookUsable($cashbook, $actor);
             $this->assetCategories->findActive((int) $depreciation->asset_category_id);
             $this->categories->findActiveForDirection((int) $depreciation->category_id, 'out');
@@ -214,7 +214,7 @@ class DepreciationService
                 throw ValidationException::withMessages(['due_date' => 'Future depreciation lines cannot be posted.']);
             }
 
-            $cashbook = Cashbook::query()->lockForUpdate()->findOrFail($depreciation->cashbook_id);
+            $cashbook = app(FinancialControlService::class)->lockCashbook($depreciation->cashbook_id, $actor);
             $this->assertCashbookUsable($cashbook, $actor);
             $category = $this->categories->findActiveForDirection((int) $depreciation->category_id, 'out');
             $remaining = $this->toMinor((string) $depreciation->asset_price) - $this->postedTotalMinor((int) $depreciation->id);
@@ -235,6 +235,7 @@ class DepreciationService
                 'description' => 'Depreciation deduction: '.$depreciation->asset_name.' #'.$line->sequence_number,
                 'external_reference' => $depreciation->reference.'-'.$line->sequence_number,
                 'idempotency_key' => 'DEP-POST-'.$depreciation->reference.'-'.$line->sequence_number,
+                'created_by_id' => $depreciation->created_by_id,
             ], 'depreciation', $actor);
 
             $line->status = DepreciationScheduleLine::STATUS_POSTED;

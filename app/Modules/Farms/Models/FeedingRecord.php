@@ -14,14 +14,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
 
 class FeedingRecord extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \Spatie\Activitylog\Traits\LogsActivity;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_CONFIRMED = 'confirmed';
+
     public const STATUS_REJECTED = 'rejected';
 
     protected $table = 'farm_feeding_records';
@@ -53,6 +57,16 @@ class FeedingRecord extends Model
         'posting_batch_id',
         'version',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->useLogName('farms')->logFillable()->logOnlyDirty()->dontSubmitEmptyLogs();
+    }
+
+    public function targets(): HasMany
+    {
+        return $this->hasMany(FeedingTarget::class, 'feeding_id');
+    }
 
     public function branch(): BelongsTo
     {

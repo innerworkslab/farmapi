@@ -3,10 +3,15 @@
 namespace App\Modules\Purchasing\Services;
 
 use App\Models\User;
+use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Services\InventoryItemResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchasePayment;
 use App\Modules\Setup\Models\Supplier;
+use App\Support\BranchAccess;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +22,15 @@ class PurchaseInvoiceService
 {
     public function __construct(private readonly InventoryItemResolver $items) {}
 
-    /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function authorizeAccess(PurchaseInvoice $invoice, User $actor): void
     {
-        return PurchaseInvoice::query()
+        BranchAccess::authorize($actor, $invoice->branch_id);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
+    {
+        return BranchAccess::scope(PurchaseInvoice::query(), $actor)
             ->with(['supplier', 'lines.item'])
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where('invoice_number', 'like', "%{$search}%");
@@ -36,12 +46,14 @@ class PurchaseInvoiceService
     public function create(array $data, User $actor): PurchaseInvoice
     {
         return DB::transaction(function () use ($data, $actor): PurchaseInvoice {
+            BranchAccess::authorize($actor, (int) $data['branch_id']);
             $supplier = Supplier::query()->findOrFail($data['supplier_id']);
             $this->assertSupplierEligible($supplier);
 
             $invoice = PurchaseInvoice::query()->create([
                 'invoice_number' => $data['invoice_number'] ?? $this->invoiceNumber(),
                 'invoice_date' => $data['invoice_date'],
+                'currency_code' => $data['currency_code'] ?? FinancialBranchSetting::query()->where('branch_id', $data['branch_id'])->value('default_currency'),
                 'supplier_id' => $supplier->id,
                 'branch_id' => $data['branch_id'],
                 'status' => PurchaseInvoice::STATUS_OPEN,
@@ -51,7 +63,7 @@ class PurchaseInvoiceService
                 'version' => 1,
             ]);
 
-            $this->replaceLines($invoice, $data['lines']);
+            $this->replaceLines($invoice, $data['lines'], $actor);
             $this->recalculate($invoice);
 
             return $invoice->refresh()->load(['supplier', 'lines.item']);
@@ -59,10 +71,11 @@ class PurchaseInvoiceService
     }
 
     /** @param array<string, mixed> $data */
-    public function update(PurchaseInvoice $invoice, array $data): PurchaseInvoice
+    public function update(PurchaseInvoice $invoice, array $data, User $actor): PurchaseInvoice
     {
-        return DB::transaction(function () use ($invoice, $data): PurchaseInvoice {
+        return DB::transaction(function () use ($invoice, $data, $actor): PurchaseInvoice {
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($invoice->id);
+            $this->authorizeAccess($invoice, $actor);
             $this->assertEditable($invoice);
 
             if (isset($data['supplier_id'])) {
@@ -70,8 +83,10 @@ class PurchaseInvoiceService
                 $this->assertSupplierEligible($supplier);
             }
 
+            BranchAccess::authorize($actor, (int) ($data['branch_id'] ?? $invoice->branch_id));
             $invoice->fill([
                 'invoice_date' => $data['invoice_date'] ?? $invoice->invoice_date,
+                'currency_code' => $data['currency_code'] ?? $invoice->currency_code,
                 'supplier_id' => $data['supplier_id'] ?? $invoice->supplier_id,
                 'branch_id' => $data['branch_id'] ?? $invoice->branch_id,
                 'notes' => $data['notes'] ?? $invoice->notes,
@@ -80,7 +95,7 @@ class PurchaseInvoiceService
 
             if (isset($data['lines'])) {
                 $invoice->lines()->delete();
-                $this->replaceLines($invoice, $data['lines']);
+                $this->replaceLines($invoice, $data['lines'], $actor);
             }
             $this->recalculate($invoice);
 
@@ -92,7 +107,8 @@ class PurchaseInvoiceService
     {
         return DB::transaction(function () use ($invoice, $reason, $actor): PurchaseInvoice {
             $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
-            $this->assertEditable($invoice);
+            $this->authorizeAccess($invoice, $actor);
+            $this->assertEditable($invoice, true);
 
             $invoice->fill([
                 'status' => PurchaseInvoice::STATUS_CANCELLED,
@@ -108,11 +124,12 @@ class PurchaseInvoiceService
     }
 
     /** @param list<array<string, mixed>> $lines */
-    private function replaceLines(PurchaseInvoice $invoice, array $lines): void
+    private function replaceLines(PurchaseInvoice $invoice, array $lines, User $actor): void
     {
         $supplier = $invoice->supplier ?: Supplier::query()->findOrFail($invoice->supplier_id);
 
         foreach (array_values($lines) as $index => $line) {
+            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? null);
             $category = strtolower($line['category']);
             $item = Item::query()->findOrFail($line['item_id']);
             if ($item->category !== $category) {
@@ -133,15 +150,23 @@ class PurchaseInvoiceService
                 throw ValidationException::withMessages(["lines.{$index}.quantity" => 'Whole-number quantity is required for this item.']);
             }
 
-            $unitPrice = round((float) $line['unit_price'], 2);
-            $gross = round($quantity * $unitPrice, 2);
-            $discount = $this->discountAmount($gross, $line['discount_type'] ?? null, (float) ($line['discount_value'] ?? 0));
-            $taxBase = round($gross - $discount, 2);
-            if ($taxBase < 0) {
+            $unitPrice = BigDecimal::of((string) $line['unit_price'])->toScale(2);
+            $gross = BigDecimal::of((string) $line['quantity'])->toScale(6, RoundingMode::HalfUp)->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp);
+            $value = BigDecimal::of((string) ($line['discount_value'] ?? 0));
+            if (($line['discount_type'] ?? null) === 'percentage' && $value->isGreaterThan(100)) {
+                throw ValidationException::withMessages(["lines.{$index}.discount_value" => 'Percentage discount cannot exceed 100.']);
+            }
+            $discount = match ($line['discount_type'] ?? null) {
+                'percentage' => $gross->multipliedBy($value)->dividedBy(100, 2, RoundingMode::HalfUp),
+                'fixed' => $value->toScale(2, RoundingMode::HalfUp),
+                default => BigDecimal::of('0.00'),
+            };
+            $taxBase = $gross->minus($discount);
+            if ($taxBase->isNegative()) {
                 throw ValidationException::withMessages(["lines.{$index}.discount_value" => 'Discount cannot make the taxable amount negative.']);
             }
-            $taxRate = (float) ($line['tax_rate'] ?? 0);
-            $tax = round($taxBase * ($taxRate / 100), 2);
+            $taxRate = BigDecimal::of((string) ($line['tax_rate'] ?? 0));
+            $tax = $taxBase->multipliedBy($taxRate)->dividedBy(100, 2, RoundingMode::HalfUp);
             $focQuantity = $this->focQuantity($quantity, $line['foc_type'] ?? null, (float) ($line['foc_value'] ?? 0), ! $item->divisible_quantity);
 
             $requiresInventory = in_array($category, ['food', 'medicine', 'equipment'], true);
@@ -161,17 +186,17 @@ class PurchaseInvoiceService
                 'stock_uom_id' => $line['stock_uom_id'] ?? $item->stock_uom_id,
                 'conversion_factor' => $line['conversion_factor'] ?? $item->uom_conversion ?? 1,
                 'quantity' => $quantity,
-                'unit_price' => $unitPrice,
-                'gross_amount' => $gross,
+                'unit_price' => $this->money($unitPrice),
+                'gross_amount' => $this->money($gross),
                 'discount_type' => $line['discount_type'] ?? null,
                 'discount_value' => $line['discount_value'] ?? 0,
-                'discount_amount' => $discount,
+                'discount_amount' => $this->money($discount),
                 'foc_type' => $line['foc_type'] ?? null,
                 'foc_value' => $line['foc_value'] ?? 0,
                 'foc_quantity' => $focQuantity,
-                'tax_rate' => $taxRate,
-                'tax_amount' => $tax,
-                'total_amount' => round($taxBase + $tax, 2),
+                'tax_rate' => (string) $taxRate,
+                'tax_amount' => $this->money($tax),
+                'total_amount' => $this->money($taxBase->plus($tax)),
                 'total_expected_quantity' => round($quantity + $focQuantity, 6),
                 'target_inventory_id' => $line['target_inventory_id'] ?? null,
                 'target_farm_information_id' => $line['target_farm_information_id'] ?? null,
@@ -185,10 +210,10 @@ class PurchaseInvoiceService
     {
         $lines = $invoice->lines()->get();
         $invoice->fill([
-            'gross_amount' => $lines->sum(fn ($line) => (float) $line->gross_amount),
-            'discount_amount' => $lines->sum(fn ($line) => (float) $line->discount_amount),
-            'tax_amount' => $lines->sum(fn ($line) => (float) $line->tax_amount),
-            'total_amount' => $lines->sum(fn ($line) => (float) $line->total_amount),
+            'gross_amount' => $this->money(BigDecimal::sum(...$lines->pluck('gross_amount')->all())),
+            'discount_amount' => $this->money(BigDecimal::sum(...$lines->pluck('discount_amount')->all())),
+            'tax_amount' => $this->money(BigDecimal::sum(...$lines->pluck('tax_amount')->all())),
+            'total_amount' => $this->money(BigDecimal::sum(...$lines->pluck('total_amount')->all())),
             'total_expected_quantity' => $lines->sum(fn ($line) => (float) $line->total_expected_quantity),
         ])->save();
     }
@@ -209,20 +234,26 @@ class PurchaseInvoiceService
         }
     }
 
-    private function assertEditable(PurchaseInvoice $invoice): void
+    private function assertEditable(PurchaseInvoice $invoice, bool $cancelling = false): void
     {
+        if (! $cancelling && PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->whereNotNull('confirmed_at')->exists()) {
+            throw ValidationException::withMessages(['invoice' => 'Financial terms are immutable after a payment has been confirmed. Reverse the payments and cancel the invoice if it was entered incorrectly.']);
+        }
+        if (PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->whereIn('state', ['draft', 'confirmed'])->exists()) {
+            throw ValidationException::withMessages(['invoice' => 'Cancel draft payments and reverse confirmed payments before editing or cancelling the invoice.']);
+        }
         if ($invoice->status === PurchaseInvoice::STATUS_CANCELLED || $invoice->delivery_status !== PurchaseInvoice::DELIVERY_NOT_RECEIVED) {
             throw ValidationException::withMessages(['invoice' => 'Only unreceived open purchases can be edited or cancelled.']);
         }
     }
 
-    private function discountAmount(float $gross, ?string $type, float $value): float
+    private function money(BigDecimal $amount): string
     {
-        return match ($type) {
-            'percentage' => round($gross * ($value / 100), 2),
-            'fixed' => round($value, 2),
-            default => 0,
-        };
+        if ($amount->isNegative() || $amount->isGreaterThan('9999999999999999.99')) {
+            throw ValidationException::withMessages(['amount' => 'Purchase amount exceeds the supported monetary range.']);
+        }
+
+        return (string) $amount->toScale(2, RoundingMode::HalfUp);
     }
 
     private function focQuantity(float $quantity, ?string $type, float $value, bool $whole): float

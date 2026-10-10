@@ -2,6 +2,10 @@
 
 namespace App\Modules\Setup\Repositories;
 
+use App\Models\User;
+use App\Modules\Setup\Models\FarmInformation;
+use App\Modules\Setup\Models\Inventory;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -30,11 +34,12 @@ abstract class BusinessMasterRepository
     }
 
     /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, ?User $actor = null): LengthAwarePaginator
     {
         $modelClass = $this->modelClass();
 
         return $modelClass::query()
+            ->when($actor !== null && in_array($modelClass, [Inventory::class, FarmInformation::class], true), fn (Builder $query) => BranchAccess::scope($query, $actor))
             ->with($this->relations())
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $query) use ($search): void {

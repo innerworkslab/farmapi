@@ -12,6 +12,7 @@ class PurchaseInvoiceResource extends JsonResource
         return [
             'id' => $this->id,
             'invoice_number' => $this->invoice_number,
+            'currency_code' => $this->currency_code,
             'invoice_date' => $this->invoice_date?->toDateString(),
             'supplier_id' => $this->supplier_id,
             'branch_id' => $this->branch_id,

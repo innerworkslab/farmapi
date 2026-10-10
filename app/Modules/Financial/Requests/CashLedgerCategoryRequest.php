@@ -23,6 +23,7 @@ class CashLedgerCategoryRequest extends FormRequest
         return [
             'name' => [$creating ? 'required' : 'sometimes', 'string', 'min:1', 'max:120'],
             'direction' => [$creating ? 'required' : 'sometimes', Rule::in([CashLedgerCategory::DIRECTION_IN, CashLedgerCategory::DIRECTION_OUT])],
+            'report_treatment' => ['sometimes', 'in:income,expense,excluded,unclassified'],
             'reversal_category_id' => ['sometimes', 'nullable', 'integer', 'exists:cash_ledger_categories,id', Rule::notIn(array_filter([$categoryId]))],
         ];
     }

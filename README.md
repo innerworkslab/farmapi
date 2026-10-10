@@ -1,3 +1,27 @@
+# Livestock ERP backend
+
+## Farm management API
+
+Import `../../docs/postman/farm/livestock-erp-farm-management-final.postman_collection.json`. Its collection name is **farm-management-final**. Run the folders in order; login, demo discovery, and workflow responses capture the IDs automatically. Default URL: `http://127.0.0.1:8000/api/v1`. The seeded `superadmin@example.com` account can run the workflows; the regular admin role only has farm read access.
+
+Apply pending migrations with `php artisan migrate`. The farm migration creates new tables and preserves existing records. Add the isolated farm demo with `php artisan db:seed --class=Database\Seeders\Demo\DemoFarmsSeeder`; existing auth/setup seed data must already be present. The demo seeder is repeatable and does not reset the database.
+
+Implemented backend workflows:
+
+- Animal receiving supports batches and individual RFIDs, partial deliveries, paid/free quantities, bio data, destination validation and duplicate protection. Equipment receiving supports serial/asset units and explicitly selected quantity tracking. Confirming receipts posts stock once; rejected quantities require a reason and never enter stock.
+- Farm operations (`POST farms/operations`) use `type=health|medication|mortality|weight`, a required idempotency key, explicit animal targets and a validated payload. Drafts can be edited with their current version, submitted, rejected or confirmed. Confirmed records are corrected through `/reverse`, preserving the original record and appending stock compensation where applicable.
+- Health updates preserve active quantity. Mortality reduces live counts, retains dead-animal details and blocks feeding/treatment for dead animals. Medication consumes eligible medicine only on confirmation and records dosage totals, variance, cost, withdrawal periods and follow-up. Dosage uses the configured stock UOM.
+- Feeding supports batch, individual and multiple individual targets in one farm. Confirmation records consumption/cost; `/reverse` restores stock with an original-ledger link. Planned feed is entered through `farms/{farm}/feeding-plans`; summaries compare plans with confirmed actual feed per animal and food/UOM. Group feeding is allocated equally across selected individuals.
+- Farm settings control activity status, timezone and optional mortality/variance/wastage/sickness thresholds. Farm summaries, timelines, mortality rates, alerts, investigations and internal manager/veterinarian notifications use real records. Follow-ups can be completed through `operations/{operation}/complete-follow-up`. Corrected mortality alerts retain their history and resolve their active flag.
+
+All routes require active authenticated users, branch access, and the relevant action permission (`farms.view` or `farms.manage`, or purchasing permissions for receipts). Histories retain batch/RFID and location snapshots. Whole-unit quantities, live counts, eligible lot status, expiry and cold-chain checks are revalidated at confirmation.
+
+Farm API endpoints cover navigation/animal views (FARM-US-001–007), feeding (008–012), medication (013–018), farm-owned histories (019–023), health (024–026), mortality (027–031) and dashboard/alerts (032–035). Transfer, sale, reproduction/production history can display source ledger records when those separate modules supply them; their transaction workflows and the frontend UI are separate dependencies. Attachments are references, not a new upload service. Notifications are internal API records, not email/SMS delivery. Current headcounts are current-state metrics; the selected summary date filters daily activities. A zero starting count has an undefined daily mortality percentage (`null`). Compare consumption using item/UOM breakdowns when units differ.
+
+Validation: the automated tests use SQLite in memory. The final collection was also executed against a separate SQLite API database, including its capture scripts and expected failure responses.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

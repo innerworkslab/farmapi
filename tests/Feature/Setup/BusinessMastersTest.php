@@ -85,6 +85,8 @@ class BusinessMastersTest extends TestCase
             'status' => 'active',
         ]);
 
+        auth()->user()->branches()->attach($branch->id);
+
         $uom = $this->postJson('/api/v1/setup/uoms', [
             'code' => 'KG',
             'name' => 'Kilogram',

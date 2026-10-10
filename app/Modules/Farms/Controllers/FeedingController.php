@@ -17,7 +17,7 @@ class FeedingController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return FeedingRecordResource::collection($this->feedings->paginate($request->query()));
+        return FeedingRecordResource::collection($this->feedings->paginate($request->query(), $request->user()));
     }
 
     public function store(FeedingRecordRequest $request): FeedingRecordResource
@@ -25,9 +25,11 @@ class FeedingController extends Controller
         return new FeedingRecordResource($this->feedings->create($request->validated(), $request->user()));
     }
 
-    public function show(FeedingRecord $feeding): FeedingRecordResource
+    public function show(Request $request, FeedingRecord $feeding): FeedingRecordResource
     {
-        return new FeedingRecordResource($feeding->load(['farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
+        $this->feedings->authorizeAccess($feeding, $request->user());
+
+        return new FeedingRecordResource($feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
     }
 
     public function update(FeedingRecordRequest $request, FeedingRecord $feeding): FeedingRecordResource
@@ -43,6 +45,11 @@ class FeedingController extends Controller
     public function confirm(Request $request, FeedingRecord $feeding): FeedingRecordResource
     {
         return new FeedingRecordResource($this->feedings->confirm($feeding, $request->user()));
+    }
+
+    public function reverse(FeedingRejectRequest $request, FeedingRecord $feeding): FeedingRecordResource
+    {
+        return new FeedingRecordResource($this->feedings->reverse($feeding, $request->validated('reason'), $request->user()));
     }
 
     public function reject(FeedingRejectRequest $request, FeedingRecord $feeding): FeedingRecordResource

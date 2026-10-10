@@ -2,16 +2,18 @@
 
 namespace App\Modules\Inventory\Services;
 
+use App\Models\User;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
 class InventoryLedgerService
 {
     /** @param array<string, mixed> $filters */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
-        return InventoryLedgerEntry::query()
+        return BranchAccess::scope(InventoryLedgerEntry::query(), $actor)
             ->with(['inventory', 'stockLot', 'equipmentInstance', 'stockUom'])
             ->when($filters['category'] ?? null, fn (Builder $query, string $category) => $query->where('category', $category))
             ->when($filters['item_id'] ?? null, fn (Builder $query, string $itemId) => $query->where('item_id', $itemId))

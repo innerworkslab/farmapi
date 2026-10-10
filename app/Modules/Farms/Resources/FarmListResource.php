@@ -32,7 +32,7 @@ class FarmListResource extends JsonResource
                 'name' => $this->responsibleEmployee->name,
                 'email' => $this->responsibleEmployee->email,
             ] : null,
-            'status' => 'active',
+            'status' => $this->setting?->status ?? 'active',
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

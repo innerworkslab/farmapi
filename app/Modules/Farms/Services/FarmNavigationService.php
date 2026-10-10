@@ -3,9 +3,11 @@
 namespace App\Modules\Farms\Services;
 
 use App\Models\User;
+use App\Modules\Farms\Models\AnimalProfile;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\FarmInformation;
+use App\Support\BranchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -18,7 +20,7 @@ class FarmNavigationService
     public function paginate(User $user, array $filters): LengthAwarePaginator
     {
         $query = FarmInformation::query()
-            ->with(['branch', 'currentAnimal', 'responsibleEmployee'])
+            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting'])
             ->select('farm_information.*')
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $inner) use ($search): void {
@@ -42,9 +44,12 @@ class FarmNavigationService
                 $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('type', $farmType));
             })
             ->when($filters['status'] ?? null, function (Builder $query, string $status): void {
-                if ($status !== 'active') {
-                    $query->whereRaw('1 = 0');
-                }
+                $query->where(function ($q) use ($status): void {
+                    $q->whereHas('setting', fn ($setting) => $setting->where('status', $status));
+                    if ($status === 'active') {
+                        $q->orWhereDoesntHave('setting');
+                    }
+                });
             });
 
         $this->applyAuthorizedBranchScope($query, $user);
@@ -62,7 +67,7 @@ class FarmNavigationService
 
         return [
             'farm' => $farm,
-            'summary' => $this->summaryFor($farm),
+            'summary' => app(FarmReportService::class)->summary($farm, $user),
             'animals' => $this->animalQuery($farm)
                 ->limit(25)
                 ->get(),
@@ -103,7 +108,7 @@ class FarmNavigationService
     {
         $farm = $this->findAuthorizedFarm($user, $farm);
 
-        $animal = $this->animalQuery($farm)
+        $animal = $this->animalQuery($farm, true)
             ->where('inventory_balances.id', $animalBalance->id)
             ->first();
 
@@ -117,7 +122,7 @@ class FarmNavigationService
     private function findAuthorizedFarm(User $user, FarmInformation $farm): FarmInformation
     {
         $authorizedFarm = $this->authorizedFarmQuery($user)
-            ->with(['branch', 'currentAnimal', 'responsibleEmployee'])
+            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting'])
             ->find($farm->id);
 
         if (! $authorizedFarm) {
@@ -137,11 +142,7 @@ class FarmNavigationService
 
     private function applyAuthorizedBranchScope(Builder $query, User $user): void
     {
-        $branchIds = $user->branches()->pluck('branches.id');
-
-        if ($branchIds->isNotEmpty()) {
-            $query->whereIn('farm_information.branch_id', $branchIds);
-        }
+        BranchAccess::scope($query, $user, 'farm_information.branch_id');
     }
 
     private function addAnimalCounts(Builder $query): void
@@ -214,8 +215,8 @@ class FarmNavigationService
             'animal_types' => $this->uniqueValues($rows, 'animal_type'),
             'breeds' => $this->uniqueValues($rows, 'breed'),
             'locations' => $this->uniqueValues($rows, 'location'),
-            'health_statuses' => ['healthy'],
-            'life_stages' => [],
+            'health_statuses' => ['healthy', 'under_observation', 'sick', 'under_treatment', 'quarantine', 'critical', 'recovered'],
+            'life_stages' => AnimalProfile::query()->whereIn('animal_balance_id', $this->animalQuery($farm)->select('inventory_balances.id'))->whereNotNull('life_stage')->distinct()->pluck('life_stage')->all(),
         ];
     }
 
@@ -241,11 +242,14 @@ class FarmNavigationService
             ->when($filters['breed'] ?? null, fn (Builder $query, string $breed) => $query->where('animals.breed', $breed))
             ->when($filters['location'] ?? null, fn (Builder $query, string $location) => $query->where('inventory_balances.location', $location))
             ->when($filters['health_status'] ?? null, function (Builder $query, string $healthStatus): void {
-                if ($healthStatus !== 'healthy') {
-                    $query->whereRaw('1 = 0');
-                }
+                $query->where(function (Builder $health) use ($healthStatus): void {
+                    $health->whereHas('profile', fn ($p) => $p->where('health_status', $healthStatus));
+                    if ($healthStatus === 'healthy') {
+                        $health->orWhereDoesntHave('profile');
+                    }
+                });
             })
-            ->when($filters['life_stage'] ?? null, fn (Builder $query) => $query->whereRaw('1 = 0'))
+            ->when($filters['life_stage'] ?? null, fn (Builder $query, $stage) => $query->whereHas('profile', fn ($p) => $p->where('life_stage', $stage)))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $inner) use ($search): void {
                     $inner
@@ -271,9 +275,21 @@ class FarmNavigationService
             ->whereNotNull('inventory_balances.farm_information_id');
     }
 
-    private function animalQuery(FarmInformation $farm): Builder
+    private function animalQuery(FarmInformation $farm, bool $includeInactive = false): Builder
     {
         return InventoryBalance::query()
+            ->with(['profile', 'farmInformation.setting'])
+            ->withCount(['feedings', 'feedingTargets'])
+            ->withCount([
+                'farmAlerts as active_mortality_alerts' => fn ($q) => $q->where('type', 'mortality')->where('details->is_active', true),
+                'movements as transfer_records' => fn ($q) => $q->where('source_type', 'transfer'),
+                'movements as production_records' => fn ($q) => $q->where('source_type', 'production'),
+                'movements as purchase_records' => fn ($q) => $q->where('source_type', 'animal_receipt'),
+                'movements as sale_records' => fn ($q) => $q->where('source_type', 'sale'),
+                'operationTargets as medication_records' => fn ($q) => $q->whereHas('operation', fn ($o) => $o->where('type', 'medication')),
+                'operationTargets as defect_records' => fn ($q) => $q->whereHas('operation', fn ($o) => $o->where('type', 'health')),
+                'operationTargets as mortality_records' => fn ($q) => $q->whereHas('operation', fn ($o) => $o->where('type', 'mortality')),
+            ])
             ->with([
                 'item' => fn ($query) => $query->with('itemable'),
                 'inventory',
@@ -287,8 +303,8 @@ class FarmNavigationService
             })
             ->where('inventory_balances.category', 'animal')
             ->where('inventory_balances.farm_information_id', $farm->id)
-            ->where('inventory_balances.on_hand_quantity', '>', 0)
-            ->select('inventory_balances.*')
+            ->when(! $includeInactive, fn ($q) => $q->where('inventory_balances.on_hand_quantity', '>', 0))
+            ->addSelect('inventory_balances.*')
             ->orderByRaw("CASE WHEN animals.tracking_type = 'batch' THEN 0 ELSE 1 END")
             ->orderBy('items.name');
     }
