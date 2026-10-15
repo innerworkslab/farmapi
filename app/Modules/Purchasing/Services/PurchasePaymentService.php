@@ -5,6 +5,7 @@ namespace App\Modules\Purchasing\Services;
 use App\Models\User;
 use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashbookTransaction;
+use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Financial\Services\CashbookService;
 use App\Modules\Financial\Services\CashbookTransactionService;
 use App\Modules\Financial\Services\FinancialControlService;
@@ -138,10 +139,21 @@ class PurchasePaymentService
     {
         BranchAccess::authorize($actor, (int) $invoice->branch_id);
         $paid = $this->paid($invoice);
+        $currency = $invoice->currency_code ?? FinancialBranchSetting::query()->where('branch_id', $invoice->branch_id)->value('default_currency');
+        if (! $currency) {
+            $currencies = Cashbook::query()->where('branch_id', $invoice->branch_id)->where('status', 'active')->distinct()->pluck('currency_code')->filter()->values();
+            if ($currencies->count() === 1) {
+                $currency = $currencies->first();
+            }
+        }
+        $cashbooks = Cashbook::query()->where('branch_id', $invoice->branch_id)->where('status', 'active')
+            ->when($currency, fn ($query, string $effectiveCurrency) => $query->where('currency_code', $effectiveCurrency))
+            ->orderBy('name')->get(['id', 'name', 'type', 'currency_code', 'branch_id']);
 
-        return ['invoice_id' => $invoice->id, 'currency_code' => $invoice->currency_code, 'total_amount' => Money::decimal(Money::minor($invoice->total_amount)),
+        return ['invoice_id' => $invoice->id, 'currency_code' => $currency, 'total_amount' => Money::decimal(Money::minor($invoice->total_amount)),
             'paid_amount' => Money::decimal($paid), 'outstanding_amount' => Money::decimal($invoice->status === 'cancelled' ? 0 : Money::minor($invoice->total_amount) - $paid),
-            'payments' => PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->orderBy('id')->get()];
+            'payments' => PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->orderBy('id')->get(),
+            'eligible_cashbooks' => $cashbooks];
     }
 
     private function paid(PurchaseInvoice $invoice): int

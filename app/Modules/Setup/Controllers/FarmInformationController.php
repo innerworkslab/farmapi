@@ -21,6 +21,11 @@ class FarmInformationController extends Controller
         return BusinessMasterResource::collection($this->service->paginate($request->query(), $request->user()));
     }
 
+    public function locationOptions(Request $request): \Illuminate\Http\JsonResponse
+    {
+        return response()->json(['data' => $this->service->locationOptions($request->query(), $request->user())]);
+    }
+
     public function store(FarmInformationRequest $request): BusinessMasterResource
     {
         BranchAccess::authorize($request->user(), (int) $request->validated('branch_id'));

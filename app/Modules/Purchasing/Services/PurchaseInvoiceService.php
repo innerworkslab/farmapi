@@ -3,6 +3,7 @@
 namespace App\Modules\Purchasing\Services;
 
 use App\Models\User;
+use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Services\InventoryItemResolver;
@@ -53,7 +54,7 @@ class PurchaseInvoiceService
             $invoice = PurchaseInvoice::query()->create([
                 'invoice_number' => $data['invoice_number'] ?? $this->invoiceNumber(),
                 'invoice_date' => $data['invoice_date'],
-                'currency_code' => $data['currency_code'] ?? FinancialBranchSetting::query()->where('branch_id', $data['branch_id'])->value('default_currency'),
+                'currency_code' => $data['currency_code'] ?? $this->defaultCurrency((int) $data['branch_id']),
                 'supplier_id' => $supplier->id,
                 'branch_id' => $data['branch_id'],
                 'status' => PurchaseInvoice::STATUS_OPEN,
@@ -270,5 +271,17 @@ class PurchaseInvoiceService
     private function invoiceNumber(): string
     {
         return 'PINV-'.now()->format('YmdHis').'-'.Str::upper(Str::random(5));
+    }
+
+    private function defaultCurrency(int $branchId): ?string
+    {
+        $configured = FinancialBranchSetting::query()->where('branch_id', $branchId)->value('default_currency');
+        if ($configured) {
+            return $configured;
+        }
+
+        $currencies = Cashbook::query()->where('branch_id', $branchId)->where('status', 'active')->distinct()->pluck('currency_code')->filter()->values();
+
+        return $currencies->count() === 1 ? $currencies->first() : null;
     }
 }

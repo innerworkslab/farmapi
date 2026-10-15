@@ -4,6 +4,8 @@ namespace App\Modules\Setup\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -41,9 +43,19 @@ class Supplier extends Model
         'version',
     ];
 
-    public function preferredBranch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function preferredBranch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'preferred_branch_id');
+    }
+
+    public function types(): HasMany
+    {
+        return $this->hasMany(SupplierType::class);
+    }
+
+    public function payableEntries(): HasMany
+    {
+        return $this->hasMany(SupplierPayableEntry::class);
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -4,6 +4,7 @@ namespace App\Modules\Setup\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -26,7 +27,6 @@ class Customer extends Model
         'state_region',
         'preferred_branch_id',
         'price_level',
-        'payment_terms',
         'credit_limit',
         'opening_balance',
         'opening_balance_date',
@@ -36,7 +36,7 @@ class Customer extends Model
         'version',
     ];
 
-    public function preferredBranch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function preferredBranch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'preferred_branch_id');
     }

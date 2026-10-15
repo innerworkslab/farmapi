@@ -18,7 +18,9 @@ class SupplierRequest extends FormRequest
 
         return [
             'code' => ['required', 'string', 'max:50', Rule::unique('suppliers', 'code')->ignore($recordId)],
-            'type' => ['required', 'string', Rule::in(['food', 'medicine', 'animal', 'equipment', 'service'])],
+            'type' => ['nullable', 'string', Rule::in(['food', 'medicine', 'animal', 'equipment', 'service'])],
+            'types' => ['required_without:type', 'array', 'min:1'],
+            'types.*' => ['required', 'string', Rule::in(['food', 'medicine', 'animal', 'equipment', 'service'])],
             'name' => ['required', 'string', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:50'],
@@ -34,8 +36,9 @@ class SupplierRequest extends FormRequest
             'minimum_order_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
-            'opening_balance_type' => ['nullable', 'string', Rule::in(['debit', 'credit', 'none'])],
-            'opening_balance' => ['nullable', 'numeric', 'min:0'],
+            'opening_balance_type' => [Rule::requiredIf(fn () => (float) $this->input('opening_balance', 0) > 0), 'nullable', 'string', Rule::in(['debit', 'credit', 'none'])],
+            'opening_balance' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'opening_balance_currency_code' => [Rule::requiredIf(fn () => (float) $this->input('opening_balance', 0) > 0), 'nullable', 'regex:/^[A-Z]{3}$/'],
             'opening_balance_date' => ['nullable', 'date'],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'bank_account_name' => ['nullable', 'string', 'max:255'],
@@ -49,6 +52,8 @@ class SupplierRequest extends FormRequest
         $this->merge([
             'code' => is_string($this->code) ? trim($this->code) : $this->code,
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
+            'type' => $this->input('type') ?? (is_array($this->input('types')) ? ($this->input('types')[0] ?? null) : null),
+            'types' => $this->input('types') ?? (is_string($this->input('type')) ? [$this->input('type')] : null),
         ]);
     }
 }

@@ -14,6 +14,10 @@ class InventoryBalanceController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return InventoryBalanceResource::collection($this->balances->paginate($request->query(), $request->user()));
+        $validated = $request->validate([
+            'from_date' => ['nullable', 'date_format:Y-m-d'],
+            'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
+        ]);
+        return InventoryBalanceResource::collection($this->balances->paginate(array_merge($request->query(), $validated), $request->user()));
     }
 }

@@ -152,13 +152,13 @@ class SaleService
             $sale->paid_amount = $paid;
             $sale->ar_amount = $ar;
             $sale->payment_status = $paymentStatus;
-            $sale->customer_snapshot = ['code' => $customer->code, 'name' => $customer->name, 'contact_person' => $customer->contact_person, 'phone_number' => $customer->phone_number, 'alternative_phone' => $customer->alternative_phone, 'delivery_address' => $customer->delivery_address, 'township' => $customer->township, 'state_region' => $customer->state_region, 'payment_terms' => $customer->payment_terms, 'price_level' => $customer->price_level];
+            $sale->customer_snapshot = ['code' => $customer->code, 'name' => $customer->name, 'contact_person' => $customer->contact_person, 'phone_number' => $customer->phone_number, 'alternative_phone' => $customer->alternative_phone, 'delivery_address' => $customer->delivery_address, 'township' => $customer->township, 'state_region' => $customer->state_region, 'price_level' => $customer->price_level];
             $this->postStock($sale, $balance, -((int) $sale->quantity + (int) $sale->foc_quantity), $actor, 'sale');
             if ($paid > 0) {
                 $this->postReceipt($sale, $actor);
             }
             if ($ar > 0) {
-                CustomerReceivableEntry::query()->create(['customer_id' => $customer->id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'entry_type' => 'sale', 'amount' => $ar, 'reference' => $sale->sale_number, 'idempotency_key' => 'sale-'.$sale->id.'-ar', 'created_by_id' => $actor->id]);
+                CustomerReceivableEntry::query()->create(['customer_id' => $customer->id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'entry_type' => 'sale', 'amount' => $ar, 'reference' => $sale->sale_number, 'idempotency_key' => 'sale-'.$sale->id.'-ar', 'created_by_id' => $actor->id, 'business_date' => $sale->sale_date]);
             }
             $sale->status = 'confirmed';
             $sale->confirmed_by_id = $actor->id;
@@ -187,7 +187,7 @@ class SaleService
                 $this->cashbookTransactions->reverseForModule($transaction, 'sale_receipt', $reason, $actor);
             }
             if ((float) $sale->ar_amount > 0) {
-                CustomerReceivableEntry::query()->create(['customer_id' => $sale->customer_id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'entry_type' => 'reversal', 'amount' => -$sale->ar_amount, 'reference' => $sale->sale_number.'-REV', 'idempotency_key' => 'sale-'.$sale->id.'-ar-reversal', 'created_by_id' => $actor->id]);
+                CustomerReceivableEntry::query()->create(['customer_id' => $sale->customer_id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'entry_type' => 'reversal', 'amount' => -$sale->ar_amount, 'reference' => $sale->sale_number.'-REV', 'idempotency_key' => 'sale-'.$sale->id.'-ar-reversal', 'created_by_id' => $actor->id, 'business_date' => $sale->sale_date]);
             }
             $sale->status = 'cancelled';
             $sale->cancellation_reason = $reason;
@@ -242,7 +242,7 @@ class SaleService
                 throw ValidationException::withMessages(['cash_category_id' => 'An active cash-in category is required.']);
             }
             $cash = $this->cashbookTransactions->postForModule(['cashbook_id' => $data['cashbook_id'], 'category_id' => $data['cash_category_id'], 'business_date' => app(FinancialControlService::class)->businessDate((int) $sale->branch_id), 'direction' => 'in', 'amount' => $data['amount'], 'description' => 'Receivable payment for '.$sale->sale_number, 'external_reference' => $sale->sale_number.'-RCPT-'.Str::upper(Str::substr(sha1($data['idempotency_key']), 0, 10)), 'idempotency_key' => $key, 'created_by_id' => $sale->created_by_id], 'sale_receipt', $actor);
-            CustomerReceivableEntry::query()->create(['customer_id' => $sale->customer_id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'cashbook_transaction_id' => $cash->id, 'entry_type' => 'receipt', 'amount' => '-'.$this->money($amountMinor), 'reference' => $cash->reference, 'idempotency_key' => $key, 'created_by_id' => $actor->id]);
+            CustomerReceivableEntry::query()->create(['customer_id' => $sale->customer_id, 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'cashbook_transaction_id' => $cash->id, 'entry_type' => 'receipt', 'amount' => '-'.$this->money($amountMinor), 'reference' => $cash->reference, 'idempotency_key' => $key, 'created_by_id' => $actor->id, 'business_date' => $cash->business_date]);
             $sale->paid_amount = $this->money($this->minor($sale->paid_amount) + $amountMinor);
             $sale->ar_amount = $this->money($balanceMinor - $amountMinor);
             $sale->payment_status = $balanceMinor === $amountMinor ? 'paid' : 'partially_paid';
@@ -277,7 +277,7 @@ class SaleService
 
         return Customer::query()->where('status', 'active')->where(fn ($q) => $q->whereNull('preferred_branch_id')->orWhere('preferred_branch_id', $branchId))
             ->when($search, fn ($q, $s) => $q->where(fn ($n) => $n->where('code', 'like', "%{$s}%")->orWhere('name', 'like', "%{$s}%")->orWhere('phone_number', 'like', "%{$s}%")))
-            ->orderBy('name')->limit(50)->get(['id', 'code', 'name', 'contact_person', 'phone_number', 'preferred_branch_id', 'price_level', 'payment_terms', 'credit_limit', 'status']);
+            ->orderBy('name')->limit(50)->get(['id', 'code', 'name', 'contact_person', 'phone_number', 'preferred_branch_id', 'price_level', 'credit_limit', 'status']);
     }
 
     private function eligibleCustomer(int $id, int $branchId, User $actor, bool $lock = false): Customer
@@ -415,10 +415,9 @@ class SaleService
         foreach ($entries as $entry) {
             $openMinor += $this->minor($entry->amount);
         }
-        $opening = $this->minor($customer->opening_balance ?? 0);
         $limit = $this->minor($customer->credit_limit ?? 0);
-        if ($limit > 0 && $openMinor + $opening + $arMinor > $limit) {
-            throw ValidationException::withMessages(['customer_id' => 'Sale would exceed the customer credit limit. Projected exposure: '.$this->money($openMinor + $opening + $arMinor).'.']);
+        if ($limit > 0 && $openMinor + $arMinor > $limit) {
+            throw ValidationException::withMessages(['customer_id' => 'Sale would exceed the customer credit limit. Projected exposure: '.$this->money($openMinor + $arMinor).'.']);
         }
     }
 

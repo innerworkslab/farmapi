@@ -36,7 +36,8 @@ class BusinessMastersTest extends TestCase
 
         $create->assertCreated()
             ->assertJsonPath('data.code', 'CUS-TST')
-            ->assertJsonPath('data.status', 'active');
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonMissingPath('data.payment_terms');
 
         $customerId = $create->json('data.id');
 
@@ -111,7 +112,7 @@ class BusinessMastersTest extends TestCase
         ])->assertCreated()
             ->json('data.id');
 
-        $this->postJson('/api/v1/setup/inventories', [
+        $inventoryId = $this->postJson('/api/v1/setup/inventories', [
             'code' => 'INV-TST',
             'name' => 'Test Inventory',
             'type' => 'feed',
@@ -119,9 +120,19 @@ class BusinessMastersTest extends TestCase
             'allowed_item_categories' => ['feed'],
             'status' => 'active',
         ])->assertCreated()
-            ->assertJsonPath('data.branch_id', $branch->id);
+            ->assertJsonPath('data.branch_id', $branch->id)
+            ->json('data.id');
 
-        $this->postJson('/api/v1/setup/foods', [
+        $this->postJson("/api/v1/setup/inventories/{$inventoryId}", [
+            'code' => 'INV-TST', 'name' => 'Test Inventory', 'type' => 'feed', 'branch_id' => $branch->id,
+            'allowed_item_categories' => ['feed'], 'building_zone' => 'Zone A', 'rack_bin' => 'A-01',
+        ])->assertOk();
+        $this->postJson('/api/v1/setup/inventories', [
+            'code' => 'INV-BAD-RACK', 'name' => 'Other Inventory', 'type' => 'feed', 'branch_id' => $branch->id,
+            'allowed_item_categories' => ['feed'], 'rack_bin' => 'NOT-REGISTERED',
+        ])->assertUnprocessable()->assertJsonValidationErrors('rack_bin');
+
+        $food = $this->postJson('/api/v1/setup/foods', [
             'code' => 'FOD-TST',
             'name' => 'Test Feed',
             'category' => 'feed',
@@ -135,7 +146,15 @@ class BusinessMastersTest extends TestCase
             'batch_tracking' => true,
             'expiry_tracking' => true,
         ])->assertCreated()
-            ->assertJsonPath('data.code', 'FOD-TST');
+            ->assertJsonPath('data.code', 'FOD-TST')
+            ->assertJsonPath('data.unit_roles.base_unit.id', $uom)
+            ->assertJsonPath('data.unit_roles.conversion_direction', 'conversion_unit_to_base_unit')
+            ->json('data.id');
+
+        $this->getJson("/api/v1/setup/foods/{$food}")
+            ->assertOk()
+            ->assertJsonPath('data.unit_roles.base_unit.id', $uom)
+            ->assertJsonPath('data.unit_roles.conversion_unit.id', $uom);
 
         $this->postJson('/api/v1/setup/medicines', [
             'code' => 'MED-TST',
@@ -185,6 +204,71 @@ class BusinessMastersTest extends TestCase
         $farm->assertCreated()
             ->assertJsonPath('data.name', 'Test Farm House')
             ->assertJsonPath('data.current_animal_id', $animal);
+        $this->postJson('/api/v1/setup/farm-information', [
+            'name' => 'Invalid Barn Choice', 'branch_id' => $branch->id, 'house_barn' => 'Barn Not Listed', 'pen_cage_pond' => 'Pen 1',
+        ])->assertUnprocessable()->assertJsonValidationErrors('house_barn');
+    }
+
+    public function test_supplier_types_are_multi_select_and_opening_balance_posts_to_currency_scoped_ap(): void
+    {
+        $this->actingWithPermissions($this->permissionsFor('suppliers'));
+        $branch = Branch::query()->create(['code' => 'BR-SUP-OPEN', 'name' => 'Supplier Branch', 'status' => 'active']);
+        auth()->user()->branches()->attach($branch->id);
+
+        $supplier = $this->postJson('/api/v1/setup/suppliers', [
+            'code' => 'SUP-MULTI', 'types' => ['food', 'medicine'], 'name' => 'Multi Category Supplier',
+            'phone_number' => '+95 9 800000019', 'preferred_branch_id' => $branch->id,
+            'opening_balance_type' => 'credit', 'opening_balance' => 125.50, 'opening_balance_currency_code' => 'MMK', 'opening_balance_date' => '2020-01-01',
+        ])->assertCreated()
+            ->assertJsonPath('data.type', 'food')
+            ->assertJsonPath('data.types', ['food', 'medicine'])
+            ->assertJsonPath('data.opening_balance_date', today()->toDateString())
+            ->json('data.id');
+
+        $this->getJson("/api/v1/setup/suppliers/{$supplier}")
+            ->assertOk()
+            ->assertJsonPath('data.types', ['food', 'medicine']);
+
+        $this->postJson("/api/v1/setup/suppliers/{$supplier}", [
+            'code' => 'SUP-MULTI', 'types' => ['food', 'medicine'], 'name' => 'Multi Category Supplier',
+            'phone_number' => '+95 9 800000019', 'preferred_branch_id' => $branch->id,
+            'opening_balance_type' => 'credit', 'opening_balance' => 125.50, 'opening_balance_currency_code' => 'MMK',
+        ])->assertOk()->assertJsonPath('data.types', ['food', 'medicine']);
+        $this->getJson('/api/v1/setup/suppliers?type=medicine')->assertOk()->assertJsonPath('data.0.id', $supplier);
+
+        $this->getJson("/api/v1/setup/suppliers/{$supplier}/payables")
+            ->assertOk()
+            ->assertJsonPath('data.balances.0.currency_code', 'MMK')
+            ->assertJsonPath('data.balances.0.opening_balance', '125.50')
+            ->assertJsonPath('data.balances.0.outstanding_amount', '125.50');
+
+        $adjustment = ['branch_id' => $branch->id, 'currency_code' => 'MMK', 'amount' => '-25.00', 'reason' => 'Correct opening balance', 'idempotency_key' => 'sup-open-adjust-1'];
+        $this->postJson("/api/v1/setup/suppliers/{$supplier}/payables/adjustments", $adjustment)->assertCreated()->assertJsonPath('data.entry_type', 'adjustment');
+        $this->postJson("/api/v1/setup/suppliers/{$supplier}/payables/adjustments", $adjustment)->assertCreated();
+        $this->getJson("/api/v1/setup/suppliers/{$supplier}/payables")
+            ->assertJsonPath('data.balances.0.outstanding_amount', '100.50');
+    }
+
+    public function test_customer_opening_balance_is_posted_as_current_date_receivable(): void
+    {
+        $this->actingWithPermissions($this->permissionsFor('customers'));
+        $branch = Branch::query()->create(['code' => 'BR-CUS-OPEN', 'name' => 'Customer Branch', 'status' => 'active']);
+        auth()->user()->branches()->attach($branch->id);
+        $id = $this->postJson('/api/v1/setup/customers', [
+            'code' => 'CUS-OPEN', 'type' => 'retail', 'name' => 'Opening Customer', 'phone_number' => '+95 9 700000019',
+            'preferred_branch_id' => $branch->id, 'opening_balance' => 250, 'opening_balance_date' => '2020-01-01',
+        ])->assertCreated()->assertJsonPath('data.opening_balance_date', today()->toDateString())->json('data.id');
+
+        $this->assertDatabaseHas('customer_receivable_entries', [
+            'customer_id' => $id, 'branch_id' => $branch->id, 'entry_type' => 'opening_balance',
+            'amount' => '250.00', 'sale_id' => null,
+        ]);
+        $this->assertDatabaseCount('customer_receivable_entries', 1);
+
+        $adjustment = ['branch_id' => $branch->id, 'amount' => '-50.00', 'reason' => 'Correct opening balance', 'idempotency_key' => 'cus-open-adjust-1'];
+        $this->postJson("/api/v1/setup/customers/{$id}/receivables/adjustments", $adjustment)->assertCreated()->assertJsonPath('data.entry_type', 'adjustment');
+        $this->postJson("/api/v1/setup/customers/{$id}/receivables/adjustments", $adjustment)->assertCreated();
+        $this->assertDatabaseCount('customer_receivable_entries', 2);
     }
 
     /** @return list<string> */

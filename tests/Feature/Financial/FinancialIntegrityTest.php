@@ -170,6 +170,7 @@ class FinancialIntegrityTest extends TestCase
         $supplier = Supplier::query()->create(['code' => 'SUP-FIN', 'type' => 'business', 'name' => 'Supplier', 'phone_number' => '0912345', 'status' => 'active']);
         $invoice = PurchaseInvoice::query()->create(['invoice_number' => 'PINV-FIN', 'invoice_date' => '2026-10-09', 'supplier_id' => $supplier->id, 'branch_id' => $this->s['branch']->id, 'status' => 'open', 'delivery_status' => 'not_received', 'total_amount' => '100.00', 'created_by_id' => $this->s['user']->id]);
         $url = '/api/v1/purchasing/invoices/'.$invoice->id.'/payments';
+        $this->getJson($url)->assertOk()->assertJsonPath('data.currency_code', 'MMK')->assertJsonPath('data.eligible_cashbooks.0.id', $this->s['book']->id);
         $data = ['cashbook_id' => $this->s['book']->id, 'category_id' => $this->s['out']->id, 'invoice_currency_code' => 'MMK', 'amount' => '60.00', 'description' => 'Supplier payment', 'idempotency_key' => 'purchase-1'];
         $id = $this->postJson($url, $data)->assertCreated()->json('data.id');
         $this->postJson($url, $data)->assertCreated()->assertJsonPath('data.id', $id);

@@ -27,13 +27,14 @@ class FoodController extends Controller
 
     public function show(Food $food): BusinessMasterResource
     {
-        return new BusinessMasterResource($food);
+        return new BusinessMasterResource($food->load(['purchaseUom', 'stockUom', 'consumptionUom', 'defaultSupplier']));
     }
 
     public function update(FoodRequest $request, Food $food): BusinessMasterResource
     {
         return new BusinessMasterResource($this->service->update($food, $request->validated()));
     }
+
     public function toggleStatus(Food $food): BusinessMasterResource
     {
         return new BusinessMasterResource($this->service->toggleStatus($food));

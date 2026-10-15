@@ -2,6 +2,8 @@
 
 namespace App\Modules\Inventory\Resources;
 
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +26,10 @@ class InventoryBalanceResource extends JsonResource
             'stock_lot_id' => $this->stock_lot_id,
             'equipment_instance_id' => $this->equipment_instance_id,
             'on_hand_quantity' => $this->on_hand_quantity,
+            'opening_quantity' => BigDecimal::of((string) ($this->period_opening_quantity ?? 0))->toScale(6, RoundingMode::DOWN)->__toString(),
+            'in_quantity' => BigDecimal::of((string) ($this->period_in_quantity ?? 0))->toScale(6, RoundingMode::DOWN)->__toString(),
+            'out_quantity' => BigDecimal::of((string) ($this->period_out_quantity ?? 0))->toScale(6, RoundingMode::DOWN)->__toString(),
+            'closing_quantity' => BigDecimal::of((string) ($this->period_opening_quantity ?? 0))->plus((string) ($this->period_in_quantity ?? 0))->minus((string) ($this->period_out_quantity ?? 0))->toScale(6, RoundingMode::DOWN)->__toString(),
             'reserved_quantity' => $this->reserved_quantity,
             'quarantined_quantity' => $this->quarantined_quantity,
             'damaged_quantity' => $this->damaged_quantity,

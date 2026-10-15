@@ -55,6 +55,7 @@ abstract class BusinessMasterRepository
                         $query->where($column, $filters[$filter]);
                     }
                 }
+                $this->applyCustomFilters($query, $filters);
             })
             ->orderBy($this->orderColumn())
             ->paginate((int) ($filters['per_page'] ?? 15));
@@ -109,6 +110,9 @@ abstract class BusinessMasterRepository
     {
         return 'name';
     }
+
+    /** @param array<string, mixed> $filters */
+    protected function applyCustomFilters(Builder $query, array $filters): void {}
 
     private function hasFillable(Model $model, string $attribute): bool
     {

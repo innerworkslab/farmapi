@@ -3,6 +3,7 @@
 namespace Tests\Feature\Inventory;
 
 use App\Models\User;
+use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Models\Item;
@@ -17,6 +18,7 @@ use App\Modules\Setup\Models\Uom;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class InventoryFoundationTest extends TestCase
@@ -43,15 +45,13 @@ class InventoryFoundationTest extends TestCase
         $this->assertDatabaseCount('inventory_ledger_entries', 0);
     }
 
-
-
     public function test_inventory_lists_confirmations_and_actions_respect_branch_access(): void
     {
         $user = $this->actingWithInventoryPermissions();
         $setup = $this->setupFoodInventory();
         $user->branches()->attach($setup['branch']->id);
         $this->postOpeningBalance($setup, 10);
-        $adjustment = \App\Modules\Inventory\Models\InventoryAdjustment::query()->firstOrFail();
+        $adjustment = InventoryAdjustment::query()->firstOrFail();
         $confirmation = $adjustment->confirmation;
         $this->getJson('/api/v1/inventory/confirmations')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
@@ -74,11 +74,10 @@ class InventoryFoundationTest extends TestCase
         $this->assertDatabaseHas('inventory_balances', ['on_hand_quantity' => 10]);
         $user->branches()->detach();
         $this->getJson('/api/v1/inventory/balances')->assertOk()->assertJsonCount(0, 'data');
-        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $user->assignRole(Role::findOrCreate('super-admin', 'web'));
         $this->getJson('/api/v1/inventory/balances')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
     }
-
 
     public function test_adjustment_confirmation_posts_ledger_and_current_balance(): void
     {
@@ -146,6 +145,14 @@ class InventoryFoundationTest extends TestCase
         $this->getJson('/api/v1/inventory/balances?category=food')
             ->assertOk()
             ->assertJsonPath('data.0.available_quantity', 500);
+
+        $today = today()->toDateString();
+        $this->getJson('/api/v1/inventory/balances?category=food&from_date='.$today.'&to_date='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.0.opening_quantity', '0.000000')
+            ->assertJsonPath('data.0.in_quantity', '500.000000')
+            ->assertJsonPath('data.0.out_quantity', '0.000000')
+            ->assertJsonPath('data.0.closing_quantity', '500.000000');
     }
 
     public function test_confirmation_revalidates_and_blocks_negative_stock(): void
@@ -267,6 +274,7 @@ class InventoryFoundationTest extends TestCase
             ->assertJsonPath('data.0.id', $item->id)
             ->assertJsonPath('data.0.itemable_id', $animalId);
     }
+
     /** @return array<string, mixed> */
     private function setupFoodInventory(bool $createFood = true): array
     {

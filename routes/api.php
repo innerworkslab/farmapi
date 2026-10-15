@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('customers', [CustomerController::class, 'index'])->middleware('permission:setup.customers.view');
             Route::post('customers', [CustomerController::class, 'store'])->middleware('permission:setup.customers.create');
+            Route::post('customers/{customer}/receivables/adjustments', [CustomerController::class, 'adjustReceivable'])->middleware('permission:setup.customers.update');
             Route::get('customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:setup.customers.view');
             Route::post('customers/{customer}', [CustomerController::class, 'update'])->middleware('permission:setup.customers.update');
             Route::post('customers/{customer}/toggle-status', [CustomerController::class, 'toggleStatus'])->middleware('permission:setup.customers.update');
@@ -99,7 +100,9 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('suppliers', [SupplierController::class, 'index'])->middleware('permission:setup.suppliers.view');
             Route::post('suppliers', [SupplierController::class, 'store'])->middleware('permission:setup.suppliers.create');
+            Route::post('suppliers/{supplier}/payables/adjustments', [SupplierController::class, 'adjustPayable'])->middleware('permission:setup.suppliers.update');
             Route::get('suppliers/{supplier}', [SupplierController::class, 'show'])->middleware('permission:setup.suppliers.view');
+            Route::get('suppliers/{supplier}/payables', [SupplierController::class, 'payables'])->middleware('permission:setup.suppliers.view');
             Route::post('suppliers/{supplier}', [SupplierController::class, 'update'])->middleware('permission:setup.suppliers.update');
             Route::post('suppliers/{supplier}/toggle-status', [SupplierController::class, 'toggleStatus'])->middleware('permission:setup.suppliers.update');
             Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->middleware('permission:setup.suppliers.delete');
@@ -118,6 +121,7 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('uoms/{uom}', [UomController::class, 'destroy'])->middleware('permission:setup.uoms.delete');
 
             Route::get('inventories', [InventoryController::class, 'index'])->middleware('permission:setup.inventories.view');
+            Route::get('inventories/location-options', [InventoryController::class, 'locationOptions'])->middleware('permission:setup.inventories.view');
             Route::post('inventories', [InventoryController::class, 'store'])->middleware('permission:setup.inventories.create');
             Route::get('inventories/{inventory}', [InventoryController::class, 'show'])->middleware('permission:setup.inventories.view');
             Route::post('inventories/{inventory}', [InventoryController::class, 'update'])->middleware('permission:setup.inventories.update');
@@ -151,6 +155,7 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('equipment/{equipment}', [EquipmentController::class, 'destroy'])->middleware('permission:setup.equipment.delete');
 
             Route::get('farm-information', [FarmInformationController::class, 'index'])->middleware('permission:setup.farm-information.view');
+            Route::get('farm-information/location-options', [FarmInformationController::class, 'locationOptions'])->middleware('permission:setup.farm-information.view');
             Route::post('farm-information', [FarmInformationController::class, 'store'])->middleware('permission:setup.farm-information.create');
             Route::get('farm-information/{farmInformation}', [FarmInformationController::class, 'show'])->middleware('permission:setup.farm-information.view');
             Route::post('farm-information/{farmInformation}', [FarmInformationController::class, 'update'])->middleware('permission:setup.farm-information.update');
