@@ -26,6 +26,7 @@ class SupplierService extends BusinessMasterService
             $types = array_values(array_unique($data['types'] ?? [$data['type']]));
             unset($data['types'], $data['opening_balance_date']);
             $amount = (float) ($data['opening_balance'] ?? 0);
+            $data['opening_balance_type'] = $amount > 0 ? 'credit' : 'none';
             if ($amount > 0) {
                 $data['opening_balance_date'] = today();
             }

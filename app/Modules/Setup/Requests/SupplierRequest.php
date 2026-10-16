@@ -15,6 +15,7 @@ class SupplierRequest extends FormRequest
     public function rules(): array
     {
         $recordId = $this->route('supplier')?->id;
+        $isUpdate = $recordId !== null;
 
         return [
             'code' => ['required', 'string', 'max:50', Rule::unique('suppliers', 'code')->ignore($recordId)],
@@ -33,10 +34,11 @@ class SupplierRequest extends FormRequest
             'supplied_categories.*' => ['string', 'max:100'],
             'preferred_branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'lead_time_days' => ['nullable', 'integer', 'min:0'],
-            'minimum_order_amount' => ['nullable', 'numeric', 'min:0'],
+            'minimum_order_amount' => $isUpdate ? ['nullable', 'numeric', 'min:0'] : ['prohibited'],
+            'min_order_amount' => ['prohibited'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
-            'opening_balance_type' => [Rule::requiredIf(fn () => (float) $this->input('opening_balance', 0) > 0), 'nullable', 'string', Rule::in(['debit', 'credit', 'none'])],
+            'opening_balance_type' => $isUpdate ? ['nullable', 'string', Rule::in(['debit', 'credit', 'none'])] : ['prohibited'],
             'opening_balance' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'opening_balance_currency_code' => [Rule::requiredIf(fn () => (float) $this->input('opening_balance', 0) > 0), 'nullable', 'regex:/^[A-Z]{3}$/'],
             'opening_balance_date' => ['nullable', 'date'],

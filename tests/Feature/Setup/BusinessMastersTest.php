@@ -3,6 +3,7 @@
 namespace Tests\Feature\Setup;
 
 use App\Models\User;
+use App\Modules\Sales\Models\CustomerReceivableEntry;
 use App\Modules\Setup\Models\Branch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -105,9 +106,7 @@ class BusinessMastersTest extends TestCase
             'supplied_categories' => ['feed'],
             'preferred_branch_id' => $branch->id,
             'lead_time_days' => 2,
-            'minimum_order_amount' => 0,
             'credit_limit' => 0,
-            'opening_balance_type' => 'none',
             'opening_balance' => 0,
         ])->assertCreated()
             ->json('data.id');
@@ -215,13 +214,20 @@ class BusinessMastersTest extends TestCase
         $branch = Branch::query()->create(['code' => 'BR-SUP-OPEN', 'name' => 'Supplier Branch', 'status' => 'active']);
         auth()->user()->branches()->attach($branch->id);
 
+        $this->postJson('/api/v1/setup/suppliers', [
+            'code' => 'SUP-FIELDS-REMOVED', 'types' => ['food'], 'name' => 'Removed Fields Supplier',
+            'phone_number' => '+95 9 800000018', 'minimum_order_amount' => 100, 'min_order_amount' => 100,
+            'opening_balance_type' => 'none',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['minimum_order_amount', 'min_order_amount', 'opening_balance_type']);
+
         $supplier = $this->postJson('/api/v1/setup/suppliers', [
             'code' => 'SUP-MULTI', 'types' => ['food', 'medicine'], 'name' => 'Multi Category Supplier',
             'phone_number' => '+95 9 800000019', 'preferred_branch_id' => $branch->id,
-            'opening_balance_type' => 'credit', 'opening_balance' => 125.50, 'opening_balance_currency_code' => 'MMK', 'opening_balance_date' => '2020-01-01',
+            'opening_balance' => 125.50, 'opening_balance_currency_code' => 'MMK', 'opening_balance_date' => '2020-01-01',
         ])->assertCreated()
             ->assertJsonPath('data.type', 'food')
             ->assertJsonPath('data.types', ['food', 'medicine'])
+            ->assertJsonPath('data.opening_balance_type', 'credit')
             ->assertJsonPath('data.opening_balance_date', today()->toDateString())
             ->json('data.id');
 
@@ -269,6 +275,21 @@ class BusinessMastersTest extends TestCase
         $this->postJson("/api/v1/setup/customers/{$id}/receivables/adjustments", $adjustment)->assertCreated()->assertJsonPath('data.entry_type', 'adjustment');
         $this->postJson("/api/v1/setup/customers/{$id}/receivables/adjustments", $adjustment)->assertCreated();
         $this->assertDatabaseCount('customer_receivable_entries', 2);
+
+        $foreignBranch = Branch::query()->create(['code' => 'BR-CUS-FOREIGN', 'name' => 'Other Customer Branch', 'status' => 'active']);
+        CustomerReceivableEntry::query()->create([
+            'customer_id' => $id, 'sale_id' => null, 'branch_id' => $foreignBranch->id,
+            'entry_type' => 'adjustment', 'amount' => 100, 'reference' => 'Out of scope',
+            'idempotency_key' => 'cus-open-adjust-foreign', 'business_date' => today(),
+        ]);
+
+        $this->getJson("/api/v1/setup/customers/{$id}/receivables")
+            ->assertOk()
+            ->assertJsonPath('data.customer_id', $id)
+            ->assertJsonPath('data.outstanding_balance', '200.00')
+            ->assertJsonCount(2, 'data.entries')
+            ->assertJsonPath('data.entries.0.entry_type', 'opening_balance')
+            ->assertJsonPath('data.entries.1.amount', '-50.00');
     }
 
     /** @return list<string> */

@@ -31,6 +31,11 @@ class CustomerController extends Controller
         return new BusinessMasterResource($customer);
     }
 
+    public function receivables(Request $request, Customer $customer): JsonResponse
+    {
+        return response()->json(['data' => $this->service->receivableRecords($customer, $request->user())]);
+    }
+
     public function adjustReceivable(CustomerReceivableAdjustmentRequest $request, Customer $customer): JsonResponse
     {
         $entry = $this->service->adjustReceivable($customer, $request->validated(), $request->user());

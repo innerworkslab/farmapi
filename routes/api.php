@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('customers', [CustomerController::class, 'index'])->middleware('permission:setup.customers.view');
             Route::post('customers', [CustomerController::class, 'store'])->middleware('permission:setup.customers.create');
+            Route::get('customers/{customer}/receivables', [CustomerController::class, 'receivables'])->middleware('permission:setup.customers.view');
             Route::post('customers/{customer}/receivables/adjustments', [CustomerController::class, 'adjustReceivable'])->middleware('permission:setup.customers.update');
             Route::get('customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:setup.customers.view');
             Route::post('customers/{customer}', [CustomerController::class, 'update'])->middleware('permission:setup.customers.update');

@@ -81,4 +81,28 @@ class CustomerService extends BusinessMasterService
 
         return $entry;
     }
+
+    public function receivableRecords(Customer $customer, User $actor): array
+    {
+        $entries = BranchAccess::scope(
+            CustomerReceivableEntry::query()->where('customer_id', $customer->id),
+            $actor,
+        )->orderBy('business_date')->orderBy('id')->get();
+        $balance = $entries->sum(fn (CustomerReceivableEntry $entry): int => Money::minor($entry->amount));
+
+        return [
+            'customer_id' => $customer->id,
+            'entries' => $entries->map(fn (CustomerReceivableEntry $entry): array => [
+                'id' => $entry->id,
+                'sale_id' => $entry->sale_id,
+                'branch_id' => $entry->branch_id,
+                'cashbook_transaction_id' => $entry->cashbook_transaction_id,
+                'entry_type' => $entry->entry_type,
+                'amount' => $entry->amount,
+                'business_date' => $entry->business_date->toDateString(),
+                'reference' => $entry->reference,
+            ])->all(),
+            'outstanding_balance' => Money::decimal($balance),
+        ];
+    }
 }
