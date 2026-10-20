@@ -24,7 +24,6 @@ class BusinessMastersTest extends TestCase
         ]);
 
         $create = $this->postJson('/api/v1/setup/customers', [
-            'code' => 'CUS-TST',
             'type' => 'retail',
             'name' => 'Test Customer',
             'phone_number' => '+95 9 700000001',
@@ -36,7 +35,7 @@ class BusinessMastersTest extends TestCase
         ]);
 
         $create->assertCreated()
-            ->assertJsonPath('data.code', 'CUS-TST')
+            ->assertJsonPath('data.code', 'CUS-000001')
             ->assertJsonPath('data.status', 'active')
             ->assertJsonMissingPath('data.payment_terms');
 
@@ -44,10 +43,9 @@ class BusinessMastersTest extends TestCase
 
         $this->getJson('/api/v1/setup/customers?search=Test&type=retail')
             ->assertOk()
-            ->assertJsonPath('data.0.code', 'CUS-TST');
+            ->assertJsonPath('data.0.code', 'CUS-000001');
 
         $this->postJson("/api/v1/setup/customers/{$customerId}", [
-            'code' => 'CUS-TST',
             'type' => 'retail',
             'name' => 'Updated Customer',
             'phone_number' => '+95 9 700000001',
@@ -56,6 +54,13 @@ class BusinessMastersTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('data.name', 'Updated Customer')
             ->assertJsonPath('data.status', 'inactive');
+
+        $this->postJson("/api/v1/setup/customers/{$customerId}", [
+            'code' => 'CUS-CLIENT-OVERRIDE',
+            'type' => 'retail',
+            'name' => 'Updated Customer',
+            'phone_number' => '+95 9 700000001',
+        ])->assertOk()->assertJsonPath('data.code', 'CUS-000001');
 
         $this->postJson("/api/v1/setup/customers/{$customerId}/toggle-status")
             ->assertOk()
@@ -261,7 +266,7 @@ class BusinessMastersTest extends TestCase
         $branch = Branch::query()->create(['code' => 'BR-CUS-OPEN', 'name' => 'Customer Branch', 'status' => 'active']);
         auth()->user()->branches()->attach($branch->id);
         $id = $this->postJson('/api/v1/setup/customers', [
-            'code' => 'CUS-OPEN', 'type' => 'retail', 'name' => 'Opening Customer', 'phone_number' => '+95 9 700000019',
+            'type' => 'retail', 'name' => 'Opening Customer', 'phone_number' => '+95 9 700000019',
             'preferred_branch_id' => $branch->id, 'opening_balance' => 250, 'opening_balance_date' => '2020-01-01',
         ])->assertCreated()->assertJsonPath('data.opening_balance_date', today()->toDateString())->json('data.id');
 
@@ -290,6 +295,21 @@ class BusinessMastersTest extends TestCase
             ->assertJsonCount(2, 'data.entries')
             ->assertJsonPath('data.entries.0.entry_type', 'opening_balance')
             ->assertJsonPath('data.entries.1.amount', '-50.00');
+    }
+
+    public function test_customer_code_is_generated_in_order_and_client_code_is_ignored(): void
+    {
+        $this->actingWithPermissions($this->permissionsFor('customers'));
+        $payload = ['type' => 'retail', 'name' => 'Generated Customer', 'phone_number' => '+95 9 700000020'];
+
+        $first = $this->postJson('/api/v1/setup/customers', $payload)->assertCreated()->json('data.code');
+        $second = $this->postJson('/api/v1/setup/customers', $payload)->assertCreated()->json('data.code');
+
+        $this->assertSame('CUS-000001', $first);
+        $this->assertSame('CUS-000002', $second);
+        $this->postJson('/api/v1/setup/customers', $payload + ['code' => 'CUS-CLIENT'])
+            ->assertCreated()
+            ->assertJsonPath('data.code', 'CUS-000003');
     }
 
     /** @return list<string> */

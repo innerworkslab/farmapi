@@ -3,7 +3,6 @@
 namespace App\Modules\Setup\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CustomerRequest extends FormRequest
 {
@@ -14,10 +13,9 @@ class CustomerRequest extends FormRequest
 
     public function rules(): array
     {
-        $recordId = $this->route('customer')?->id;
-
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('customers', 'code')->ignore($recordId)],
+            // Older clients may still send a code; the service ignores it and generates the value.
+            'code' => ['sometimes'],
             'type' => ['required', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
@@ -41,7 +39,6 @@ class CustomerRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'code' => is_string($this->code) ? trim($this->code) : $this->code,
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
         ]);
     }

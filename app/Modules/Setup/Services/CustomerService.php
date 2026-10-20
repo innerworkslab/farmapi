@@ -10,6 +10,7 @@ use App\Modules\Setup\Repositories\CustomerRepository;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CustomerService extends BusinessMasterService
@@ -27,7 +28,17 @@ class CustomerService extends BusinessMasterService
             if ((float) ($data['opening_balance'] ?? 0) > 0) {
                 $data['opening_balance_date'] = today();
             }
-            $customer = $this->create($data);
+            unset($data['code']);
+            $customer = Customer::withoutEvents(function () use ($data): Customer {
+                $customer = $this->create($data + ['code' => 'CUS-PENDING-'.Str::uuid()]);
+                $customer->code = 'CUS-'.str_pad((string) $customer->id, 6, '0', STR_PAD_LEFT);
+                $customer->saveQuietly();
+
+                return $customer->load('preferredBranch');
+            });
+            activity('setup')->performedOn($customer)->causedBy($actor)
+                ->withProperties(['attributes' => $customer->only($customer->getFillable())])
+                ->log('Customer created');
             $amount = (float) ($data['opening_balance'] ?? 0);
             if ($amount > 0) {
                 BranchAccess::authorize($actor, (int) $branchId);
@@ -49,6 +60,7 @@ class CustomerService extends BusinessMasterService
 
     public function update(Model $model, array $data): Model
     {
+        unset($data['code']);
         unset($data['opening_balance_date']);
         if ($model instanceof Customer && CustomerReceivableEntry::query()->where('customer_id', $model->id)->where('entry_type', 'opening_balance')->exists()) {
             if ((float) ($data['opening_balance'] ?? $model->opening_balance) !== (float) $model->opening_balance) {
