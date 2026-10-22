@@ -7,6 +7,7 @@ use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Services\InventoryItemResolver;
+use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchasePayment;
 use App\Modules\Setup\Models\Supplier;
@@ -132,7 +133,7 @@ class PurchaseInvoiceService
         foreach (array_values($lines) as $index => $line) {
             BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? null);
             $category = strtolower($line['category']);
-            $item = Item::query()->findOrFail($line['item_id']);
+            $item = Item::query()->lockForUpdate()->findOrFail($line['item_id']);
             if ($item->category !== $category) {
                 throw ValidationException::withMessages(["lines.{$index}.item_id" => 'Item category does not match the purchase line category.']);
             }
@@ -178,6 +179,19 @@ class PurchaseInvoiceService
                 throw ValidationException::withMessages(["lines.{$index}.target_farm_information_id" => 'Target farm is required for animal purchases.']);
             }
 
+            $conversion = $line['conversion_factor'] ?? $item->uom_conversion ?? 1;
+            if (in_array($category, ['food', 'medicine'], true)) {
+                $conversion = app(ItemUomService::class)->purchaseToStock($item);
+                foreach (['purchase_uom_id' => $item->purchase_uom_id, 'stock_uom_id' => $item->stock_uom_id] as $field => $expected) {
+                    if (isset($line[$field]) && (int) $line[$field] !== (int) $expected) {
+                        throw ValidationException::withMessages(["lines.{$index}.{$field}" => 'Use the configured item UOM.']);
+                    }
+                }
+                if (isset($line['conversion_factor']) && ! BigDecimal::of((string) $line['conversion_factor'])->isEqualTo($conversion)) {
+                    throw ValidationException::withMessages(["lines.{$index}.conversion_factor" => 'Purchase-to-stock conversion is derived from the item unit definition.']);
+                }
+            }
+
             $invoice->lines()->create([
                 'line_number' => $line['line_number'] ?? ($index + 1),
                 'category' => $category,
@@ -185,7 +199,7 @@ class PurchaseInvoiceService
                 'description' => $line['description'] ?? $item->name,
                 'purchase_uom_id' => $line['purchase_uom_id'] ?? $item->purchase_uom_id,
                 'stock_uom_id' => $line['stock_uom_id'] ?? $item->stock_uom_id,
-                'conversion_factor' => $line['conversion_factor'] ?? $item->uom_conversion ?? 1,
+                'conversion_factor' => $conversion,
                 'quantity' => $quantity,
                 'unit_price' => $this->money($unitPrice),
                 'gross_amount' => $this->money($gross),

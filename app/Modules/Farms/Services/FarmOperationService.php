@@ -10,9 +10,11 @@ use App\Modules\Farms\Models\FarmSetting;
 use App\Modules\Farms\Repositories\FarmOperationRepository;
 use App\Modules\Inventory\Models\InventoryBalance;
 use App\Modules\Inventory\Services\InventoryItemResolver;
+use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Inventory\Services\StockMovementService;
 use App\Modules\Setup\Models\Inventory;
 use App\Support\BranchAccess;
+use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -275,8 +277,8 @@ class FarmOperationService
         if ($resolved['batch_tracking'] && empty($line['stock_lot_id'])) {
             $this->invalid('stock_lot_id', 'Medicine lot is required.');
         }
-        if ((int) $line['dosage_uom_id'] !== (int) $line['stock_uom_id']) {
-            $this->invalid('dosage_uom_id', 'Use the medicine stock UOM for dosage; convert dosage before entry.');
+        if (! in_array((int) $line['dosage_uom_id'], [(int) $resolved['item']->purchase_uom_id, (int) $resolved['item']->usage_uom_id], true)) {
+            $this->invalid('dosage_uom_id', 'Use the configured medicine purchase or usage UOM for dosage.');
         }
         $balance = InventoryBalance::query()->with('stockLot')->where('category', 'medicine')->where('branch_id', $operation->branch_id)
             ->where('inventory_id', $line['inventory_id'])->where('item_id', $line['medicine_item_id'])->where('stock_uom_id', $line['stock_uom_id'])
@@ -328,9 +330,9 @@ class FarmOperationService
             foreach ($operation->payload['lines'] as $index => $line) {
                 $balance = $this->medicine($operation, $line, $actor);
                 $master = $this->items->resolve('medicine', (int) $line['medicine_item_id'])['model'];
-                $required = round((float) $line['dosage'] * $operation->targets->sum('quantity'), 6);
-                $costMinor = (int) round((float) ((float) $master->standard_cost > 0 ? $master->standard_cost : ((float) ($master->purchase_price ?? 0) / max(0.000001, (float) ($master->uom_conversion ?? 1)))) * 100);
-                $cost = number_format(round($costMinor * (float) $line['quantity']) / 100, 2, '.', '');
+                $units = app(ItemUomService::class);
+                $required = (float) $units->toStock($master, (string) BigDecimal::of((string) $line['dosage'])->multipliedBy($operation->targets->sum('quantity')), (int) $line['dosage_uom_id']);
+                $cost = $units->consumptionCost($master, $line['quantity']);
                 $this->stock->post($balance, -(float) $line['quantity'], 'medicine_consumption', $operation->id, $actor, 'medicine-'.$operation->id.'-'.$index, ['required_quantity' => $required, 'dosage' => $line['dosage'], 'variance' => (float) $line['quantity'] - $required, 'cost' => $cost, 'follow_up_date' => $operation->payload['follow_up_date'] ?? null]);
                 $posted[] = ['medicine_item_id' => $line['medicine_item_id'], 'stock_uom_id' => $line['stock_uom_id'], 'balance_id' => $balance->id, 'quantity' => $line['quantity'], 'required_quantity' => $required, 'variance' => (float) $line['quantity'] - $required, 'cost' => $cost];
             }

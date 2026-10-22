@@ -3,6 +3,7 @@
 namespace App\Modules\Setup\Services;
 
 use App\Modules\Inventory\Services\ItemRegistryService;
+use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Setup\Repositories\MedicineRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class MedicineService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            app(ItemUomService::class)->validateMaster($data, 'usage_uom_id');
             $medicine = $this->repository->create($data);
             $this->items->syncFromMaster($medicine);
 
@@ -29,6 +31,8 @@ class MedicineService extends BusinessMasterService
     public function update(Model $model, array $data): Model
     {
         return DB::transaction(function () use ($model, $data): Model {
+            $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
+            app(ItemUomService::class)->validateMaster($data, 'usage_uom_id', $model);
             $medicine = $this->repository->update($model, $data);
             $this->items->syncFromMaster($medicine);
 

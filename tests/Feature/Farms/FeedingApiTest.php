@@ -4,6 +4,7 @@ namespace Tests\Feature\Farms;
 
 use App\Models\User;
 use App\Modules\Inventory\Models\InventoryBalance;
+use App\Modules\Inventory\Models\InventoryConfirmation;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\ItemRegistryService;
@@ -17,7 +18,9 @@ use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FeedingApiTest extends TestCase
@@ -49,8 +52,6 @@ class FeedingApiTest extends TestCase
         $this->assertDatabaseCount('farm_feeding_records', 0);
     }
 
-
-
     public function test_feeding_access_is_rechecked_for_lists_details_and_every_action(): void
     {
         $user = $this->actingWithFarmPermissions();
@@ -62,7 +63,7 @@ class FeedingApiTest extends TestCase
         foreach (['inventory.confirmations.view', 'inventory.ledger.view'] as $permission) {
             $user->givePermissionTo(Permission::findOrCreate($permission, 'web'));
         }
-        $confirmation = \App\Modules\Inventory\Models\InventoryConfirmation::query()->where('source_type', 'feeding')->firstOrFail();
+        $confirmation = InventoryConfirmation::query()->where('source_type', 'feeding')->firstOrFail();
         $this->getJson('/api/v1/inventory/confirmations/'.$confirmation->id)->assertOk();
         $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
         $user->branches()->sync([$other->id]);
@@ -79,11 +80,50 @@ class FeedingApiTest extends TestCase
         $this->assertDatabaseHas('farm_feeding_records', ['id' => $id, 'status' => 'submitted']);
         $user->branches()->detach();
         $this->getJson('/api/v1/farms/feedings')->assertOk()->assertJsonCount(0, 'data');
-        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $user->assignRole(Role::findOrCreate('super-admin', 'web'));
         $this->getJson('/api/v1/farms/feedings/'.$id)->assertOk();
         $this->postJson('/api/v1/farms/feedings/'.$id.'/confirm')->assertOk();
     }
 
+    public static function foodStockChoices(): array
+    {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('foodStockChoices')]
+    public function test_feeding_converts_usage_quantity_and_wastage_and_reverses_in_stock_units(bool $stockInUsage): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $initial = $stockInUsage ? 2000 : 2;
+        $s = $this->setupFeedingStock($initial);
+        $user->branches()->attach($s['branch']->id);
+        $other = Uom::create(['code' => 'OTHER-UOM', 'name' => 'Other unit', 'symbol' => 'other', 'category' => 'weight', 'status' => 'active']);
+        $purchaseId = $stockInUsage ? $other->id : $s['uom']->id;
+        $usageId = $stockInUsage ? $s['uom']->id : $other->id;
+        $master = $s['foodItem']->itemable;
+        $master->update(['purchase_uom_id' => $purchaseId, 'consumption_uom_id' => $usageId, 'uom_conversion' => 1000, 'purchase_price' => '10.00']);
+        app(ItemRegistryService::class)->syncFromMaster($master);
+        $payload = $this->feedingPayload($s, 50, 5);
+        $payload['lines'][0]['quantity_uom_id'] = $usageId;
+        $quantity = $stockInUsage ? 50 : 0.05;
+        $wastage = $stockInUsage ? 5 : 0.005;
+        $id = $this->postJson('/api/v1/farms/feedings', $payload)->assertCreated()
+            ->assertJsonPath('data.lines.0.quantity', $quantity)
+            ->assertJsonPath('data.lines.0.wastage_quantity', $wastage)
+            ->assertJsonPath('data.lines.0.metadata.original_uom_id', $usageId)->json('data.id');
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/submit')->assertOk();
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/confirm')->assertOk()
+            ->assertJsonPath('data.lines.0.metadata.cost', '0.50');
+        $this->assertEquals($initial - $quantity, $s['foodBalance']->fresh()->on_hand_quantity);
+        $this->assertDatabaseHas('inventory_ledger_entries', ['item_id' => $s['foodItem']->id, 'original_quantity' => 50, 'original_uom_id' => $usageId, 'quantity_out' => $quantity]);
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/reverse', ['reason' => 'Correct unit test feeding'])->assertOk();
+        $this->assertEquals($initial, $s['foodBalance']->fresh()->on_hand_quantity);
+
+        $payload['lines'][0]['quantity'] = 3000;
+        $id = $this->postJson('/api/v1/farms/feedings', $payload)->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/farms/feedings/'.$id.'/submit')->assertUnprocessable();
+        $this->assertEquals($initial, $s['foodBalance']->fresh()->on_hand_quantity);
+    }
 
     public function test_feeding_confirmation_deducts_food_stock_and_posts_ledger(): void
     {
@@ -187,6 +227,7 @@ class FeedingApiTest extends TestCase
             'balance_after' => 913,
         ]);
     }
+
     /** @return array<string, mixed> */
     private function setupFeedingStock(int $foodQuantity, bool $generalFoodStock = false): array
     {

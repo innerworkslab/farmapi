@@ -22,6 +22,7 @@ class ItemResource extends JsonResource
             'purchase_uom_id' => $this->purchase_uom_id,
             'usage_uom_id' => $this->usage_uom_id,
             'uom_conversion' => $this->uom_conversion,
+            'purchase_to_stock_factor' => (int) $this->stock_uom_id === (int) $this->purchase_uom_id ? '1' : $this->uom_conversion,
             'batch_tracking' => $this->batch_tracking,
             'expiry_tracking' => $this->expiry_tracking,
             'serial_tracking' => $this->serial_tracking,

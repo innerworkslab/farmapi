@@ -31,6 +31,7 @@ class FeedingRecordRequest extends FormRequest
             'lines.*.stock_lot_id' => ['nullable', 'integer', 'exists:inventory_stock_lots,id'],
             'lines.*.source_location' => ['nullable', 'string', 'max:100'],
             'lines.*.stock_uom_id' => ['nullable', 'integer', 'exists:uoms,id'],
+            'lines.*.quantity_uom_id' => ['nullable', 'integer', 'exists:uoms,id'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
             'lines.*.wastage_quantity' => ['nullable', 'numeric', 'min:0'],
             'lines.*.notes' => ['nullable', 'string', 'max:2000'],

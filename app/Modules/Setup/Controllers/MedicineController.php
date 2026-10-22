@@ -27,13 +27,14 @@ class MedicineController extends Controller
 
     public function show(Medicine $medicine): BusinessMasterResource
     {
-        return new BusinessMasterResource($medicine);
+        return new BusinessMasterResource($medicine->load(['purchaseUom', 'stockUom', 'usageUom', 'defaultSupplier']));
     }
 
     public function update(MedicineRequest $request, Medicine $medicine): BusinessMasterResource
     {
         return new BusinessMasterResource($this->service->update($medicine, $request->validated()));
     }
+
     public function toggleStatus(Medicine $medicine): BusinessMasterResource
     {
         return new BusinessMasterResource($this->service->toggleStatus($medicine));

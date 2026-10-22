@@ -13,6 +13,7 @@ use App\Modules\Inventory\Models\InventoryConfirmation;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Models\StockLot;
 use App\Modules\Inventory\Services\InventoryItemResolver;
+use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Inventory\Services\StockIdentityService;
 use App\Modules\Inventory\Services\StockMovementService;
 use App\Modules\Setup\Models\FarmInformation;
@@ -395,8 +396,16 @@ class FeedingService
 
             $stockLot = $this->validateStockLot($line, $feeding, $index);
             $sourceLocation = $line['source_location'] ?? $stockLot?->location ?? 'MAIN';
-            $quantity = round((float) $line['quantity'], 6);
-            $wastage = round((float) ($line['wastage_quantity'] ?? 0), 6);
+            $quantityUomId = (int) ($line['quantity_uom_id'] ?? $stockUomId);
+            $units = app(ItemUomService::class);
+            $quantity = (float) $units->toStock($resolved['item'], $line['quantity'], $quantityUomId);
+            $wastage = (float) $units->toStock($resolved['item'], $line['wastage_quantity'] ?? 0, $quantityUomId);
+            if ($quantity <= 0) {
+                throw ValidationException::withMessages(["lines.{$index}.quantity" => 'Quantity must be at least 0.000001 in stock UOM.']);
+            }
+            if (round($quantity / (float) $line['quantity'], 8) <= 0) {
+                throw ValidationException::withMessages(["lines.{$index}.quantity_uom_id" => 'This conversion is below ledger precision. Enter the quantity in stock UOM.']);
+            }
             if ($wastage > $quantity) {
                 throw ValidationException::withMessages(['wastage_quantity' => 'Wastage cannot exceed total issued quantity.']);
             }
@@ -414,6 +423,10 @@ class FeedingService
                 'quantity_per_animal' => $quantityPerAnimal,
                 'notes' => $line['notes'] ?? null,
                 'metadata' => [
+                    'original_quantity' => (string) $line['quantity'],
+                    'original_wastage_quantity' => (string) ($line['wastage_quantity'] ?? 0),
+                    'original_uom_id' => $quantityUomId,
+                    'conversion_factor' => $quantity / (float) $line['quantity'],
                     'fefo_recommended_stock_lot_id' => $this->fefoLotId((int) $line['food_item_id'], (int) $line['inventory_id'], $sourceLocation),
                 ],
             ]);
@@ -474,7 +487,7 @@ class FeedingService
             $balance->save();
 
             $master = $this->items->resolve('food', (int) $line->food_item_id)['model'];
-            $cost = number_format(round(((float) $master->standard_cost > 0 ? (float) $master->standard_cost : (float) $master->purchase_price / max(0.000001, (float) $master->uom_conversion)) * $quantity, 2), 2, '.', '');
+            $cost = app(ItemUomService::class)->consumptionCost($master, $line->quantity);
             $line->metadata = array_merge($line->metadata ?? [], ['cost' => $cost]);
             $line->save();
             $ledger = InventoryLedgerEntry::query()->create([
@@ -498,9 +511,9 @@ class FeedingService
                 'stock_uom_id' => $line->stock_uom_id,
                 'stock_lot_id' => $line->stock_lot_id,
                 'equipment_instance_id' => null,
-                'original_quantity' => $quantity,
-                'original_uom_id' => $line->stock_uom_id,
-                'conversion_factor' => 1,
+                'original_quantity' => $line->metadata['original_quantity'] ?? $quantity,
+                'original_uom_id' => $line->metadata['original_uom_id'] ?? $line->stock_uom_id,
+                'conversion_factor' => $line->metadata['conversion_factor'] ?? 1,
                 'quantity_in' => 0,
                 'quantity_out' => $quantity,
                 'balance_before' => $before,

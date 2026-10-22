@@ -48,7 +48,9 @@ class InventoryItemResolver
             'serial_tracking' => (bool) $item->serial_tracking,
             'asset_tracking' => (bool) $item->asset_tracking,
             'cold_chain_required' => (bool) $item->cold_chain_required,
-            'conversion_factor' => (float) ($item->uom_conversion ?? 1),
+            'conversion_factor' => in_array($category, ['food', 'medicine'], true)
+                ? (float) app(ItemUomService::class)->purchaseToStock($item)
+                : (float) ($item->uom_conversion ?? 1),
         ];
     }
 

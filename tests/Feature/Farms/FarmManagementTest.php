@@ -23,6 +23,7 @@ use Database\Seeders\Demo\DemoFarmsSeeder;
 use Database\Seeders\Demo\DemoSetupSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -92,6 +93,40 @@ class FarmManagementTest extends TestCase
         $user->revokePermissionTo('farms.manage');
         $this->postJson('/api/v1/farms/operations/'.$id.'/confirm')->assertForbidden();
         $this->assertDatabaseCount('inventory_ledger_entries', 0);
+    }
+
+    public static function medicineStockChoices(): array
+    {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('medicineStockChoices')]
+    public function test_medication_converts_usage_dosage_and_preserves_fractional_unit_cost(bool $stockInUsage): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $s = $this->setupFeedingStock(100);
+        $user->branches()->attach($s['branch']->id);
+        $other = Uom::create(['code' => 'MED-OTHER', 'name' => 'Medicine other unit', 'symbol' => 'other', 'category' => 'volume', 'status' => 'active']);
+        $third = Uom::create(['code' => 'MED-THIRD', 'name' => 'Unrelated unit', 'symbol' => 'third', 'category' => 'volume', 'status' => 'active']);
+        $purchaseId = $stockInUsage ? $other->id : $s['uom']->id;
+        $usageId = $stockInUsage ? $s['uom']->id : $other->id;
+        $medicine = Medicine::create(['code' => 'MED-CONVERT', 'name' => 'Converted medicine', 'type' => 'medicine', 'category' => 'antibiotic', 'purchase_uom_id' => $purchaseId, 'stock_uom_id' => $s['uom']->id, 'usage_uom_id' => $usageId, 'uom_conversion' => 1000, 'batch_tracking' => false, 'purchase_price' => '0.33', 'status' => 'active']);
+        $item = app(ItemRegistryService::class)->syncFromMaster($medicine);
+        $initial = $stockInUsage ? 2000 : 2;
+        $quantity = $stockInUsage ? 50 : 0.05;
+        $balance = InventoryBalance::create(['identity_key' => 'MED-CONVERT-STOCK', 'category' => 'medicine', 'item_type' => 'medicine', 'item_id' => $item->id, 'branch_id' => $s['branch']->id, 'inventory_id' => $s['inventory']->id, 'location' => 'MED', 'stock_uom_id' => $s['uom']->id, 'on_hand_quantity' => $initial, 'available_quantity' => $initial]);
+        $line = ['medicine_item_id' => $item->id, 'inventory_id' => $s['inventory']->id, 'source_location' => 'MED', 'stock_uom_id' => $s['uom']->id, 'dosage' => 25, 'dosage_uom_id' => $usageId, 'quantity' => $quantity];
+        $bad = $this->operationPayload($s, 'medication', 2, ['reason' => 'Invalid dosage unit', 'administration_route' => 'oral', 'lines' => [array_replace($line, ['dosage_uom_id' => $third->id])]]);
+        $this->postJson('/api/v1/farms/operations', $bad)->assertUnprocessable()->assertJsonValidationErrors('dosage_uom_id');
+        $id = $this->operation($s, 'medication', 2, ['reason' => 'Usage dosage conversion', 'administration_route' => 'oral', 'lines' => [$line]]);
+        $this->confirmOperation($id);
+        $this->getJson('/api/v1/farms/operations/'.$id)->assertOk()
+            ->assertJsonPath('data.payload.posted_lines.0.required_quantity', $quantity)
+            ->assertJsonPath('data.payload.posted_lines.0.variance', 0)
+            ->assertJsonPath('data.payload.posted_lines.0.cost', '0.02');
+        $this->assertEquals($initial - $quantity, $balance->fresh()->on_hand_quantity);
+        $this->postJson('/api/v1/farms/operations/'.$id.'/reverse', ['reason' => 'Correct medicine use'])->assertCreated();
+        $this->assertEquals($initial, $balance->fresh()->on_hand_quantity);
     }
 
     public function test_medication_posts_only_on_confirmation_and_reverses_with_audit(): void

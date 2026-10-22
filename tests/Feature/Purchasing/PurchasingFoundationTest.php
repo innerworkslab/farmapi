@@ -12,9 +12,13 @@ use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Medicine;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use App\Modules\Setup\Services\FoodService;
+use App\Modules\Setup\Services\MedicineService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -304,6 +308,50 @@ class PurchasingFoundationTest extends TestCase
         $this->createPurchaseInvoice($setup, ['quantity' => '4.5', 'unit_price' => '0.33', 'discount_type' => 'percentage', 'discount_value' => '10', 'tax_rate' => '7.5'])
             ->assertCreated()->assertJsonPath('data.gross_amount', '1.49')->assertJsonPath('data.discount_amount', '0.15')
             ->assertJsonPath('data.tax_amount', '0.10')->assertJsonPath('data.total_amount', '1.44');
+    }
+
+    public static function unitStockChoices(): array
+    {
+        return [['food', false], ['food', true], ['medicine', false], ['medicine', true]];
+    }
+
+    #[DataProvider('unitStockChoices')]
+    public function test_receiving_derives_stock_conversion_and_rejects_unit_overrides(string $category, bool $stockInUsage): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $s = $this->setupPurchasingStock($category);
+        $user->branches()->attach($s['branch']->id);
+        $usage = Uom::create(['code' => 'USE', 'name' => 'Usage unit', 'symbol' => 'use', 'category' => 'quantity', 'status' => 'active']);
+        $stockId = $stockInUsage ? $usage->id : $s['uom']->id;
+        $s['master']->update(['stock_uom_id' => $stockId, $category === 'food' ? 'consumption_uom_id' : 'usage_uom_id' => $usage->id, 'uom_conversion' => 1000]);
+        app(ItemRegistryService::class)->syncFromMaster($s['master']);
+        $factor = $stockInUsage ? 1000 : 1;
+        $payload = ['invoice_date' => now()->toDateString(), 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id,
+            'lines' => [['category' => $category, 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => '10.00', 'target_inventory_id' => $s['inventory']->id]]];
+        foreach ([['conversion_factor' => 7], ['purchase_uom_id' => $usage->id], ['stock_uom_id' => $stockInUsage ? $s['uom']->id : $usage->id]] as $override) {
+            $bad = $payload;
+            $bad['lines'][0] = array_replace($bad['lines'][0], $override);
+            $this->postJson('/api/v1/purchasing/invoices', $bad)->assertUnprocessable();
+        }
+        $invoice = $this->postJson('/api/v1/purchasing/invoices', $payload)->assertCreated()
+            ->assertJsonPath('data.lines.0.stock_uom_id', $stockId)
+            ->assertJsonPath('data.lines.0.conversion_factor', $factor);
+        // The purchase snapshot blocks subsequent definition changes, even before receiving.
+        $service = app($category === 'food' ? FoodService::class : MedicineService::class);
+        try {
+            $service->update($s['master'], ['uom_conversion' => 500]);
+            $this->fail('Referenced item conversion was changed.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('uom_conversion', $exception->errors());
+        }
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => now()->toDateString(), 'idempotency_key' => 'uom-receive',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 2, 'receipt_lot_number' => 'UOM-LOT', 'expiry_date' => '2099-01-01', 'cold_chain_status' => 'compliant', 'observed_temperature' => 4]]])->assertCreated();
+        $url = '/api/v1/purchasing/receipts/'.$receipt->json('data.id').'/confirm';
+        $this->postJson($url)->assertOk();
+        $this->postJson($url)->assertOk();
+        $this->assertDatabaseHas('inventory_balances', ['item_id' => $s['item']->id, 'stock_uom_id' => $stockId, 'on_hand_quantity' => 2 * $factor]);
+        $this->assertDatabaseHas('inventory_ledger_entries', ['item_id' => $s['item']->id, 'original_uom_id' => $s['uom']->id, 'original_quantity' => 2, 'quantity_in' => 2 * $factor, 'conversion_factor' => $factor]);
+        $this->assertDatabaseCount('inventory_ledger_entries', 1);
     }
 
     private function createPurchaseInvoice(array $setup, array $overrides = []): TestResponse
