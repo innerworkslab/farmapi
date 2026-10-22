@@ -33,8 +33,6 @@ class DemoInventorySeeder extends Seeder
             'type' => 'medicine',
             'branch_id' => $mandalay->id,
             'physical_address' => 'Medicine store beside clinic room',
-            'building_zone' => 'Clinic',
-            'rack_bin' => 'MED-R1',
             'allowed_item_categories' => ['medicine', 'vaccine'],
             'inventory_gl_account' => '1310-MED',
             'status' => 'active',

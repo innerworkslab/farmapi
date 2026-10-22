@@ -130,7 +130,7 @@ class BusinessMastersTest extends TestCase
 
         $this->postJson("/api/v1/setup/inventories/{$inventoryId}", [
             'code' => 'INV-TST', 'name' => 'Test Inventory', 'type' => 'feed', 'branch_id' => $branch->id,
-            'allowed_item_categories' => ['feed'], 'building_zone' => 'Zone A', 'rack_bin' => 'A-01',
+            'allowed_item_categories' => ['feed'],
         ])->assertOk();
         $this->postJson('/api/v1/setup/inventories', [
             'code' => 'INV-BAD-RACK', 'name' => 'Other Inventory', 'type' => 'feed', 'branch_id' => $branch->id,

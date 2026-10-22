@@ -13,7 +13,7 @@ class InventoryRepository extends BusinessMasterRepository
 
     protected function searchColumns(): array
     {
-        return ['code', 'name', 'physical_address', 'building_zone', 'rack_bin'];
+        return ['code', 'name', 'physical_address'];
     }
 
     protected function filterColumns(): array

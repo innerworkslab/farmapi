@@ -143,7 +143,6 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('uoms/{uom}', [UomController::class, 'destroy'])->middleware('permission:setup.uoms.delete');
 
             Route::get('inventories', [InventoryController::class, 'index'])->middleware('permission:setup.inventories.view');
-            Route::get('inventories/location-options', [InventoryController::class, 'locationOptions'])->middleware('permission:setup.inventories.view');
             Route::post('inventories', [InventoryController::class, 'store'])->middleware('permission:setup.inventories.create');
             Route::get('inventories/{inventory}', [InventoryController::class, 'show'])->middleware('permission:setup.inventories.view');
             Route::post('inventories/{inventory}', [InventoryController::class, 'update'])->middleware('permission:setup.inventories.update');

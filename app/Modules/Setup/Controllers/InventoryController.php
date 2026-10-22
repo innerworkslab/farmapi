@@ -11,6 +11,7 @@ use App\Support\BranchAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
 {
@@ -18,12 +19,17 @@ class InventoryController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return BusinessMasterResource::collection($this->service->paginate($request->query(), $request->user()));
-    }
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'branch_id' => ['nullable', 'integer', 'min:1'],
+            'type' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'per_page' => ['nullable', 'integer', 'between:1,100'],
+            'building_zone' => ['prohibited'],
+            'rack_bin' => ['prohibited'],
+        ]);
 
-    public function locationOptions(Request $request): \Illuminate\Http\JsonResponse
-    {
-        return response()->json(['data' => $this->service->locationOptions($request->query(), $request->user())]);
+        return BusinessMasterResource::collection($this->service->paginate($filters, $request->user()));
     }
 
     public function store(InventoryRequest $request): BusinessMasterResource

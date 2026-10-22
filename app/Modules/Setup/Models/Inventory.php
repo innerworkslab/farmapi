@@ -20,8 +20,6 @@ class Inventory extends Model
         'type',
         'branch_id',
         'physical_address',
-        'building_zone',
-        'rack_bin',
         'allowed_item_categories',
         'inventory_gl_account',
         'status',

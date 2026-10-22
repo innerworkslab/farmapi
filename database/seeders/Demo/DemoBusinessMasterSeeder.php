@@ -87,8 +87,6 @@ class DemoBusinessMasterSeeder extends Seeder
             'type' => 'feed',
             'branch_id' => $yangon->id,
             'physical_address' => 'Feed warehouse beside Barn A',
-            'building_zone' => 'Zone A',
-            'rack_bin' => 'R1',
             'allowed_item_categories' => ['feed'],
             'inventory_gl_account' => '1300-FEED',
             'status' => 'active',

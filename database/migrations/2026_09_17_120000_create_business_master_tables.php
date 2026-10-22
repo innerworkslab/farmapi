@@ -90,8 +90,6 @@ return new class extends Migration
             $table->string('type')->index();
             $table->foreignId('branch_id')->constrained('branches')->restrictOnDelete();
             $table->text('physical_address')->nullable();
-            $table->string('building_zone')->nullable();
-            $table->string('rack_bin')->nullable();
             $table->json('allowed_item_categories')->nullable();
             $table->string('inventory_gl_account')->nullable();
             $table->string('status')->default('active')->index();
