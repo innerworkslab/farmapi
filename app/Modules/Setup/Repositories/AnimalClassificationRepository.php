@@ -6,6 +6,7 @@ use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\AnimalBreed;
 use App\Modules\Setup\Models\AnimalCategory;
 use App\Modules\Setup\Models\AnimalType;
+use App\Modules\Setup\Models\Medicine;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -56,7 +57,8 @@ class AnimalClassificationRepository
     public function isReferenced(string $kind, Model $record): bool
     {
         return $this->animalsUsing($kind, $record->id)->exists()
-            || ($kind === 'animal-types' && (AnimalCategory::withTrashed()->where('animal_type_id', $record->id)->exists()
+            || ($kind === 'animal-types' && (Medicine::withTrashed()->where('animal_type_id', $record->id)->exists()
+                || AnimalCategory::withTrashed()->where('animal_type_id', $record->id)->exists()
                 || AnimalBreed::withTrashed()->where('animal_type_id', $record->id)->exists()));
     }
 }

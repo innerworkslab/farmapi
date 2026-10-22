@@ -10,6 +10,7 @@ use App\Modules\Setup\Services\MedicineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\Rule;
 
 class MedicineController extends Controller
 {
@@ -17,7 +18,18 @@ class MedicineController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return BusinessMasterResource::collection($this->service->paginate($request->query()));
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'animal_type_id' => ['nullable', 'integer', 'min:1'],
+            'target_animal_type' => ['prohibited'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'type' => ['nullable', 'string', 'max:100'],
+            'default_supplier_id' => ['nullable', 'integer', 'min:1'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'per_page' => ['nullable', 'integer', 'between:1,100'],
+        ]);
+
+        return BusinessMasterResource::collection($this->service->paginate($filters));
     }
 
     public function store(MedicineRequest $request): BusinessMasterResource

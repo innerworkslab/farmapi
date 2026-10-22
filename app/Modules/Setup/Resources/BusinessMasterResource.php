@@ -23,6 +23,9 @@ class BusinessMasterResource extends JsonResource
         if ($this->resource instanceof Customer) {
             unset($data['payment_terms']);
         }
+        if ($this->resource instanceof Medicine) {
+            $data['animal_type'] = new AnimalClassificationResource($this->whenLoaded('animalType'));
+        }
 
         if ($this->resource instanceof Food || $this->resource instanceof Medicine) {
             $base = $this->whenLoaded('stockUom');

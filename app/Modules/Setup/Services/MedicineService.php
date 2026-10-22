@@ -19,6 +19,7 @@ class MedicineService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            app(AnimalClassificationService::class)->validateOptionalAnimalType($data['animal_type_id'] ?? null);
             app(ItemUomService::class)->validateMaster($data, 'usage_uom_id');
             $medicine = $this->repository->create($data);
             $this->items->syncFromMaster($medicine);
@@ -32,6 +33,8 @@ class MedicineService extends BusinessMasterService
     {
         return DB::transaction(function () use ($model, $data): Model {
             $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
+            $selection = array_replace($model->getAttributes(), $data);
+            app(AnimalClassificationService::class)->validateOptionalAnimalType($selection['animal_type_id'] ?? null);
             app(ItemUomService::class)->validateMaster($data, 'usage_uom_id', $model);
             $medicine = $this->repository->update($model, $data);
             $this->items->syncFromMaster($medicine);

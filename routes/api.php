@@ -80,6 +80,9 @@ Route::prefix('v1')->group(function (): void {
             foreach (['animal-types', 'animal-categories', 'animal-breeds'] as $kind) {
                 $permission = 'setup.'.str_replace('-', '_', $kind);
                 $readPermission = $permission.'.view|setup.animals.view|setup.animals.create|setup.animals.update';
+                if ($kind === 'animal-types') {
+                    $readPermission .= '|setup.medicines.view|setup.medicines.create|setup.medicines.update';
+                }
                 Route::get($kind, [AnimalClassificationController::class, 'index'])->defaults('classification_kind', $kind)->middleware('permission:'.$readPermission);
                 Route::post($kind, [AnimalClassificationController::class, 'store'])->defaults('classification_kind', $kind)->middleware('permission:'.$permission.'.create');
                 Route::get($kind.'/{classification}', [AnimalClassificationController::class, 'show'])->whereNumber('classification')->defaults('classification_kind', $kind)->middleware('permission:'.$readPermission);

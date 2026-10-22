@@ -125,7 +125,7 @@ class DemoBusinessMasterSeeder extends Seeder
             'generic_name' => 'Ivermectin',
             'type' => 'antiparasitic',
             'category' => 'injection',
-            'target_animal_type' => 'cattle',
+            'animal_type_id' => AnimalClassificationSeeder::cattleReferences()['animal_type_id'],
             'target_disease' => 'parasites',
             'active_ingredient' => 'Ivermectin 1%',
             'strength' => '10mg/ml',

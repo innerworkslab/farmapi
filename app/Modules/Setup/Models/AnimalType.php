@@ -26,6 +26,11 @@ class AnimalType extends Model
         return $this->hasMany(AnimalBreed::class);
     }
 
+    public function medicines(): HasMany
+    {
+        return $this->hasMany(Medicine::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->useLogName('setup')->logFillable()->logOnlyDirty()->dontSubmitEmptyLogs();

@@ -18,11 +18,11 @@ class MedicineRepository extends BusinessMasterRepository
 
     protected function filterColumns(): array
     {
-        return ['category' => 'category', 'default_supplier_id' => 'default_supplier_id', 'status' => 'status', 'target_animal_type' => 'target_animal_type', 'type' => 'type'];
+        return ['category' => 'category', 'default_supplier_id' => 'default_supplier_id', 'status' => 'status', 'animal_type_id' => 'animal_type_id', 'type' => 'type'];
     }
 
     protected function relations(): array
     {
-        return ['purchaseUom', 'stockUom', 'usageUom', 'defaultSupplier'];
+        return ['animalType', 'purchaseUom', 'stockUom', 'usageUom', 'defaultSupplier'];
     }
 }

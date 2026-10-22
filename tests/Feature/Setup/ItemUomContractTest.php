@@ -112,6 +112,9 @@ class ItemUomContractTest extends TestCase
         }
         [$purchase, $usage, $third] = $units;
         $payload = ['code' => 'UOM-ITEM', 'name' => 'Unit test item', 'category' => 'feed', 'type' => 'medicine', 'target_animal_type' => 'cattle', 'purchase_uom_id' => $purchase->id, $usageField => $usage->id, 'stock_uom_id' => $purchase->id, 'uom_conversion' => 1000, 'purchase_price' => '10.00', 'batch_tracking' => false, 'expiry_tracking' => false, 'cold_chain_required' => false];
+        if ($kind === 'medicines') {
+            unset($payload['target_animal_type']);
+        }
 
         return [$payload, $purchase, $usage, $third];
     }

@@ -143,6 +143,17 @@ class AnimalClassificationService
 
     }
 
+    public function validateOptionalAnimalType(?int $id): void
+    {
+        if ($id === null) {
+            return;
+        }
+        $type = $this->records->query('animal-types')->whereKey($id)->lockForUpdate()->first();
+        if (! $type || $type->status !== 'active') {
+            throw ValidationException::withMessages(['animal_type_id' => 'Select an active animal type.']);
+        }
+    }
+
     private function assertActiveType(int $id): void
     {
         if (! $this->records->query('animal-types')->whereKey($id)->where('status', 'active')->exists()) {

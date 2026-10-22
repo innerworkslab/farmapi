@@ -144,7 +144,7 @@ return new class extends Migration
             $table->string('generic_name')->nullable();
             $table->string('type');
             $table->string('category');
-            $table->string('target_animal_type')->nullable();
+            $table->foreignId('animal_type_id')->nullable()->constrained('animal_types')->restrictOnDelete();
             $table->string('target_disease')->nullable();
             $table->string('active_ingredient')->nullable();
             $table->string('strength')->nullable();

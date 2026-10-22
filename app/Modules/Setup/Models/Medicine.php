@@ -14,13 +14,15 @@ class Medicine extends Model
 
     protected $table = 'medicines';
 
+    protected $with = ['animalType'];
+
     protected $fillable = [
         'code',
         'name',
         'generic_name',
         'type',
         'category',
-        'target_animal_type',
+        'animal_type_id',
         'target_disease',
         'active_ingredient',
         'strength',
@@ -54,6 +56,11 @@ class Medicine extends Model
         'status',
         'version',
     ];
+
+    public function animalType(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(AnimalType::class);
+    }
 
     public function item(): \Illuminate\Database\Eloquent\Relations\MorphOne
     {
