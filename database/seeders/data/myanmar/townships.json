@@ -1,0 +1,4061 @@
+[
+    {
+        "id":  1,
+        "division_id":  1,
+        "name":  "Hinthada",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  2,
+        "division_id":  1,
+        "name":  "Ingapu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  3,
+        "division_id":  1,
+        "name":  "Kyangin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  4,
+        "division_id":  1,
+        "name":  "Lemyethna",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  5,
+        "division_id":  1,
+        "name":  "Myanaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  6,
+        "division_id":  1,
+        "name":  "Zalun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  7,
+        "division_id":  1,
+        "name":  "Labutta",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  8,
+        "division_id":  1,
+        "name":  "Mawlamyinegyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  9,
+        "division_id":  1,
+        "name":  "Pyinsalu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  10,
+        "division_id":  1,
+        "name":  "Danuphyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  11,
+        "division_id":  1,
+        "name":  "Ma-ubin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  12,
+        "division_id":  1,
+        "name":  "Nyaungdon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  13,
+        "division_id":  1,
+        "name":  "Pantanaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  14,
+        "division_id":  1,
+        "name":  "Einme",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  15,
+        "division_id":  1,
+        "name":  "Myaungmya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  16,
+        "division_id":  1,
+        "name":  "Wakema",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  17,
+        "division_id":  1,
+        "name":  "Hainggyikyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  18,
+        "division_id":  1,
+        "name":  "Kangyidaunk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  19,
+        "division_id":  1,
+        "name":  "Kyaunggon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  20,
+        "division_id":  1,
+        "name":  "Kyonpyaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  21,
+        "division_id":  1,
+        "name":  "Ngapudaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  22,
+        "division_id":  1,
+        "name":  "Ngathaingchaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  23,
+        "division_id":  1,
+        "name":  "Ngayokaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  24,
+        "division_id":  1,
+        "name":  "Ngwehsaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  25,
+        "division_id":  1,
+        "name":  "Pathein",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  26,
+        "division_id":  1,
+        "name":  "Shwethaungyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  27,
+        "division_id":  1,
+        "name":  "Thabaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  28,
+        "division_id":  1,
+        "name":  "Yekyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  29,
+        "division_id":  1,
+        "name":  "Ahmar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  30,
+        "division_id":  1,
+        "name":  "Bogale",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  31,
+        "division_id":  1,
+        "name":  "Dedaye",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  32,
+        "division_id":  1,
+        "name":  "Kyaiklat",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  33,
+        "division_id":  1,
+        "name":  "Pyapon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  34,
+        "division_id":  2,
+        "name":  "Aungmyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  35,
+        "division_id":  2,
+        "name":  "Bago",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  36,
+        "division_id":  2,
+        "name":  "Daik-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  37,
+        "division_id":  2,
+        "name":  "Hpayargyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  38,
+        "division_id":  2,
+        "name":  "Intagaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  39,
+        "division_id":  2,
+        "name":  "Kawa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  40,
+        "division_id":  2,
+        "name":  "Kyauktaga",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  41,
+        "division_id":  2,
+        "name":  "Madauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  42,
+        "division_id":  2,
+        "name":  "Nyaunglebin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  43,
+        "division_id":  2,
+        "name":  "Peinzalot",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  44,
+        "division_id":  2,
+        "name":  "Penwegon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  45,
+        "division_id":  2,
+        "name":  "Pyuntaza",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  46,
+        "division_id":  2,
+        "name":  "Shwegyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  47,
+        "division_id":  2,
+        "name":  "Thanatpin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  48,
+        "division_id":  2,
+        "name":  "Waw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  49,
+        "division_id":  2,
+        "name":  "Kanyutkwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  50,
+        "division_id":  2,
+        "name":  "Kaytumadi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  51,
+        "division_id":  2,
+        "name":  "Kyaukkyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  52,
+        "division_id":  2,
+        "name":  "Kywebwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  53,
+        "division_id":  2,
+        "name":  "Mone",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  54,
+        "division_id":  2,
+        "name":  "Myohla",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  55,
+        "division_id":  2,
+        "name":  "Natthangwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  56,
+        "division_id":  2,
+        "name":  "Nyaungbinthar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  57,
+        "division_id":  2,
+        "name":  "Oktwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  58,
+        "division_id":  2,
+        "name":  "Pyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  59,
+        "division_id":  2,
+        "name":  "Swa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  60,
+        "division_id":  2,
+        "name":  "Tantabin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  61,
+        "division_id":  2,
+        "name":  "Taungoo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  62,
+        "division_id":  2,
+        "name":  "Thagara",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  63,
+        "division_id":  2,
+        "name":  "Yaeni",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  64,
+        "division_id":  2,
+        "name":  "Yedashe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  65,
+        "division_id":  2,
+        "name":  "Innma",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  66,
+        "division_id":  2,
+        "name":  "Okshipin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  67,
+        "division_id":  2,
+        "name":  "Padaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  68,
+        "division_id":  2,
+        "name":  "Padigone",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  69,
+        "division_id":  2,
+        "name":  "Paukkaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  70,
+        "division_id":  2,
+        "name":  "Paungdale",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  71,
+        "division_id":  2,
+        "name":  "Paungde",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  72,
+        "division_id":  2,
+        "name":  "Pyay",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  73,
+        "division_id":  2,
+        "name":  "Shwedaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  74,
+        "division_id":  2,
+        "name":  "Sinmeswe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  75,
+        "division_id":  2,
+        "name":  "Thegon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  76,
+        "division_id":  2,
+        "name":  "Gyobingauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  77,
+        "division_id":  2,
+        "name":  "Letpadan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  78,
+        "division_id":  2,
+        "name":  "Minhla",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  79,
+        "division_id":  2,
+        "name":  "Monyo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  80,
+        "division_id":  2,
+        "name":  "Nattalin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  81,
+        "division_id":  2,
+        "name":  "Okpho",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:00",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  82,
+        "division_id":  2,
+        "name":  "Ooethegone",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  83,
+        "division_id":  2,
+        "name":  "Sitkwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  84,
+        "division_id":  2,
+        "name":  "Tapun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  85,
+        "division_id":  2,
+        "name":  "Tharrawaddy",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  86,
+        "division_id":  2,
+        "name":  "Thonze",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  87,
+        "division_id":  2,
+        "name":  "Zigon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  88,
+        "division_id":  3,
+        "name":  "Cikha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  89,
+        "division_id":  3,
+        "name":  "Falam",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  90,
+        "division_id":  3,
+        "name":  "Rikhuadal",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  91,
+        "division_id":  3,
+        "name":  "Tiddim",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  92,
+        "division_id":  3,
+        "name":  "Ton Zang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  93,
+        "division_id":  3,
+        "name":  "Hakha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  94,
+        "division_id":  3,
+        "name":  "Htantlang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  95,
+        "division_id":  3,
+        "name":  "Kanpetlet",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  96,
+        "division_id":  3,
+        "name":  "Matupi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  97,
+        "division_id":  3,
+        "name":  "Mindat",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  98,
+        "division_id":  3,
+        "name":  "Paletwa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  99,
+        "division_id":  3,
+        "name":  "Reazu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  100,
+        "division_id":  3,
+        "name":  "Sami",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  101,
+        "division_id":  4,
+        "name":  "Bhamo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  102,
+        "division_id":  4,
+        "name":  "Dotphoneyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  103,
+        "division_id":  4,
+        "name":  "Lwegel",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  104,
+        "division_id":  4,
+        "name":  "Mansi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  105,
+        "division_id":  4,
+        "name":  "Momauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  106,
+        "division_id":  4,
+        "name":  "Myohla",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  107,
+        "division_id":  4,
+        "name":  "Shwegu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  108,
+        "division_id":  4,
+        "name":  "Hopin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  109,
+        "division_id":  4,
+        "name":  "Hpakant",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  110,
+        "division_id":  4,
+        "name":  "Kamine",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  111,
+        "division_id":  4,
+        "name":  "Mogaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  112,
+        "division_id":  4,
+        "name":  "Mohnyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  113,
+        "division_id":  4,
+        "name":  "Chipwi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  114,
+        "division_id":  4,
+        "name":  "Hsadone",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  115,
+        "division_id":  4,
+        "name":  "Hsawlaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  116,
+        "division_id":  4,
+        "name":  "Hsinbo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  117,
+        "division_id":  4,
+        "name":  "Injangyang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  118,
+        "division_id":  4,
+        "name":  "Kanpaikti",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  119,
+        "division_id":  4,
+        "name":  "Myitkyina",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  120,
+        "division_id":  4,
+        "name":  "Panwa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  121,
+        "division_id":  4,
+        "name":  "Shinbwayyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  122,
+        "division_id":  4,
+        "name":  "Tanai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  123,
+        "division_id":  4,
+        "name":  "Waingmaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  124,
+        "division_id":  4,
+        "name":  "Kawnglanghpu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  125,
+        "division_id":  4,
+        "name":  "Machanbaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  126,
+        "division_id":  4,
+        "name":  "Nogmung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  127,
+        "division_id":  4,
+        "name":  "Pannandin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  128,
+        "division_id":  4,
+        "name":  "Putao",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  129,
+        "division_id":  4,
+        "name":  "Sumprabum",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  130,
+        "division_id":  5,
+        "name":  "Bawlakhe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  131,
+        "division_id":  5,
+        "name":  "Hpasawng",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  132,
+        "division_id":  5,
+        "name":  "Mese",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  133,
+        "division_id":  5,
+        "name":  "Ywathit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  134,
+        "division_id":  5,
+        "name":  "Demoso",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  135,
+        "division_id":  5,
+        "name":  "Hpruso",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  136,
+        "division_id":  5,
+        "name":  "Loikaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  137,
+        "division_id":  5,
+        "name":  "Shadaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  138,
+        "division_id":  6,
+        "name":  "Bawgali",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  139,
+        "division_id":  6,
+        "name":  "Hlaignbwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  140,
+        "division_id":  6,
+        "name":  "Hpa-an",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  141,
+        "division_id":  6,
+        "name":  "Leiktho",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  142,
+        "division_id":  6,
+        "name":  "Paingkyon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  143,
+        "division_id":  6,
+        "name":  "Shan Ywathit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  144,
+        "division_id":  6,
+        "name":  "Thandaunggyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  145,
+        "division_id":  6,
+        "name":  "Hpapun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  146,
+        "division_id":  6,
+        "name":  "Kamamaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  147,
+        "division_id":  6,
+        "name":  "Kawkareik",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  148,
+        "division_id":  6,
+        "name":  "Kyaidon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  149,
+        "division_id":  6,
+        "name":  "Kyain Seikgyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  150,
+        "division_id":  6,
+        "name":  "Payarthonezu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  151,
+        "division_id":  6,
+        "name":  "Myawaddy",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  152,
+        "division_id":  6,
+        "name":  "Sugali",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  153,
+        "division_id":  6,
+        "name":  "Wawlaymyaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  154,
+        "division_id":  7,
+        "name":  "Gangaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  155,
+        "division_id":  7,
+        "name":  "Kyaukhtu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  156,
+        "division_id":  7,
+        "name":  "Saw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  157,
+        "division_id":  7,
+        "name":  "Tilin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  158,
+        "division_id":  7,
+        "name":  "Chauck",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  159,
+        "division_id":  7,
+        "name":  "Magway",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  160,
+        "division_id":  7,
+        "name":  "Myothit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  161,
+        "division_id":  7,
+        "name":  "Natmauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  162,
+        "division_id":  7,
+        "name":  "Taungdwingyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  163,
+        "division_id":  7,
+        "name":  "Yenangyaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  164,
+        "division_id":  7,
+        "name":  "Minbu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  165,
+        "division_id":  7,
+        "name":  "Ngape",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  166,
+        "division_id":  7,
+        "name":  "Pwintbyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  167,
+        "division_id":  7,
+        "name":  "Salin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  168,
+        "division_id":  7,
+        "name":  "Sidoktaya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  169,
+        "division_id":  7,
+        "name":  "Myaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  170,
+        "division_id":  7,
+        "name":  "Pakokku",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  171,
+        "division_id":  7,
+        "name":  "Pauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  172,
+        "division_id":  7,
+        "name":  "Seikphyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  173,
+        "division_id":  7,
+        "name":  "Yesagyo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  174,
+        "division_id":  7,
+        "name":  "Aunglan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  175,
+        "division_id":  7,
+        "name":  "Kamma",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  176,
+        "division_id":  7,
+        "name":  "Mindon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  177,
+        "division_id":  7,
+        "name":  "Minhla",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  178,
+        "division_id":  7,
+        "name":  "Sinbaungwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  179,
+        "division_id":  7,
+        "name":  "Thayet",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  180,
+        "division_id":  8,
+        "name":  "Kyaukse",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  181,
+        "division_id":  8,
+        "name":  "Myittha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  182,
+        "division_id":  8,
+        "name":  "Sintgaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  183,
+        "division_id":  8,
+        "name":  "Tada-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  184,
+        "division_id":  8,
+        "name":  "Amarapura",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  185,
+        "division_id":  8,
+        "name":  "Aungmyethazan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  186,
+        "division_id":  8,
+        "name":  "Chanayethazan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  187,
+        "division_id":  8,
+        "name":  "Chanmyathazi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  188,
+        "division_id":  8,
+        "name":  "Mahaaungmye",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  189,
+        "division_id":  8,
+        "name":  "Patheingyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  190,
+        "division_id":  8,
+        "name":  "Pyigyidagun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  191,
+        "division_id":  8,
+        "name":  "Mahlaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  192,
+        "division_id":  8,
+        "name":  "Meiktila",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  193,
+        "division_id":  8,
+        "name":  "Thazi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  194,
+        "division_id":  8,
+        "name":  "Wundwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  195,
+        "division_id":  8,
+        "name":  "Myingyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  196,
+        "division_id":  8,
+        "name":  "Natogyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  197,
+        "division_id":  8,
+        "name":  "Nganzun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  198,
+        "division_id":  8,
+        "name":  "Thaungtha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  199,
+        "division_id":  8,
+        "name":  "Kyaukpadaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  200,
+        "division_id":  8,
+        "name":  "Ngathayauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  201,
+        "division_id":  8,
+        "name":  "Nyaung-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  202,
+        "division_id":  8,
+        "name":  "Madaya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  203,
+        "division_id":  8,
+        "name":  "Mogok",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  204,
+        "division_id":  8,
+        "name":  "Pyinoolwin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  205,
+        "division_id":  8,
+        "name":  "Singu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  206,
+        "division_id":  8,
+        "name":  "Tagaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  207,
+        "division_id":  8,
+        "name":  "Thabeikkyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  208,
+        "division_id":  8,
+        "name":  "Pyawbwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  209,
+        "division_id":  8,
+        "name":  "Yamethin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  210,
+        "division_id":  9,
+        "name":  "Chaungzon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  211,
+        "division_id":  9,
+        "name":  "Khawzar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  212,
+        "division_id":  9,
+        "name":  "Kyaikkhami",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  213,
+        "division_id":  9,
+        "name":  "Kyaikmaraw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  214,
+        "division_id":  9,
+        "name":  "Lamine",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  215,
+        "division_id":  9,
+        "name":  "Mawlamyine",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  216,
+        "division_id":  9,
+        "name":  "Mudon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:21"
+    },
+    {
+        "id":  217,
+        "division_id":  9,
+        "name":  "Thanbyuzayat",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  218,
+        "division_id":  9,
+        "name":  "Ye",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  219,
+        "division_id":  9,
+        "name":  "Bilin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  220,
+        "division_id":  9,
+        "name":  "Kyaikto",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  221,
+        "division_id":  9,
+        "name":  "Mottama",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  222,
+        "division_id":  9,
+        "name":  "Paung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  223,
+        "division_id":  9,
+        "name":  "Suvannawadi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  224,
+        "division_id":  9,
+        "name":  "Thaton",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  225,
+        "division_id":  9,
+        "name":  "Zingyeik",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  226,
+        "division_id":  10,
+        "name":  "Dekkhinathiri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  227,
+        "division_id":  10,
+        "name":  "Lewe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  228,
+        "division_id":  10,
+        "name":  "Pyinmana",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  229,
+        "division_id":  10,
+        "name":  "Zabuthiri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  230,
+        "division_id":  10,
+        "name":  "Ottarathiri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  231,
+        "division_id":  10,
+        "name":  "Pobbathiri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  232,
+        "division_id":  10,
+        "name":  "Tatkon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  233,
+        "division_id":  10,
+        "name":  "Zeyarthiri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  234,
+        "division_id":  11,
+        "name":  "Ann",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  235,
+        "division_id":  11,
+        "name":  "Kyaukpyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  236,
+        "division_id":  11,
+        "name":  "Manaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  237,
+        "division_id":  11,
+        "name":  "Ramree",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  238,
+        "division_id":  11,
+        "name":  "Buthidaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  239,
+        "division_id":  11,
+        "name":  "Maungdaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  240,
+        "division_id":  11,
+        "name":  "Taungpyoletwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  241,
+        "division_id":  11,
+        "name":  "Pauktaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  242,
+        "division_id":  11,
+        "name":  "Ponnagyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  243,
+        "division_id":  11,
+        "name":  "Rathedaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  244,
+        "division_id":  11,
+        "name":  "Sittwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  245,
+        "division_id":  11,
+        "name":  "Gaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  246,
+        "division_id":  11,
+        "name":  "Kyeintali",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  247,
+        "division_id":  11,
+        "name":  "Maei",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  248,
+        "division_id":  11,
+        "name":  "Thandwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  249,
+        "division_id":  11,
+        "name":  "Toungup",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  250,
+        "division_id":  11,
+        "name":  "Kyauktaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  251,
+        "division_id":  11,
+        "name":  "Minbya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  252,
+        "division_id":  11,
+        "name":  "Mrauk-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  253,
+        "division_id":  11,
+        "name":  "Myebon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  254,
+        "division_id":  12,
+        "name":  "Donhee",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  255,
+        "division_id":  12,
+        "name":  "Hkamti",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  256,
+        "division_id":  12,
+        "name":  "Homalin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  257,
+        "division_id":  12,
+        "name":  "Htanparkway",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  258,
+        "division_id":  12,
+        "name":  "Lahe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  259,
+        "division_id":  12,
+        "name":  "Leshi Township (Lay",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  260,
+        "division_id":  12,
+        "name":  "Mobaingluk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  261,
+        "division_id":  12,
+        "name":  "Nanyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  262,
+        "division_id":  12,
+        "name":  "Pansaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  263,
+        "division_id":  12,
+        "name":  "Sonemara",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  264,
+        "division_id":  12,
+        "name":  "Kanbalu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  265,
+        "division_id":  12,
+        "name":  "Kyunhla",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  266,
+        "division_id":  12,
+        "name":  "Taze",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  267,
+        "division_id":  12,
+        "name":  "Ye-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  268,
+        "division_id":  12,
+        "name":  "Kale",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  269,
+        "division_id":  12,
+        "name":  "Kalewa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  270,
+        "division_id":  12,
+        "name":  "Mingin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  271,
+        "division_id":  12,
+        "name":  "Banmauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  272,
+        "division_id":  12,
+        "name":  "Indaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  273,
+        "division_id":  12,
+        "name":  "Katha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  274,
+        "division_id":  12,
+        "name":  "Kawlin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  275,
+        "division_id":  12,
+        "name":  "Pinlebu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  276,
+        "division_id":  12,
+        "name":  "Tigyaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  277,
+        "division_id":  12,
+        "name":  "Wuntho",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  278,
+        "division_id":  12,
+        "name":  "Mawlaik",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  279,
+        "division_id":  12,
+        "name":  "Paungbyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  280,
+        "division_id":  12,
+        "name":  "Ayadaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  281,
+        "division_id":  12,
+        "name":  "Budalin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:01",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  282,
+        "division_id":  12,
+        "name":  "Chaung-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  283,
+        "division_id":  12,
+        "name":  "Monywa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  284,
+        "division_id":  12,
+        "name":  "Myaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  285,
+        "division_id":  12,
+        "name":  "Myinmu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  286,
+        "division_id":  12,
+        "name":  "Sagaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  287,
+        "division_id":  12,
+        "name":  "Khin-U",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  288,
+        "division_id":  12,
+        "name":  "Kyaukmyaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  289,
+        "division_id":  12,
+        "name":  "Shwebo",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  290,
+        "division_id":  12,
+        "name":  "Tabayin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  291,
+        "division_id":  12,
+        "name":  "Wetlet",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  292,
+        "division_id":  12,
+        "name":  "Khampat",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  293,
+        "division_id":  12,
+        "name":  "Myothit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  294,
+        "division_id":  12,
+        "name":  "Tamu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  295,
+        "division_id":  12,
+        "name":  "Kani",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  296,
+        "division_id":  12,
+        "name":  "Pale",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  297,
+        "division_id":  12,
+        "name":  "Salingyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  298,
+        "division_id":  12,
+        "name":  "Yinmabin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  299,
+        "division_id":  13,
+        "name":  "Kengtung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  300,
+        "division_id":  13,
+        "name":  "Mine Pauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  301,
+        "division_id":  13,
+        "name":  "Minelar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  302,
+        "division_id":  13,
+        "name":  "Mong Khet",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  303,
+        "division_id":  13,
+        "name":  "Mong La",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  304,
+        "division_id":  13,
+        "name":  "Mong Yang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  305,
+        "division_id":  13,
+        "name":  "Mineyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  306,
+        "division_id":  13,
+        "name":  "Mong Hpayak",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  307,
+        "division_id":  13,
+        "name":  "Mong Yawng",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  308,
+        "division_id":  13,
+        "name":  "Minekoke",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  309,
+        "division_id":  13,
+        "name":  "Monehta",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  310,
+        "division_id":  13,
+        "name":  "Mong Hsat",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  311,
+        "division_id":  13,
+        "name":  "Mong Ping",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  312,
+        "division_id":  13,
+        "name":  "Mong Tong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  313,
+        "division_id":  13,
+        "name":  "Ponparkyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  314,
+        "division_id":  13,
+        "name":  "Tontar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  315,
+        "division_id":  13,
+        "name":  "Kyaing Lap",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  316,
+        "division_id":  13,
+        "name":  "Tachileik",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  317,
+        "division_id":  13,
+        "name":  "Talay",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  318,
+        "division_id":  13,
+        "name":  "Kunlong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  319,
+        "division_id":  13,
+        "name":  "Hsipaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  320,
+        "division_id":  13,
+        "name":  "Kyaukme",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  321,
+        "division_id":  13,
+        "name":  "Mantong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  322,
+        "division_id":  13,
+        "name":  "Minelon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  323,
+        "division_id":  13,
+        "name":  "Minengaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  324,
+        "division_id":  13,
+        "name":  "Namhsan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  325,
+        "division_id":  13,
+        "name":  "Namtu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  326,
+        "division_id":  13,
+        "name":  "Nawnghkio",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  327,
+        "division_id":  13,
+        "name":  "Hsenwi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  328,
+        "division_id":  13,
+        "name":  "Lashio",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  329,
+        "division_id":  13,
+        "name":  "Mongyai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  330,
+        "division_id":  13,
+        "name":  "Tangyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  331,
+        "division_id":  13,
+        "name":  "Chinshwehaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  332,
+        "division_id":  13,
+        "name":  "Konkyan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  333,
+        "division_id":  13,
+        "name":  "Laukkaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  334,
+        "division_id":  13,
+        "name":  "Mawhtike",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  335,
+        "division_id":  13,
+        "name":  "Kutkai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  336,
+        "division_id":  13,
+        "name":  "Manhero",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  337,
+        "division_id":  13,
+        "name":  "Monekoe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  338,
+        "division_id":  13,
+        "name":  "Mu Se",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  339,
+        "division_id":  13,
+        "name":  "Namhkam",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  340,
+        "division_id":  13,
+        "name":  "Pansai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  341,
+        "division_id":  13,
+        "name":  "Tamoenye",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  342,
+        "division_id":  13,
+        "name":  "Hopang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  343,
+        "division_id":  13,
+        "name":  "Mongmao",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  344,
+        "division_id":  13,
+        "name":  "Namtit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  345,
+        "division_id":  13,
+        "name":  "Pangwaun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  346,
+        "division_id":  13,
+        "name":  "Panlong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  347,
+        "division_id":  13,
+        "name":  "Man Kan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  348,
+        "division_id":  13,
+        "name":  "Matman",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  349,
+        "division_id":  13,
+        "name":  "Namphan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  350,
+        "division_id":  13,
+        "name":  "Pangsang Township (Pan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  351,
+        "division_id":  13,
+        "name":  "Mabein",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  352,
+        "division_id":  13,
+        "name":  "Mongmit",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  353,
+        "division_id":  13,
+        "name":  "Homane",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  354,
+        "division_id":  13,
+        "name":  "Kengtaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  355,
+        "division_id":  13,
+        "name":  "Langkho",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  356,
+        "division_id":  13,
+        "name":  "Mawkmai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  357,
+        "division_id":  13,
+        "name":  "Mong Nai",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  358,
+        "division_id":  13,
+        "name":  "Mong Pan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  359,
+        "division_id":  13,
+        "name":  "Karli",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  360,
+        "division_id":  13,
+        "name":  "Kholan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  361,
+        "division_id":  13,
+        "name":  "Kunhing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  362,
+        "division_id":  13,
+        "name":  "Kyethi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  363,
+        "division_id":  13,
+        "name":  "Lai-Hka",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  364,
+        "division_id":  13,
+        "name":  "Loilen",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  365,
+        "division_id":  13,
+        "name":  "Minenaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  366,
+        "division_id":  13,
+        "name":  "Minesan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  367,
+        "division_id":  13,
+        "name":  "Mong Hsu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  368,
+        "division_id":  13,
+        "name":  "Mong Kung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  369,
+        "division_id":  13,
+        "name":  "Nansang",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  370,
+        "division_id":  13,
+        "name":  "Panglong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  371,
+        "division_id":  13,
+        "name":  "Hopong",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  372,
+        "division_id":  13,
+        "name":  "Hsi Hseng",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  373,
+        "division_id":  13,
+        "name":  "Indaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  374,
+        "division_id":  13,
+        "name":  "Kalaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  375,
+        "division_id":  13,
+        "name":  "Kyauktalongyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  376,
+        "division_id":  13,
+        "name":  "Lawksawk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  377,
+        "division_id":  13,
+        "name":  "Naungtayar",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  378,
+        "division_id":  13,
+        "name":  "Nyaungshwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  379,
+        "division_id":  13,
+        "name":  "Pekon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  380,
+        "division_id":  13,
+        "name":  "Pingdaya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  381,
+        "division_id":  13,
+        "name":  "Pinlaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  382,
+        "division_id":  13,
+        "name":  "Taunggyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  383,
+        "division_id":  13,
+        "name":  "Ywangan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  384,
+        "division_id":  14,
+        "name":  "Dawei",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  385,
+        "division_id":  14,
+        "name":  "Kaleinaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  386,
+        "division_id":  14,
+        "name":  "Launglon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  387,
+        "division_id":  14,
+        "name":  "Myitta",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  388,
+        "division_id":  14,
+        "name":  "Thayetchaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  389,
+        "division_id":  14,
+        "name":  "Yebyu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  390,
+        "division_id":  14,
+        "name":  "Bokpyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  391,
+        "division_id":  14,
+        "name":  "Karathuri",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  392,
+        "division_id":  14,
+        "name":  "Kawthoung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  393,
+        "division_id":  14,
+        "name":  "Khamaukgyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  394,
+        "division_id":  14,
+        "name":  "Pyigyimandaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  395,
+        "division_id":  14,
+        "name":  "Kyunsu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  396,
+        "division_id":  14,
+        "name":  "Myeik",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  397,
+        "division_id":  14,
+        "name":  "Palauk",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  398,
+        "division_id":  14,
+        "name":  "Palaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  399,
+        "division_id":  14,
+        "name":  "Tanintharyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  400,
+        "division_id":  15,
+        "name":  "Botataung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  401,
+        "division_id":  15,
+        "name":  "City",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  402,
+        "division_id":  15,
+        "name":  "Dagon Seikkan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  403,
+        "division_id":  15,
+        "name":  "Dawbon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  404,
+        "division_id":  15,
+        "name":  "East Dagon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  405,
+        "division_id":  15,
+        "name":  "Mingala Taungnyunt",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  406,
+        "division_id":  15,
+        "name":  "North Dagon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  407,
+        "division_id":  15,
+        "name":  "North Okkalapa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  408,
+        "division_id":  15,
+        "name":  "Pazundaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  409,
+        "division_id":  15,
+        "name":  "South Dagon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  410,
+        "division_id":  15,
+        "name":  "South Okkalapa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  411,
+        "division_id":  15,
+        "name":  "Tamwe",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  412,
+        "division_id":  15,
+        "name":  "Thaketa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  413,
+        "division_id":  15,
+        "name":  "Thingangyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  414,
+        "division_id":  15,
+        "name":  "Yankin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-08-10 07:29:11"
+    },
+    {
+        "id":  415,
+        "division_id":  15,
+        "name":  "City",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2023-11-06 03:54:02"
+    },
+    {
+        "id":  416,
+        "division_id":  15,
+        "name":  "Hlaingthaya",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  417,
+        "division_id":  15,
+        "name":  "Hlegu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  418,
+        "division_id":  15,
+        "name":  "Hmawbi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  419,
+        "division_id":  15,
+        "name":  "Htantabin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  420,
+        "division_id":  15,
+        "name":  "Insein",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  421,
+        "division_id":  15,
+        "name":  "Mingaladon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  422,
+        "division_id":  15,
+        "name":  "Rural",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  423,
+        "division_id":  15,
+        "name":  "Shwepyitha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  424,
+        "division_id":  15,
+        "name":  "Taikkyi",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  425,
+        "division_id":  15,
+        "name":  "City",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2023-11-06 03:54:02"
+    },
+    {
+        "id":  426,
+        "division_id":  15,
+        "name":  "Cocokyun",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  427,
+        "division_id":  15,
+        "name":  "Dala",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  428,
+        "division_id":  15,
+        "name":  "Kawhmu",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  429,
+        "division_id":  15,
+        "name":  "Kayan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  430,
+        "division_id":  15,
+        "name":  "Kungyangon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  431,
+        "division_id":  15,
+        "name":  "Kyauktan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  432,
+        "division_id":  15,
+        "name":  "Rural",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2023-11-06 03:54:02"
+    },
+    {
+        "id":  433,
+        "division_id":  15,
+        "name":  "Seikkyi Kanaungto",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  434,
+        "division_id":  15,
+        "name":  "Tada",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  435,
+        "division_id":  15,
+        "name":  "Thanlyin",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  436,
+        "division_id":  15,
+        "name":  "Thongwa",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  437,
+        "division_id":  15,
+        "name":  "Twante",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  438,
+        "division_id":  15,
+        "name":  "Ahlon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2026-07-31 05:04:39"
+    },
+    {
+        "id":  439,
+        "division_id":  15,
+        "name":  "Bahan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  440,
+        "division_id":  15,
+        "name":  "City",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2023-11-06 03:54:02"
+    },
+    {
+        "id":  441,
+        "division_id":  15,
+        "name":  "Dagon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  442,
+        "division_id":  15,
+        "name":  "Hlaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  443,
+        "division_id":  15,
+        "name":  "Kamayut",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  444,
+        "division_id":  15,
+        "name":  "Kyauktada",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  445,
+        "division_id":  15,
+        "name":  "Kyimyindaing",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  446,
+        "division_id":  15,
+        "name":  "Lanmadaw",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  447,
+        "division_id":  15,
+        "name":  "Latha",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  448,
+        "division_id":  15,
+        "name":  "Mayangon",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  449,
+        "division_id":  15,
+        "name":  "Pabedan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  450,
+        "division_id":  15,
+        "name":  "Sanchaung",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    },
+    {
+        "id":  451,
+        "division_id":  15,
+        "name":  "Seikkan",
+        "is_active":  true,
+        "is_manual":  false,
+        "created_at":  "2023-11-06 03:54:02",
+        "updated_at":  "2025-05-16 09:54:22"
+    }
+]

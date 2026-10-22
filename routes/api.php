@@ -36,6 +36,7 @@ use App\Modules\Setup\Controllers\CustomerController;
 use App\Modules\Setup\Controllers\EquipmentController;
 use App\Modules\Setup\Controllers\FarmInformationController;
 use App\Modules\Setup\Controllers\FoodController;
+use App\Modules\Setup\Controllers\GeographyController;
 use App\Modules\Setup\Controllers\InventoryController;
 use App\Modules\Setup\Controllers\MedicineController;
 use App\Modules\Setup\Controllers\RoleController;
@@ -46,6 +47,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login']);
+
+    Route::prefix('setup')->group(function (): void {
+        Route::get('divisions', [GeographyController::class, 'divisions']);
+        Route::get('divisions/{division}/townships', [GeographyController::class, 'townships'])->whereNumber('division');
+    });
 
     Route::middleware(['auth:sanctum', 'active_user'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
