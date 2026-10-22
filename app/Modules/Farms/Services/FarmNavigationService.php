@@ -37,12 +37,11 @@ class FarmNavigationService
                 });
             })
             ->when($filters['branch_id'] ?? null, fn (Builder $query, string $branchId) => $query->where('farm_information.branch_id', $branchId))
-            ->when($filters['animal_type'] ?? null, function (Builder $query, string $animalType): void {
-                $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('type', $animalType));
+            ->when($filters['animal_type_id'] ?? null, function (Builder $query, $typeId): void {
+                $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('animal_type_id', $typeId));
             })
-            ->when($filters['farm_type'] ?? null, function (Builder $query, string $farmType): void {
-                $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('type', $farmType));
-            })
+            ->when($filters['animal_category_id'] ?? null, fn ($query, $id) => $query->whereHas('currentAnimal', fn ($animal) => $animal->where('animal_category_id', $id)))
+            ->when($filters['animal_breed_id'] ?? null, fn ($query, $id) => $query->whereHas('currentAnimal', fn ($animal) => $animal->where('animal_breed_id', $id)))
             ->when($filters['status'] ?? null, function (Builder $query, string $status): void {
                 $query->where(function ($q) use ($status): void {
                     $q->whereHas('setting', fn ($setting) => $setting->where('status', $status));
@@ -95,8 +94,9 @@ class FarmNavigationService
             'selected_filters' => [
                 'view' => $filters['view'] ?? $filters['tracking_type'] ?? 'all',
                 'search' => $filters['search'] ?? null,
-                'animal_type' => $filters['animal_type'] ?? null,
-                'breed' => $filters['breed'] ?? null,
+                'animal_type_id' => $filters['animal_type_id'] ?? null,
+                'animal_category_id' => $filters['animal_category_id'] ?? null,
+                'animal_breed_id' => $filters['animal_breed_id'] ?? null,
                 'location' => $filters['location'] ?? null,
                 'health_status' => $filters['health_status'] ?? null,
                 'life_stage' => $filters['life_stage'] ?? null,
@@ -202,18 +202,14 @@ class FarmNavigationService
     /** @return array<string, list<string>> */
     private function animalFilterOptions(FarmInformation $farm): array
     {
-        $rows = $this->animalQuery($farm)
-            ->select([
-                'animals.type as animal_type',
-                'animals.breed',
-                'inventory_balances.location',
-            ])
-            ->get();
+        $rows = $this->animalQuery($farm)->get();
+        $animals = $rows->map(fn ($row) => $row->item?->itemable)->filter();
 
         return [
             'views' => ['all', 'batch', 'individual'],
-            'animal_types' => $this->uniqueValues($rows, 'animal_type'),
-            'breeds' => $this->uniqueValues($rows, 'breed'),
+            'animal_types' => $animals->map(fn ($animal) => ['id' => $animal->animal_type_id, 'name' => $animal->animalType?->name])->unique('id')->values()->all(),
+            'animal_categories' => $animals->map(fn ($animal) => ['id' => $animal->animal_category_id, 'animal_type_id' => $animal->animal_type_id, 'name' => $animal->animalCategory?->name])->unique('id')->values()->all(),
+            'breeds' => $animals->map(fn ($animal) => ['id' => $animal->animal_breed_id, 'animal_type_id' => $animal->animal_type_id, 'name' => $animal->animalBreed?->name])->unique('id')->values()->all(),
             'locations' => $this->uniqueValues($rows, 'location'),
             'health_statuses' => ['healthy', 'under_observation', 'sick', 'under_treatment', 'quarantine', 'critical', 'recovered'],
             'life_stages' => AnimalProfile::query()->whereIn('animal_balance_id', $this->animalQuery($farm)->select('inventory_balances.id'))->whereNotNull('life_stage')->distinct()->pluck('life_stage')->all(),
@@ -238,8 +234,9 @@ class FarmNavigationService
 
         return $this->animalQuery($farm)
             ->when($view !== null && $view !== 'all', fn (Builder $query) => $query->where('animals.tracking_type', $view))
-            ->when($filters['animal_type'] ?? null, fn (Builder $query, string $animalType) => $query->where('animals.type', $animalType))
-            ->when($filters['breed'] ?? null, fn (Builder $query, string $breed) => $query->where('animals.breed', $breed))
+            ->when($filters['animal_type_id'] ?? null, fn (Builder $query, $id) => $query->where('animals.animal_type_id', $id))
+            ->when($filters['animal_category_id'] ?? null, fn (Builder $query, $id) => $query->where('animals.animal_category_id', $id))
+            ->when($filters['animal_breed_id'] ?? null, fn (Builder $query, $id) => $query->where('animals.animal_breed_id', $id))
             ->when($filters['location'] ?? null, fn (Builder $query, string $location) => $query->where('inventory_balances.location', $location))
             ->when($filters['health_status'] ?? null, function (Builder $query, string $healthStatus): void {
                 $query->where(function (Builder $health) use ($healthStatus): void {

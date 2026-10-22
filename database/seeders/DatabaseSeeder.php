@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MyanmarGeographySeeder::class,
             DemoAuthSeeder::class,
+            AnimalClassificationPermissionsSeeder::class,
+            AnimalClassificationSeeder::class,
             DemoFinancialCategoryPermissionsSeeder::class,
             DemoFinancialControlPermissionsSeeder::class,
             DemoStaffPermissionsSeeder::class,

@@ -4,35 +4,35 @@ namespace App\Modules\Setup\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Setup\Models\Animal;
+use App\Modules\Setup\Requests\AnimalIndexRequest;
 use App\Modules\Setup\Requests\AnimalRequest;
-use App\Modules\Setup\Resources\BusinessMasterResource;
+use App\Modules\Setup\Resources\AnimalResource;
 use App\Modules\Setup\Services\AnimalService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AnimalController extends Controller
 {
     public function __construct(private readonly AnimalService $service) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(AnimalIndexRequest $request): AnonymousResourceCollection
     {
-        return BusinessMasterResource::collection($this->service->paginate($request->query()));
+        return AnimalResource::collection($this->service->paginate($request->validated()));
     }
 
-    public function store(AnimalRequest $request): BusinessMasterResource
+    public function store(AnimalRequest $request): AnimalResource
     {
-        return new BusinessMasterResource($this->service->create($request->validated()));
+        return new AnimalResource($this->service->create($request->validated()));
     }
 
-    public function show(Animal $animal): BusinessMasterResource
+    public function show(Animal $animal): AnimalResource
     {
-        return new BusinessMasterResource($animal);
+        return new AnimalResource($animal);
     }
 
-    public function update(AnimalRequest $request, Animal $animal): BusinessMasterResource
+    public function update(AnimalRequest $request, Animal $animal): AnimalResource
     {
-        return new BusinessMasterResource($this->service->update($animal, $request->validated()));
+        return new AnimalResource($this->service->update($animal, $request->validated()));
     }
 
     public function destroy(Animal $animal): JsonResponse

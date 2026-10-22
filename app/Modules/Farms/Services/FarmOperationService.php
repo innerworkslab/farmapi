@@ -302,7 +302,8 @@ class FarmOperationService
         foreach ($operation->targets as $target) {
             $animal = $animals[$target->animal_balance_id];
             $profile = $animal->profile;
-            $target->snapshot = ['animal' => $animal->item?->itemable?->only(['code', 'name', 'tracking_type', 'ear_tag_rfid_number', 'batch_flock_number', 'type', 'breed']), 'location' => $animal->location, 'restrictions' => $animal->only(['quarantined_quantity', 'damaged_quantity', 'expired_quantity']), 'profile' => $profile->only(['death_quantity', 'affected_quantity', 'health_status', 'animal_state', 'weight', 'weight_uom', 'withdrawal_end_date'])];
+            $master = $animal->item?->itemable;
+            $target->snapshot = ['animal' => array_merge($master?->only(['code', 'name', 'tracking_type', 'ear_tag_rfid_number', 'batch_flock_number']) ?? [], $master?->classificationSnapshot() ?? []), 'location' => $animal->location, 'restrictions' => $animal->only(['quarantined_quantity', 'damaged_quantity', 'expired_quantity']), 'profile' => $profile->only(['death_quantity', 'affected_quantity', 'health_status', 'animal_state', 'weight', 'weight_uom', 'withdrawal_end_date'])];
             $target->save();
             if ($operation->type === 'mortality') {
                 $this->stock->post($animal, -$target->quantity, 'mortality', $operation->id, $actor, 'mortality-'.$operation->id.'-'.$animal->id, ['activity_date' => $operation->activity_date->toDateString(), 'reason' => $operation->payload['reason']]);

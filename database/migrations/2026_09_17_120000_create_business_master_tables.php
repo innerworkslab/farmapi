@@ -191,17 +191,19 @@ return new class extends Migration
             $table->string('ear_tag_rfid_number')->nullable()->unique();
             $table->string('batch_flock_number')->nullable()->unique();
             $table->string('name')->nullable();
-            $table->string('type');
-            $table->string('category');
-            $table->string('breed');
+            $table->foreignId('animal_type_id')->constrained('animal_types')->restrictOnDelete();
+            $table->foreignId('animal_category_id');
+            $table->foreignId('animal_breed_id');
+            $table->foreign(['animal_category_id', 'animal_type_id'], 'animals_category_type_foreign')->references(['id', 'animal_type_id'])->on('animal_categories')->restrictOnDelete();
+            $table->foreign(['animal_breed_id', 'animal_type_id'], 'animals_breed_type_foreign')->references(['id', 'animal_type_id'])->on('animal_breeds')->restrictOnDelete();
             $table->string('gender');
             $table->string('color_marking')->nullable();
             $table->string('photo_path')->nullable();
             $table->unsignedInteger('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['type', 'category']);
-            $table->index(['breed', 'gender']);
+            $table->index(['animal_type_id', 'animal_category_id']);
+            $table->index(['animal_breed_id', 'gender']);
         });
 
         // EQP-001..EQP-005: Equipment Master fields from the Setup user-story sheet.

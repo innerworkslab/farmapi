@@ -13,12 +13,12 @@ use App\Modules\Setup\Models\Uom;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FarmNavigationTest extends TestCase
 {
     use RefreshDatabase;
-
 
     public function test_no_branch_assignments_grants_no_farm_access_but_super_admin_can_access_all(): void
     {
@@ -28,7 +28,7 @@ class FarmNavigationTest extends TestCase
         foreach (['', '/animals', '/animal-view-summary', '/animals/'.$setup['batchBalance']->id] as $path) {
             $this->getJson('/api/v1/farms/'.$setup['farm']->id.$path)->assertNotFound();
         }
-        $user->assignRole(\Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web'));
+        $user->assignRole(Role::findOrCreate('super-admin', 'web'));
         $this->getJson('/api/v1/farms')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals')->assertOk()->assertJsonCount(2, 'data');
     }
@@ -53,7 +53,6 @@ class FarmNavigationTest extends TestCase
         $this->getJson('/api/v1/setup/farm-information')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/setup/inventories/'.$setup['inventory']->id)->assertOk();
     }
-
 
     public function test_farm_navigation_returns_authorized_farm_summary_and_animals(): void
     {
@@ -86,8 +85,19 @@ class FarmNavigationTest extends TestCase
             ->assertJsonPath('data.tabs.batch', 1)
             ->assertJsonPath('data.tabs.individual', 1)
             ->assertJsonPath('data.filter_options.views.0', 'all')
-            ->assertJsonPath('data.filter_options.animal_types.0', 'cattle')
+            ->assertJsonPath('data.filter_options.animal_types.0.name', 'cattle')
             ->assertJsonPath('data.actions.row_actions.0', 'add_food');
+
+        $typeId = $setup['batchBalance']->item->itemable->animal_type_id;
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?animal_type_id='.$typeId)
+            ->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.animal_type.id', $typeId)
+            ->assertJsonMissingPath('data.0.type')->assertJsonMissingPath('data.0.category')->assertJsonMissingPath('data.0.breed');
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id)->assertOk()
+            ->assertJsonPath('data.current_animal.animal_type_id', $typeId)
+            ->assertJsonMissingPath('data.current_animal.type');
+        $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?breed=Brahman')
+            ->assertUnprocessable()->assertJsonValidationErrors('breed');
 
         $this->getJson('/api/v1/farms/'.$setup['farm']->id.'/animals?view=batch')
             ->assertOk()
@@ -153,24 +163,18 @@ class FarmNavigationTest extends TestCase
             'allowed_item_categories' => ['animal'],
             'status' => 'active',
         ]);
-        $batch = Animal::query()->create([
+        $batch = Animal::factory()->create([
             'code' => 'ANI-BATCH',
             'tracking_type' => 'batch',
             'batch_flock_number' => 'BATCH-001',
             'name' => 'Brahman Batch 1',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
             'gender' => 'mixed',
         ]);
-        $individual = Animal::query()->create([
+        $individual = Animal::factory()->create([
             'code' => 'ANI-RFID',
             'tracking_type' => 'individual',
             'ear_tag_rfid_number' => 'RFID-001',
             'name' => 'RFID Cow 1',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
             'gender' => 'female',
         ]);
         $batchItem = app(ItemRegistryService::class)->syncFromMaster($batch);

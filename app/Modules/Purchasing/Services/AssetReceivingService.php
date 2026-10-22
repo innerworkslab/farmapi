@@ -16,6 +16,8 @@ use App\Modules\Purchasing\Models\PurchaseReceiptLine;
 use App\Modules\Setup\Models\Animal;
 use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\Inventory;
+use App\Modules\Setup\Repositories\AnimalClassificationRepository;
+use App\Modules\Setup\Services\AnimalClassificationService;
 use App\Support\BranchAccess;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -57,8 +59,11 @@ class AssetReceivingService
         if (! $line->stock_uom_id) {
             $this->invalid('stock_uom_id', 'A stock count UOM is required.');
         }
-        Item::query()->lockForUpdate()->findOrFail($line->item_id);
         $master = $line->item->itemable;
+        if ($master instanceof Animal && $master->animal_type_id) {
+            app(AnimalClassificationRepository::class)->find('animal-types', (int) $master->animal_type_id, true);
+        }
+        Item::query()->lockForUpdate()->findOrFail($line->item_id);
         if (! $master || $line->item->status !== 'active') {
             $this->invalid('item_id', 'An active master item is required.');
         }
@@ -97,10 +102,14 @@ class AssetReceivingService
                 if (Animal::withTrashed()->where($identityField, $identity)->exists()) {
                     $this->invalid('metadata', 'The received animal identity already exists.');
                 }
-                $animal = Animal::query()->create([
+                if (array_key_exists('breed', $row)) {
+                    $this->invalid('animal_breed_id', 'Select animal_breed_id instead of entering a breed name.');
+                }
+                $classificationIds = ['animal_type_id' => $master->animal_type_id, 'animal_category_id' => $master->animal_category_id, 'animal_breed_id' => $row['animal_breed_id'] ?? $master->animal_breed_id];
+                app(AnimalClassificationService::class)->validateAnimalSelection($classificationIds);
+                $animal = Animal::query()->create($classificationIds + [
                     'code' => 'RCV-'.Str::uuid(), 'tracking_type' => $master->tracking_type, $identityField => $identity,
-                    'name' => $row['name'] ?? $master->name, 'type' => $master->type, 'category' => $master->category,
-                    'breed' => $row['breed'] ?? $master->breed, 'gender' => $row['gender'] ?? $master->gender,
+                    'name' => $row['name'] ?? $master->name, 'gender' => $row['gender'] ?? $master->gender,
                     'color_marking' => $row['color_marking'] ?? $master->color_marking, 'photo_path' => $row['photo_path'] ?? null,
                 ]);
             }

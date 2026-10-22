@@ -18,6 +18,7 @@ class AnimalService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            app(AnimalClassificationService::class)->validateAnimalSelection($data);
             $animal = $this->repository->create($data);
             $this->items->syncFromMaster($animal);
 
@@ -29,6 +30,8 @@ class AnimalService extends BusinessMasterService
     public function update(Model $model, array $data): Model
     {
         return DB::transaction(function () use ($model, $data): Model {
+            app(AnimalClassificationService::class)->validateAnimalSelection(array_replace($model->getAttributes(), $data));
+            $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
             $animal = $this->repository->update($model, $data);
             $this->items->syncFromMaster($animal);
 

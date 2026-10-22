@@ -12,6 +12,7 @@ use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use Database\Seeders\AnimalClassificationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
@@ -42,6 +43,11 @@ class AssetReceivingTest extends TestCase
         $r = $this->receipt($s, 2, 1, ['animals' => [['rfid' => 'NEW-1'], ['rfid' => 'NEW-2'], ['rfid' => 'NEW-3', 'foc' => true]]]);
         $this->postJson('/api/v1/purchasing/receipts/'.$r.'/confirm')->assertOk();
         $this->assertDatabaseCount('farm_animal_profiles', 3);
+        $template = Animal::where('code', 'ANI')->firstOrFail();
+        $received = Animal::where('ear_tag_rfid_number', 'NEW-1')->firstOrFail();
+        $this->assertSame($template->animal_type_id, $received->animal_type_id);
+        $this->assertSame($template->animal_category_id, $received->animal_category_id);
+        $this->assertSame($template->animal_breed_id, $received->animal_breed_id);
         $this->assertDatabaseCount('inventory_ledger_entries', 3);
         $r = $this->receipt($s, 2, 0, ['animals' => [['rfid' => 'NEW-4'], ['rfid' => 'NEW-1']]]);
         $this->postJson('/api/v1/purchasing/receipts/'.$r.'/confirm')->assertUnprocessable();
@@ -90,7 +96,11 @@ class AssetReceivingTest extends TestCase
         $supplier = Supplier::query()->create(['code' => 'SUP', 'name' => 'Supplier', 'type' => 'animal', 'phone_number' => '123', 'supplied_categories' => ['animal', 'equipment'], 'status' => 'active']);
         $inventory = Inventory::query()->create(['code' => 'INV', 'name' => 'Farm store', 'type' => 'animal', 'branch_id' => $branch->id, 'allowed_item_categories' => ['animal', 'equipment'], 'status' => 'active']);
         $farm = FarmInformation::query()->create(['name' => 'Farm', 'branch_id' => $branch->id, 'house_barn' => 'Barn', 'pen_cage_pond' => 'Pen']);
-        $master = $type === 'equipment' ? Equipment::query()->create(['code' => 'EQ', 'name' => 'Tools', 'category' => 'farm']) : Animal::query()->create(['code' => 'ANI', 'tracking_type' => $type, 'batch_flock_number' => $type === 'batch' ? 'TEMPLATE-BATCH' : null, 'ear_tag_rfid_number' => $type === 'individual' ? 'TEMPLATE-RFID' : null, 'name' => 'Cattle', 'type' => 'cattle', 'category' => 'beef', 'breed' => 'Brahman', 'gender' => 'mixed']);
+        $master = $type === 'equipment' ? Equipment::query()->create(['code' => 'EQ', 'name' => 'Tools', 'category' => 'farm']) : Animal::factory()->create(['code' => 'ANI', 'tracking_type' => $type, 'batch_flock_number' => $type === 'batch' ? 'TEMPLATE-BATCH' : null, 'ear_tag_rfid_number' => $type === 'individual' ? 'TEMPLATE-RFID' : null, 'name' => 'Cattle', 'gender' => 'mixed']);
+        if ($master instanceof Animal) {
+            $this->seed(AnimalClassificationSeeder::class);
+            $master->refresh();
+        }
         $item = app(ItemRegistryService::class)->syncFromMaster($master);
         $category = $type === 'equipment' ? 'equipment' : 'animal';
         $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_inventory_id' => $inventory->id, 'target_farm_information_id' => $farm->id, 'target_location' => 'Pen']]])->assertCreated();

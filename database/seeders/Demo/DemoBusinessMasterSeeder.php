@@ -13,12 +13,14 @@ use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Medicine;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use Database\Seeders\AnimalClassificationSeeder;
 use Illuminate\Database\Seeder;
 
 class DemoBusinessMasterSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(AnimalClassificationSeeder::class);
         $yangon = Branch::query()->where('code', 'BR-YGN')->firstOrFail();
         $mandalay = Branch::query()->where('code', 'BR-MDY')->firstOrFail();
 
@@ -159,9 +161,7 @@ class DemoBusinessMasterSeeder extends Seeder
             'tracking_type' => 'batch',
             'batch_flock_number' => 'BATCH-CATTLE-001',
             'name' => 'Cattle Batch 001',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman Cross',
+            ...AnimalClassificationSeeder::cattleReferences('brahman cross'),
             'gender' => 'mixed',
             'color_marking' => 'mixed brown',
         ]);

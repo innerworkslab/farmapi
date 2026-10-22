@@ -15,6 +15,7 @@ use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use App\Modules\Setup\Services\AnimalClassificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
@@ -243,14 +244,18 @@ class InventoryFoundationTest extends TestCase
             'inventory.items.view',
         ]);
 
+        $classifications = app(AnimalClassificationService::class);
+        $animalType = $classifications->save('animal-types', ['name' => 'cattle']);
+        $animalCategory = $classifications->save('animal-categories', ['name' => 'beef', 'animal_type_id' => $animalType->id]);
+        $animalBreed = $classifications->save('animal-breeds', ['name' => 'Brahman', 'animal_type_id' => $animalType->id]);
         $create = $this->postJson('/api/v1/setup/animals', [
             'code' => 'ANI-AUTO',
             'tracking_type' => 'batch',
             'batch_flock_number' => 'BATCH-AUTO',
             'name' => 'Auto Registered Batch',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
+            'animal_type_id' => $animalType->id,
+            'animal_category_id' => $animalCategory->id,
+            'animal_breed_id' => $animalBreed->id,
             'gender' => 'mixed',
         ])->assertCreated();
 

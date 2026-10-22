@@ -18,6 +18,7 @@ use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Medicine;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use App\Modules\Setup\Services\AnimalClassificationService;
 use Database\Seeders\Demo\DemoAuthSeeder;
 use Database\Seeders\Demo\DemoFarmsSeeder;
 use Database\Seeders\Demo\DemoSetupSeeder;
@@ -30,6 +31,22 @@ use Tests\TestCase;
 class FarmManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_classification_renames_do_not_rewrite_posted_operation_snapshots(): void
+    {
+        $user = $this->actingWithFarmPermissions();
+        $s = $this->setupFeedingStock(100);
+        $user->branches()->attach($s['branch']->id);
+        $id = $this->operation($s, 'health', 1, ['reason' => 'Snapshot verification', 'health_status' => 'healthy']);
+        $this->confirmOperation($id);
+        $target = FarmOperation::findOrFail($id)->targets()->firstOrFail();
+        $snapshot = $target->snapshot;
+        $this->assertSame('Brahman', $snapshot['animal']['animal_breed']['name']);
+        $master = $s['animalBalance']->item->itemable;
+        app(AnimalClassificationService::class)->save('animal-breeds', ['name' => 'Renamed Brahman', 'animal_type_id' => $master->animal_type_id], $master->animal_breed_id);
+        $this->assertSame('Renamed Brahman', $master->fresh()->animalBreed->name);
+        $this->assertSame($snapshot, $target->fresh()->snapshot);
+    }
 
     public function test_health_mortality_reports_alerts_and_reversal_are_consistent(): void
     {
@@ -156,6 +173,8 @@ class FarmManagementTest extends TestCase
 
     public function test_feeding_plans_variance_alerts_and_correction_reconcile(): void
     {
+        // Keep UTC entry dates and the farm's Myanmar business day aligned at midnight boundaries.
+        $this->travelTo(now()->startOfDay()->addHours(9));
         $user = $this->actingWithFarmPermissions();
         $s = $this->setupFeedingStock(100);
         $user->branches()->attach($s['branch']->id);
@@ -185,7 +204,7 @@ class FarmManagementTest extends TestCase
         $user->branches()->attach($s['branch']->id);
         $ids = [];
         foreach (['A', 'B'] as $tag) {
-            $animal = Animal::query()->create(['code' => 'IND-'.$tag, 'tracking_type' => 'individual', 'ear_tag_rfid_number' => 'TAG-'.$tag, 'name' => $tag, 'type' => 'cattle', 'category' => 'beef', 'breed' => 'Brahman', 'gender' => 'female']);
+            $animal = Animal::factory()->create(['code' => 'IND-'.$tag, 'tracking_type' => 'individual', 'ear_tag_rfid_number' => 'TAG-'.$tag, 'name' => $tag, 'gender' => 'female']);
             $item = app(ItemRegistryService::class)->syncFromMaster($animal);
             $balance = InventoryBalance::query()->create(['identity_key' => 'IND-'.$tag, 'category' => 'animal', 'item_type' => 'animal', 'item_id' => $item->id, 'branch_id' => $s['branch']->id, 'inventory_id' => $s['inventory']->id, 'farm_information_id' => $s['farm']->id, 'location' => 'Pen F1', 'stock_uom_id' => $s['uom']->id, 'on_hand_quantity' => 1, 'available_quantity' => 1]);
             $ids[] = $balance->id;
@@ -283,14 +302,11 @@ class FarmManagementTest extends TestCase
             'allowed_item_categories' => ['feed'],
             'status' => 'active',
         ]);
-        $animal = Animal::query()->create([
+        $animal = Animal::factory()->create([
             'code' => 'ANI-FEED-BATCH',
             'tracking_type' => 'batch',
             'batch_flock_number' => 'FEED-BATCH-001',
             'name' => 'Feeding Batch',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
             'gender' => 'mixed',
         ]);
         $farm = FarmInformation::query()->create([

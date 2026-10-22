@@ -30,6 +30,7 @@ use App\Modules\Purchasing\Controllers\PurchaseReceiptController;
 use App\Modules\Sales\Controllers\SaleController;
 use App\Modules\Setup\Controllers\ActivityLogController;
 use App\Modules\Setup\Controllers\AdminController;
+use App\Modules\Setup\Controllers\AnimalClassificationController;
 use App\Modules\Setup\Controllers\AnimalController;
 use App\Modules\Setup\Controllers\BranchController;
 use App\Modules\Setup\Controllers\CustomerController;
@@ -76,6 +77,17 @@ Route::prefix('v1')->group(function (): void {
         });
 
         Route::prefix('setup')->group(function (): void {
+            foreach (['animal-types', 'animal-categories', 'animal-breeds'] as $kind) {
+                $permission = 'setup.'.str_replace('-', '_', $kind);
+                $readPermission = $permission.'.view|setup.animals.view|setup.animals.create|setup.animals.update';
+                Route::get($kind, [AnimalClassificationController::class, 'index'])->defaults('classification_kind', $kind)->middleware('permission:'.$readPermission);
+                Route::post($kind, [AnimalClassificationController::class, 'store'])->defaults('classification_kind', $kind)->middleware('permission:'.$permission.'.create');
+                Route::get($kind.'/{classification}', [AnimalClassificationController::class, 'show'])->whereNumber('classification')->defaults('classification_kind', $kind)->middleware('permission:'.$readPermission);
+                Route::post($kind.'/{classification}', [AnimalClassificationController::class, 'update'])->whereNumber('classification')->defaults('classification_kind', $kind)->middleware('permission:'.$permission.'.update');
+                Route::post($kind.'/{classification}/toggle-status', [AnimalClassificationController::class, 'toggleStatus'])->whereNumber('classification')->defaults('classification_kind', $kind)->middleware('permission:'.$permission.'.update');
+                Route::delete($kind.'/{classification}', [AnimalClassificationController::class, 'destroy'])->whereNumber('classification')->defaults('classification_kind', $kind)->middleware('permission:'.$permission.'.delete');
+            }
+
             Route::get('branches', [BranchController::class, 'index'])->middleware('permission:setup.branches.view');
             Route::post('branches', [BranchController::class, 'store'])->middleware('permission:setup.branches.create');
             Route::get('branches/{branch}', [BranchController::class, 'show'])->middleware('permission:setup.branches.view');

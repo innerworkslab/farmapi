@@ -265,14 +265,11 @@ class FeedingApiTest extends TestCase
             'allowed_item_categories' => ['feed'],
             'status' => 'active',
         ]);
-        $animal = Animal::query()->create([
+        $animal = Animal::factory()->create([
             'code' => 'ANI-FEED-BATCH',
             'tracking_type' => 'batch',
             'batch_flock_number' => 'FEED-BATCH-001',
             'name' => 'Feeding Batch',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
             'gender' => 'mixed',
         ]);
         $farm = FarmInformation::query()->create([

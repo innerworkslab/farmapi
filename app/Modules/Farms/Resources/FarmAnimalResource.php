@@ -2,6 +2,7 @@
 
 namespace App\Modules\Farms\Resources;
 
+use App\Modules\Setup\Resources\AnimalClassificationResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,9 +43,12 @@ class FarmAnimalResource extends JsonResource
                 'animal_name' => $isIndividual ? $animal?->name : null,
                 'current_weight' => $profile?->weight,
             ],
-            'animal_type' => $animal?->type,
-            'category' => $animal?->category ?? $item?->master_category,
-            'breed' => $animal?->breed,
+            'animal_type_id' => $animal?->animal_type_id,
+            'animal_category_id' => $animal?->animal_category_id,
+            'animal_breed_id' => $animal?->animal_breed_id,
+            'animal_type' => $animal?->animalType ? new AnimalClassificationResource($animal->animalType) : null,
+            'animal_category' => $animal?->animalCategory ? new AnimalClassificationResource($animal->animalCategory) : null,
+            'animal_breed' => $animal?->animalBreed ? new AnimalClassificationResource($animal->animalBreed) : null,
             'gender' => $animal?->gender,
             'color_marking' => $animal?->color_marking,
             'age' => $profile?->date_of_birth ? (int) $profile->date_of_birth->diffInDays(now()) : null,

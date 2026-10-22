@@ -13,16 +13,16 @@ class AnimalRepository extends BusinessMasterRepository
 
     protected function searchColumns(): array
     {
-        return ['code', 'name', 'ear_tag_rfid_number', 'batch_flock_number', 'breed'];
+        return ['code', 'name', 'ear_tag_rfid_number', 'batch_flock_number'];
     }
 
     protected function filterColumns(): array
     {
-        return ['breed' => 'breed', 'category' => 'category', 'gender' => 'gender', 'tracking_type' => 'tracking_type', 'type' => 'type'];
+        return ['gender' => 'gender', 'tracking_type' => 'tracking_type', 'animal_type_id' => 'animal_type_id', 'animal_category_id' => 'animal_category_id', 'animal_breed_id' => 'animal_breed_id'];
     }
 
     protected function relations(): array
     {
-        return [];
+        return ['animalType', 'animalCategory', 'animalBreed'];
     }
 }

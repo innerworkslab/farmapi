@@ -21,12 +21,14 @@ use App\Modules\Setup\Models\Inventory;
 use App\Modules\Setup\Models\Medicine;
 use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
+use Database\Seeders\AnimalClassificationSeeder;
 use Illuminate\Database\Seeder;
 
 class DemoFarmsSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(AnimalClassificationSeeder::class);
         $actor = User::query()->where('email', 'admin@example.com')->firstOrFail();
         $branch = Branch::query()->where('code', 'BR-YGN')->firstOrFail();
         $uom = Uom::query()->firstOrCreate(['code' => 'HEAD-FARM'], ['name' => 'Animal / equipment count', 'symbol' => 'unit', 'category' => 'unit', 'status' => 'active']);
@@ -36,8 +38,8 @@ class DemoFarmsSeeder extends Seeder
         $kg = Uom::query()->firstOrCreate(['code' => 'KG-FARM'], ['name' => 'Farm Kilogram', 'symbol' => 'kg', 'category' => 'weight', 'status' => 'active']);
         $dose = Uom::query()->firstOrCreate(['code' => 'DOSE-FARM'], ['name' => 'Farm Dose', 'symbol' => 'dose', 'category' => 'unit', 'status' => 'active']);
         $masters = [
-            Animal::query()->firstOrCreate(['code' => 'ANI-FINAL-BATCH'], ['tracking_type' => 'batch', 'batch_flock_number' => 'FINAL-BATCH', 'name' => 'Demo cattle batch', 'type' => 'cattle', 'category' => 'beef', 'breed' => 'Brahman', 'gender' => 'mixed']),
-            Animal::query()->firstOrCreate(['code' => 'ANI-FINAL-RFID'], ['tracking_type' => 'individual', 'ear_tag_rfid_number' => 'FINAL-RFID', 'name' => 'Demo individual cattle', 'type' => 'cattle', 'category' => 'beef', 'breed' => 'Brahman', 'gender' => 'female']),
+            Animal::query()->firstOrCreate(['code' => 'ANI-FINAL-BATCH'], ['tracking_type' => 'batch', 'batch_flock_number' => 'FINAL-BATCH', 'name' => 'Demo cattle batch', ...AnimalClassificationSeeder::cattleReferences(), 'gender' => 'mixed']),
+            Animal::query()->firstOrCreate(['code' => 'ANI-FINAL-RFID'], ['tracking_type' => 'individual', 'ear_tag_rfid_number' => 'FINAL-RFID', 'name' => 'Demo individual cattle', ...AnimalClassificationSeeder::cattleReferences(), 'gender' => 'female']),
             Equipment::query()->firstOrCreate(['code' => 'EQ-FINAL'], ['name' => 'Demo farm tools', 'category' => 'farm']),
             Food::query()->firstOrCreate(['code' => 'FOD-FARM-FINAL'], ['name' => 'Farm demo feed', 'category' => 'feed', 'target_animal_type' => 'cattle', 'purchase_uom_id' => $kg->id, 'stock_uom_id' => $kg->id, 'consumption_uom_id' => $kg->id, 'uom_conversion' => 1, 'purchase_price' => 2, 'default_supplier_id' => $supplier->id, 'batch_tracking' => true, 'expiry_tracking' => true, 'status' => 'active']),
             Medicine::query()->firstOrCreate(['code' => 'MED-FARM-FINAL'], ['name' => 'Farm demo medicine', 'type' => 'medicine', 'category' => 'antibiotic', 'purchase_uom_id' => $dose->id, 'stock_uom_id' => $dose->id, 'usage_uom_id' => $dose->id, 'uom_conversion' => 1, 'purchase_price' => 10, 'default_supplier_id' => $supplier->id, 'batch_tracking' => true, 'expiry_tracking' => true, 'status' => 'active']),

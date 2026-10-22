@@ -2,6 +2,7 @@
 
 namespace App\Modules\Farms\Resources;
 
+use App\Modules\Setup\Resources\AnimalClassificationResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,8 +15,8 @@ class FarmListResource extends JsonResource
             'id' => $this->id,
             'farm_code' => sprintf('FRM-%05d', $this->id),
             'name' => $this->name,
-            'farm_type' => $this->currentAnimal?->type,
-            'animal_type' => $this->currentAnimal?->type,
+            'animal_type_id' => $this->currentAnimal?->animal_type_id,
+            'animal_type' => $this->currentAnimal?->animalType ? new AnimalClassificationResource($this->currentAnimal->animalType) : null,
             'branch' => [
                 'id' => $this->branch?->id,
                 'code' => $this->branch?->code,

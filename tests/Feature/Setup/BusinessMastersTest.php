@@ -5,6 +5,7 @@ namespace Tests\Feature\Setup;
 use App\Models\User;
 use App\Modules\Sales\Models\CustomerReceivableEntry;
 use App\Modules\Setup\Models\Branch;
+use App\Modules\Setup\Services\AnimalClassificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
@@ -176,14 +177,18 @@ class BusinessMastersTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('data.code', 'MED-TST');
 
+        $classifications = app(AnimalClassificationService::class);
+        $animalType = $classifications->save('animal-types', ['name' => 'cattle']);
+        $animalCategory = $classifications->save('animal-categories', ['name' => 'beef', 'animal_type_id' => $animalType->id]);
+        $animalBreed = $classifications->save('animal-breeds', ['name' => 'Brahman', 'animal_type_id' => $animalType->id]);
         $animal = $this->postJson('/api/v1/setup/animals', [
             'code' => 'ANI-TST',
             'tracking_type' => 'batch',
             'batch_flock_number' => 'BATCH-TST',
             'name' => 'Test Batch',
-            'type' => 'cattle',
-            'category' => 'beef',
-            'breed' => 'Brahman',
+            'animal_type_id' => $animalType->id,
+            'animal_category_id' => $animalCategory->id,
+            'animal_breed_id' => $animalBreed->id,
             'gender' => 'mixed',
         ])->assertCreated()
             ->json('data.id');

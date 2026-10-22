@@ -132,7 +132,7 @@ class ItemRegistryService
                 'code' => $master->code,
                 'name' => $master->name ?: $master->code,
                 'category' => 'animal',
-                'master_category' => $master->category,
+                'master_category' => $master->animalCategory?->name,
                 'stock_uom_id' => null,
                 'purchase_uom_id' => null,
                 'usage_uom_id' => null,
