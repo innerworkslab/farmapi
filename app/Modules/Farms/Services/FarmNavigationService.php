@@ -26,8 +26,8 @@ class FarmNavigationService
                 $query->where(function (Builder $inner) use ($search): void {
                     $inner
                         ->where('farm_information.name', 'like', "%{$search}%")
-                        ->orWhere('farm_information.house_barn', 'like', "%{$search}%")
-                        ->orWhere('farm_information.pen_cage_pond', 'like', "%{$search}%");
+                        ->orWhereHas('houseBarn', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('penCagePond', fn ($q) => $q->where('name', 'like', "%{$search}%"));
 
                     $numericSearch = preg_replace('/\D+/', '', $search);
 
@@ -37,6 +37,8 @@ class FarmNavigationService
                 });
             })
             ->when($filters['branch_id'] ?? null, fn (Builder $query, string $branchId) => $query->where('farm_information.branch_id', $branchId))
+            ->when($filters['house_barn_id'] ?? null, fn ($q, $id) => $q->where('house_barn_id', $id))
+            ->when($filters['pen_cage_pond_id'] ?? null, fn ($q, $id) => $q->where('pen_cage_pond_id', $id))
             ->when($filters['animal_type_id'] ?? null, function (Builder $query, $typeId): void {
                 $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('animal_type_id', $typeId));
             })

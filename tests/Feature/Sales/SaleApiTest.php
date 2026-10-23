@@ -88,7 +88,7 @@ class SaleApiTest extends TestCase
         $uom = Uom::query()->create(['code' => 'HD-SALE', 'name' => 'Head', 'symbol' => 'hd', 'category' => 'unit', 'status' => 'active']);
         $inventory = Inventory::query()->create(['code' => 'INV-SALE', 'name' => 'Sale stock', 'type' => 'animal', 'branch_id' => $branch->id, 'allowed_item_categories' => ['animal'], 'status' => 'active']);
         $animal = Animal::factory()->create(['code' => 'ANI-SALE', 'tracking_type' => 'batch', 'batch_flock_number' => 'SALE-BATCH-1', 'name' => 'Sale cattle', 'gender' => 'mixed']);
-        $farm = FarmInformation::query()->create(['name' => 'Sale farm', 'branch_id' => $branch->id, 'house_barn' => 'Barn 1', 'pen_cage_pond' => 'Pen 1', 'current_animal_id' => $animal->id]);
+        $farm = FarmInformation::query()->create(['name' => 'Sale farm', 'branch_id' => $branch->id, ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Barn 1', 'Pen 1'), 'current_animal_id' => $animal->id]);
         $item = app(ItemRegistryService::class)->syncFromMaster($animal);
         $balance = InventoryBalance::query()->create(['identity_key' => 'SALE-BATCH-BALANCE', 'category' => 'animal', 'item_type' => 'animal', 'item_id' => $item->id, 'branch_id' => $branch->id, 'inventory_id' => $inventory->id, 'farm_information_id' => $farm->id, 'location' => 'Pen 1', 'stock_uom_id' => $uom->id, 'on_hand_quantity' => 10, 'available_quantity' => 10]);
         AnimalProfile::query()->create(['animal_balance_id' => $balance->id, 'initial_quantity' => 10, 'health_status' => 'healthy', 'animal_state' => 'alive']);

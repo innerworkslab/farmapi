@@ -205,8 +205,7 @@ class BusinessMastersTest extends TestCase
         $farm = $this->postJson('/api/v1/setup/farm-information', [
             'name' => 'Test Farm House',
             'branch_id' => $branch->id,
-            'house_barn' => 'Barn A',
-            'pen_cage_pond' => 'Pen 1',
+            ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Barn A', 'Pen 1'),
             'current_animal_id' => $animal,
         ]);
 
@@ -214,8 +213,8 @@ class BusinessMastersTest extends TestCase
             ->assertJsonPath('data.name', 'Test Farm House')
             ->assertJsonPath('data.current_animal_id', $animal);
         $this->postJson('/api/v1/setup/farm-information', [
-            'name' => 'Invalid Barn Choice', 'branch_id' => $branch->id, 'house_barn' => 'Barn Not Listed', 'pen_cage_pond' => 'Pen 1',
-        ])->assertUnprocessable()->assertJsonValidationErrors('house_barn');
+            'name' => 'Invalid Barn Choice', 'branch_id' => $branch->id, 'house_barn_id' => 999999999,
+        ])->assertUnprocessable()->assertJsonValidationErrors('house_barn_id');
     }
 
     public function test_supplier_types_are_multi_select_and_opening_balance_posts_to_currency_scoped_ap(): void

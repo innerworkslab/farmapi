@@ -48,7 +48,7 @@ class FarmNavigationTest extends TestCase
             $this->deleteJson('/api/v1/setup/'.$module.'/'.$id)->assertForbidden();
         }
         $this->postJson('/api/v1/setup/inventories/'.$setup['inventory']->id.'/toggle-status')->assertForbidden();
-        $this->postJson('/api/v1/setup/farm-information', ['name' => 'Unauthorized farm', 'house_barn' => 'Barn', 'branch_id' => $setup['branch']->id])->assertForbidden();
+        $this->postJson('/api/v1/setup/farm-information', ['name' => 'Unauthorized farm', 'house_barn_id' => 999999999, 'branch_id' => $setup['branch']->id])->assertForbidden();
         $user->branches()->attach($setup['branch']->id);
         $this->getJson('/api/v1/setup/farm-information')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/setup/inventories/'.$setup['inventory']->id)->assertOk();
@@ -182,8 +182,7 @@ class FarmNavigationTest extends TestCase
         $farm = FarmInformation::query()->create([
             'name' => 'North Barn',
             'branch_id' => $branch->id,
-            'house_barn' => 'Barn N',
-            'pen_cage_pond' => 'Pen 1',
+            ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Barn N', 'Pen 1'),
             'current_animal_id' => $batch->id,
         ]);
 

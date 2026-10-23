@@ -178,8 +178,7 @@ class DemoBusinessMasterSeeder extends Seeder
         FarmInformation::query()->updateOrCreate([
             'branch_id' => $yangon->id,
             'name' => 'Yangon Barn A',
-            'house_barn' => 'Barn A',
-            'pen_cage_pond' => 'Pen 1',
+            ...\Database\Seeders\FarmLocationSeeder::references($yangon->id, 'Barn A', 'Pen 1'),
         ], [
             'current_animal_id' => $animal->id,
             'responsible_employee_id' => User::query()->where('email', 'admin@example.com')->value('id'),

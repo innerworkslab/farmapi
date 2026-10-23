@@ -34,7 +34,7 @@ class DemoFarmsSeeder extends Seeder
         $uom = Uom::query()->firstOrCreate(['code' => 'HEAD-FARM'], ['name' => 'Animal / equipment count', 'symbol' => 'unit', 'category' => 'unit', 'status' => 'active']);
         $inventory = Inventory::query()->firstOrCreate(['code' => 'INV-FARM-FINAL'], ['name' => 'Farm receiving store', 'type' => 'animal', 'branch_id' => $branch->id, 'allowed_item_categories' => ['animal', 'equipment', 'food', 'medicine'], 'status' => 'active']);
         $supplier = Supplier::query()->firstOrCreate(['code' => 'SUP-FARM-FINAL'], ['name' => 'Farm demo supplier', 'type' => 'animal', 'phone_number' => '09700000000', 'supplied_categories' => ['animal', 'equipment', 'food', 'medicine'], 'status' => 'active']);
-        $farm = FarmInformation::query()->firstOrCreate(['name' => 'Farm management demo'], ['branch_id' => $branch->id, 'house_barn' => 'Demo Barn', 'pen_cage_pond' => 'Demo Pen', 'responsible_employee_id' => $actor->id]);
+        $farm = FarmInformation::query()->firstOrCreate(['name' => 'Farm management demo'], ['branch_id' => $branch->id, ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Demo Barn', 'Demo Pen'), 'responsible_employee_id' => $actor->id]);
         $kg = Uom::query()->firstOrCreate(['code' => 'KG-FARM'], ['name' => 'Farm Kilogram', 'symbol' => 'kg', 'category' => 'weight', 'status' => 'active']);
         $dose = Uom::query()->firstOrCreate(['code' => 'DOSE-FARM'], ['name' => 'Farm Dose', 'symbol' => 'dose', 'category' => 'unit', 'status' => 'active']);
         $masters = [

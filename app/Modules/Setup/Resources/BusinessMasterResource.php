@@ -17,6 +17,11 @@ class BusinessMasterResource extends JsonResource
     {
         $data = parent::toArray($request);
 
+        if ($this->resource instanceof \App\Modules\Setup\Models\FarmInformation) {
+            $data['house_barn'] = new FarmLocationResource($this->whenLoaded('houseBarn'));
+            $data['pen_cage_pond'] = new FarmLocationResource($this->whenLoaded('penCagePond'));
+        }
+
         if ($this->resource instanceof Supplier) {
             $data['types'] = $this->whenLoaded('types', fn () => $this->types->pluck('type')->values()->all(), []);
         }

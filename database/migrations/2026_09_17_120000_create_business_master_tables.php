@@ -228,15 +228,18 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->foreignId('branch_id')->constrained('branches')->restrictOnDelete();
-            $table->string('house_barn');
-            $table->string('pen_cage_pond')->nullable();
+            $table->unsignedBigInteger('house_barn_id')->nullable();
+            $table->unsignedBigInteger('pen_cage_pond_id')->nullable();
+            $table->foreign(['house_barn_id', 'branch_id'], 'farm_barn_branch_foreign')->references(['id', 'branch_id'])->on('house_barns')->restrictOnDelete();
+            $table->foreign(['pen_cage_pond_id', 'branch_id'], 'farm_pen_branch_foreign')->references(['id', 'branch_id'])->on('pen_cage_ponds')->restrictOnDelete();
             $table->foreignId('current_animal_id')->nullable()->constrained('animals')->nullOnDelete();
             $table->foreignId('responsible_employee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['branch_id', 'name', 'house_barn', 'pen_cage_pond'], 'farm_location_unique');
-            $table->index(['branch_id', 'house_barn']);
+            $table->unique(['branch_id', 'name', 'house_barn_id', 'pen_cage_pond_id'], 'farm_location_unique');
+            $table->index('branch_id', 'farm_branch_index');
+            $table->index(['branch_id', 'house_barn_id']);
         });
     }
 

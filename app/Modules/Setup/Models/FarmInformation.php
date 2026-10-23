@@ -18,11 +18,13 @@ class FarmInformation extends Model
 
     protected $table = 'farm_information';
 
+    protected $with = ['houseBarn', 'penCagePond'];
+
     protected $fillable = [
         'name',
         'branch_id',
-        'house_barn',
-        'pen_cage_pond',
+        'house_barn_id',
+        'pen_cage_pond_id',
         'current_animal_id',
         'responsible_employee_id',
         'version',
@@ -31,6 +33,16 @@ class FarmInformation extends Model
     public function setting(): HasOne
     {
         return $this->hasOne(FarmSetting::class, 'farm_information_id');
+    }
+
+    public function houseBarn(): BelongsTo
+    {
+        return $this->belongsTo(HouseBarn::class);
+    }
+
+    public function penCagePond(): BelongsTo
+    {
+        return $this->belongsTo(PenCagePond::class);
     }
 
     public function branch(): BelongsTo

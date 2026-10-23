@@ -43,10 +43,7 @@ abstract class BusinessMasterRepository
             ->with($this->relations())
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $query) use ($search): void {
-                    foreach ($this->searchColumns() as $index => $column) {
-                        $method = $index === 0 ? 'where' : 'orWhere';
-                        $query->{$method}($column, 'like', "%{$search}%");
-                    }
+                    $this->applySearch($query, $search);
                 });
             })
             ->when(true, function (Builder $query) use ($filters): void {
@@ -113,6 +110,14 @@ abstract class BusinessMasterRepository
 
     /** @param array<string, mixed> $filters */
     protected function applyCustomFilters(Builder $query, array $filters): void {}
+
+    protected function applySearch(Builder $query, string $search): void
+    {
+        foreach ($this->searchColumns() as $index => $column) {
+            $method = $index === 0 ? 'where' : 'orWhere';
+            $query->{$method}($column, 'like', "%{$search}%");
+        }
+    }
 
     private function hasFillable(Model $model, string $attribute): bool
     {

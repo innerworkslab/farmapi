@@ -312,8 +312,7 @@ class FarmManagementTest extends TestCase
         $farm = FarmInformation::query()->create([
             'name' => 'Feed Barn',
             'branch_id' => $branch->id,
-            'house_barn' => 'Barn F',
-            'pen_cage_pond' => 'Pen F1',
+            ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Barn F', 'Pen F1'),
             'current_animal_id' => $animal->id,
         ]);
         $food = Food::query()->create([

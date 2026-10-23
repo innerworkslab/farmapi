@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Controllers\AuthController;
+use App\Modules\Setup\Controllers\FarmLocationController;
 use App\Modules\Auth\Controllers\AuthorizationController;
 use App\Modules\Farms\Controllers\FarmController;
 use App\Modules\Farms\Controllers\FarmOperationController;
@@ -176,7 +177,16 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('equipment/{equipment}', [EquipmentController::class, 'destroy'])->middleware('permission:setup.equipment.delete');
 
             Route::get('farm-information', [FarmInformationController::class, 'index'])->middleware('permission:setup.farm-information.view');
-            Route::get('farm-information/location-options', [FarmInformationController::class, 'locationOptions'])->middleware('permission:setup.farm-information.view');
+            foreach (['house-barns', 'pen-cage-ponds'] as $kind) {
+                $permission = 'setup.'.str_replace('-', '_', $kind);
+                $read = $permission.'.view|setup.farm-information.view|setup.farm-information.create|setup.farm-information.update|farms.view';
+                Route::get($kind, [FarmLocationController::class, 'index'])->defaults('location_kind', $kind)->middleware('permission:'.$read);
+                Route::post($kind, [FarmLocationController::class, 'store'])->defaults('location_kind', $kind)->middleware('permission:'.$permission.'.create');
+                Route::get($kind.'/{location}', [FarmLocationController::class, 'show'])->whereNumber('location')->defaults('location_kind', $kind)->middleware('permission:'.$read);
+                Route::post($kind.'/{location}', [FarmLocationController::class, 'update'])->whereNumber('location')->defaults('location_kind', $kind)->middleware('permission:'.$permission.'.update');
+                Route::post($kind.'/{location}/toggle-status', [FarmLocationController::class, 'toggleStatus'])->whereNumber('location')->defaults('location_kind', $kind)->middleware('permission:'.$permission.'.update');
+                Route::delete($kind.'/{location}', [FarmLocationController::class, 'destroy'])->whereNumber('location')->defaults('location_kind', $kind)->middleware('permission:'.$permission.'.delete');
+            }
             Route::post('farm-information', [FarmInformationController::class, 'store'])->middleware('permission:setup.farm-information.create');
             Route::get('farm-information/{farmInformation}', [FarmInformationController::class, 'show'])->middleware('permission:setup.farm-information.view');
             Route::post('farm-information/{farmInformation}', [FarmInformationController::class, 'update'])->middleware('permission:setup.farm-information.update');

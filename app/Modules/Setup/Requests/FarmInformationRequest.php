@@ -4,7 +4,6 @@ namespace App\Modules\Setup\Requests;
 
 use App\Support\BranchAccess;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class FarmInformationRequest extends FormRequest
@@ -19,24 +18,13 @@ class FarmInformationRequest extends FormRequest
 
     public function rules(): array
     {
-        $recordId = $this->route('farmInformation')?->id;
-        $hasBarns = DB::table('farm_information')->whereNull('deleted_at')->where('branch_id', $this->input('branch_id'))->whereNotNull('house_barn')->where('house_barn', '<>', '')->exists();
-        $hasPens = DB::table('farm_information')->whereNull('deleted_at')->where('branch_id', $this->input('branch_id'))->whereNotNull('pen_cage_pond')->where('pen_cage_pond', '<>', '')->exists();
-
-        $barnRules = ['required', 'string', 'max:255'];
-        $penRules = ['nullable', 'string', 'max:255'];
-        if ($hasBarns) {
-            $barnRules[] = Rule::exists('farm_information', 'house_barn')->where(fn ($query) => $query->whereNull('deleted_at')->where('branch_id', $this->input('branch_id')));
-        }
-        if ($hasPens) {
-            $penRules[] = Rule::exists('farm_information', 'pen_cage_pond')->where(fn ($query) => $query->whereNull('deleted_at')->where('branch_id', $this->input('branch_id')));
-        }
-
         return [
             'name' => ['required', 'string', 'max:255'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'house_barn' => $barnRules,
-            'pen_cage_pond' => $penRules,
+            'house_barn' => ['prohibited'],
+            'pen_cage_pond' => ['prohibited'],
+            'house_barn_id' => ['nullable', 'integer', 'required_without:pen_cage_pond_id', Rule::exists('house_barns', 'id')->where('branch_id', $this->input('branch_id'))->where('status', 'active')->whereNull('deleted_at')],
+            'pen_cage_pond_id' => ['nullable', 'integer', 'required_without:house_barn_id', Rule::exists('pen_cage_ponds', 'id')->where('branch_id', $this->input('branch_id'))->where('status', 'active')->whereNull('deleted_at')],
             'current_animal_id' => ['nullable', 'integer', 'exists:animals,id'],
             'responsible_employee_id' => ['nullable', 'integer', 'exists:users,id'],
         ];

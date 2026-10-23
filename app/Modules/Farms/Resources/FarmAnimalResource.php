@@ -62,8 +62,10 @@ class FarmAnimalResource extends JsonResource
             'inventory_id' => $this->inventory_id,
             'location' => [
                 'name' => $this->location,
-                'house_barn' => $this->farmInformation?->house_barn,
-                'pen_cage_pond' => $this->farmInformation?->pen_cage_pond,
+                'house_barn_id' => $this->farmInformation?->house_barn_id,
+                'house_barn' => $this->farmInformation?->houseBarn ? new \App\Modules\Setup\Resources\FarmLocationResource($this->farmInformation?->houseBarn) : null,
+                'pen_cage_pond_id' => $this->farmInformation?->pen_cage_pond_id,
+                'pen_cage_pond' => $this->farmInformation?->penCagePond ? new \App\Modules\Setup\Resources\FarmLocationResource($this->farmInformation?->penCagePond) : null,
             ],
             'stock_lot_id' => $this->stock_lot_id,
             'health_status' => $profile?->health_status ?? 'healthy',

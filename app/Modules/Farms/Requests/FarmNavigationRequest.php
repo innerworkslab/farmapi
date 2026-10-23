@@ -15,6 +15,10 @@ class FarmNavigationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'house_barn_id' => ['nullable', 'integer', 'min:1'],
+            'pen_cage_pond_id' => ['nullable', 'integer', 'min:1'],
+            'house_barn' => ['prohibited'],
+            'pen_cage_pond' => ['prohibited'],
             'search' => ['nullable', 'string', 'max:100'],
             'branch_id' => ['nullable', 'integer', 'min:1'],
             'animal_type_id' => ['nullable', 'integer', 'min:1'],

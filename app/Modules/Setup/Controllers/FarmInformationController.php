@@ -18,12 +18,7 @@ class FarmInformationController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return BusinessMasterResource::collection($this->service->paginate($request->query(), $request->user()));
-    }
-
-    public function locationOptions(Request $request): \Illuminate\Http\JsonResponse
-    {
-        return response()->json(['data' => $this->service->locationOptions($request->query(), $request->user())]);
+        return BusinessMasterResource::collection($this->service->paginate($request->validate(['search' => ['nullable', 'string', 'max:100'], 'branch_id' => ['nullable', 'integer', 'min:1'], 'house_barn_id' => ['nullable', 'integer', 'min:1'], 'pen_cage_pond_id' => ['nullable', 'integer', 'min:1'], 'current_animal_id' => ['nullable', 'integer'], 'responsible_employee_id' => ['nullable', 'integer'], 'per_page' => ['nullable', 'integer', 'between:1,100'], 'house_barn' => ['prohibited'], 'pen_cage_pond' => ['prohibited']]), $request->user()));
     }
 
     public function store(FarmInformationRequest $request): BusinessMasterResource
