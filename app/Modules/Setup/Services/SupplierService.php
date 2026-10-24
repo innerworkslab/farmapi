@@ -7,6 +7,7 @@ use App\Modules\Financial\Support\Money;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchasePayment;
 use App\Modules\Setup\Models\Supplier;
+use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\SupplierPayableEntry;
 use App\Modules\Setup\Repositories\SupplierRepository;
 use App\Support\BranchAccess;
@@ -39,6 +40,9 @@ class SupplierService extends BusinessMasterService
             if ($amount > 0) {
                 BranchAccess::authorize($actor, (int) $data['preferred_branch_id']);
             }
+            $codeBranch = Branch::query()->findOrFail($data['preferred_branch_id']);
+            BranchAccess::authorize($actor, (int) $codeBranch->id);
+            $data['code'] = app(BranchMasterCodeGenerator::class)->next($codeBranch, 'suppliers', 'SUP');
             $supplier = $this->create($data);
             $supplier->types()->createMany(array_map(fn (string $type): array => ['type' => $type], $types));
             activity('setup')->performedOn($supplier)->causedBy($actor)
@@ -65,7 +69,7 @@ class SupplierService extends BusinessMasterService
     public function updateWithTypes(Supplier $supplier, array $data, User $actor): Supplier
     {
         $types = $data['types'] ?? null;
-        unset($data['types'], $data['opening_balance_date']);
+        unset($data['types'], $data['opening_balance_date'], $data['code']);
         if ($supplier->payableEntries()->exists() && (
             (isset($data['opening_balance']) && (float) $data['opening_balance'] !== (float) $supplier->opening_balance)
             || (isset($data['opening_balance_type']) && $data['opening_balance_type'] !== $supplier->opening_balance_type)

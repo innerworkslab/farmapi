@@ -6,11 +6,11 @@ use App\Models\User;
 use App\Modules\Financial\Support\Money;
 use App\Modules\Sales\Models\CustomerReceivableEntry;
 use App\Modules\Setup\Models\Customer;
+use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Repositories\CustomerRepository;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CustomerService extends BusinessMasterService
@@ -28,14 +28,10 @@ class CustomerService extends BusinessMasterService
             if ((float) ($data['opening_balance'] ?? 0) > 0) {
                 $data['opening_balance_date'] = today();
             }
-            unset($data['code']);
-            $customer = Customer::withoutEvents(function () use ($data): Customer {
-                $customer = $this->create($data + ['code' => 'CUS-PENDING-'.Str::uuid()]);
-                $customer->code = 'CUS-'.str_pad((string) $customer->id, 6, '0', STR_PAD_LEFT);
-                $customer->saveQuietly();
-
-                return $customer->load('preferredBranch');
-            });
+            $codeBranch = Branch::query()->findOrFail($data['preferred_branch_id']);
+            BranchAccess::authorize($actor, (int) $codeBranch->id);
+            $data['code'] = app(BranchMasterCodeGenerator::class)->next($codeBranch, 'customers', 'CUS');
+            $customer = $this->create($data)->load('preferredBranch');
             activity('setup')->performedOn($customer)->causedBy($actor)
                 ->withProperties(['attributes' => $customer->only($customer->getFillable())])
                 ->log('Customer created');

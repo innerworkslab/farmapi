@@ -18,7 +18,7 @@ class SupplierRequest extends FormRequest
         $isUpdate = $recordId !== null;
 
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('suppliers', 'code')->ignore($recordId)],
+            'code' => ['prohibited'],
             'type' => ['nullable', 'string', Rule::in(['food', 'medicine', 'animal', 'equipment', 'service'])],
             'types' => ['required_without:type', 'array', 'min:1'],
             'types.*' => ['required', 'string', Rule::in(['food', 'medicine', 'animal', 'equipment', 'service'])],
@@ -32,7 +32,7 @@ class SupplierRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:255'],
             'supplied_categories' => ['nullable', 'array'],
             'supplied_categories.*' => ['string', 'max:100'],
-            'preferred_branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'preferred_branch_id' => $isUpdate ? ['nullable', 'integer', 'exists:branches,id'] : ['required', 'integer', 'exists:branches,id'],
             'lead_time_days' => ['nullable', 'integer', 'min:0'],
             'minimum_order_amount' => $isUpdate ? ['nullable', 'numeric', 'min:0'] : ['prohibited'],
             'min_order_amount' => ['prohibited'],
@@ -52,7 +52,6 @@ class SupplierRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'code' => is_string($this->code) ? trim($this->code) : $this->code,
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
             'type' => $this->input('type') ?? (is_array($this->input('types')) ? ($this->input('types')[0] ?? null) : null),
             'types' => $this->input('types') ?? (is_string($this->input('type')) ? [$this->input('type')] : null),

@@ -15,8 +15,7 @@ class CustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Older clients may still send a code; the service ignores it and generates the value.
-            'code' => ['sometimes'],
+            'code' => ['prohibited'],
             'type' => ['required', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
@@ -25,7 +24,7 @@ class CustomerRequest extends FormRequest
             'delivery_address' => ['nullable', 'string', 'max:2000'],
             'township' => ['nullable', 'string', 'max:255'],
             'state_region' => ['nullable', 'string', 'max:255'],
-            'preferred_branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'preferred_branch_id' => [Rule::requiredIf(fn () => ! $this->route('customer')), 'nullable', 'integer', 'exists:branches,id'],
             'price_level' => ['nullable', 'string', 'max:100'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'opening_balance' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
