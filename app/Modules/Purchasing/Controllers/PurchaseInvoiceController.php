@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Requests\PurchaseCancelRequest;
 use App\Modules\Purchasing\Requests\PurchaseInvoiceRequest;
+use App\Modules\Purchasing\Requests\PurchaseInvoiceConfirmRequest;
 use App\Modules\Purchasing\Resources\PurchaseInvoiceResource;
 use App\Modules\Purchasing\Services\PurchaseInvoiceService;
 use Illuminate\Http\Request;
@@ -40,6 +41,11 @@ class PurchaseInvoiceController extends Controller
     public function cancel(PurchaseCancelRequest $request, PurchaseInvoice $invoice): PurchaseInvoiceResource
     {
         return new PurchaseInvoiceResource($this->invoices->cancel($invoice, $request->validated('reason'), $request->user()));
+    }
+
+    public function confirm(PurchaseInvoiceConfirmRequest $request, PurchaseInvoice $invoice): PurchaseInvoiceResource
+    {
+        return new PurchaseInvoiceResource($this->invoices->confirm($invoice, $request->validated('cashbook_id'), $request->user()));
     }
 
 }

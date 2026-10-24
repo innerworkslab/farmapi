@@ -21,7 +21,7 @@ class PurchaseReceiptLineResource extends JsonResource
             'rejection_reason' => $this->rejection_reason,
             'target_inventory_id' => $this->target_inventory_id,
             'target_farm_information_id' => $this->target_farm_information_id,
-            'target_location' => $this->target_location,
+            'target_location' => $this->when(! in_array($this->category, ['animal', 'equipment'], true), fn () => $this->target_location),
             'purchase_uom_id' => $this->purchase_uom_id,
             'stock_uom_id' => $this->stock_uom_id,
             'conversion_factor' => $this->conversion_factor,

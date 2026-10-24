@@ -337,6 +337,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('invoices', [PurchaseInvoiceController::class, 'store'])->middleware('permission:purchasing.invoices.create');
             Route::get('invoices/{invoice}', [PurchaseInvoiceController::class, 'show'])->middleware('permission:purchasing.invoices.view');
             Route::post('invoices/{invoice}', [PurchaseInvoiceController::class, 'update'])->middleware('permission:purchasing.invoices.update');
+            Route::post('invoices/{invoice}/confirm', [PurchaseInvoiceController::class, 'confirm'])->middleware('permission:purchasing.invoices.confirm');
             Route::post('invoices/{invoice}/cancel', [PurchaseInvoiceController::class, 'cancel'])->middleware('permission:purchasing.invoices.cancel');
 
             Route::get('receipts', [PurchaseReceiptController::class, 'index'])->middleware('permission:purchasing.receipts.view');

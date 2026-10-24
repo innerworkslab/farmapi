@@ -3,9 +3,11 @@
 namespace Tests\Feature\Purchasing;
 
 use App\Models\User;
+use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Inventory\Models\InventoryLedgerEntry;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Services\ReceiptLotNumberService;
 use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\Food;
 use App\Modules\Setup\Models\Inventory;
@@ -14,7 +16,10 @@ use App\Modules\Setup\Models\Supplier;
 use App\Modules\Setup\Models\Uom;
 use App\Modules\Setup\Services\FoodService;
 use App\Modules\Setup\Services\MedicineService;
+use Database\Seeders\PurchasePaymentCategorySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
@@ -27,14 +32,69 @@ class PurchasingFoundationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_receipt_lines_get_short_serial_lot_numbers_that_survive_confirmation(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
+        $line = [
+            'purchase_invoice_line_id' => $invoice->json('data.lines.0.id'),
+            'target_inventory_id' => $setup['inventory']->id,
+            'accepted_quantity' => 1,
+            'expiry_date' => '2099-01-01',
+        ];
+        $body = ['purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18', 'lines' => [$line, $line]];
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', $body)->assertCreated()
+            ->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000001')
+            ->assertJsonPath('data.lines.1.receipt_lot_number', 'LOT-000002');
+        $id = $receipt->json('data.id');
+        $this->assertDatabaseHas('purchase_receipt_lines', ['id' => $receipt->json('data.lines.0.id'), 'receipt_lot_number' => 'LOT-000001']);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+
+        $body['lines'] = [$line];
+        $this->postJson('/api/v1/purchasing/receipts', $body)->assertCreated()
+            ->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000003');
+
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->postJson('/api/v1/purchasing/receipts/'.$id.'/confirm')->assertOk()
+                ->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000001')
+                ->assertJsonPath('data.lines.1.receipt_lot_number', 'LOT-000002');
+        }
+        $this->assertDatabaseCount('inventory_ledger_entries', 2);
+        $this->getJson('/api/v1/purchasing/receipts/'.$id)->assertOk()
+            ->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000001');
+        $this->assertDatabaseHas('inventory_stock_lots', ['receipt_lot_number' => 'LOT-000001']);
+        $this->assertDatabaseHas('inventory_stock_lots', ['receipt_lot_number' => 'LOT-000002']);
+    }
+
+    public function test_receipt_lot_numbers_skip_existing_numbers_and_fill_legacy_blank_lines(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $setup = $this->setupPurchasingStock('food');
+        $user->branches()->attach($setup['branch']->id);
+        $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', [
+            'purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $setup['inventory']->id, 'accepted_quantity' => 1, 'receipt_lot_number' => 'LOT-000001', 'expiry_date' => '2099-01-01']],
+        ])->assertCreated()->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000001');
+        $generator = app(ReceiptLotNumberService::class);
+        $this->assertSame('LOT-000002', $generator->next());
+        DB::table('purchase_receipt_lines')->where('id', $receipt->json('data.lines.0.id'))->update(['receipt_lot_number' => null]);
+        $this->postJson('/api/v1/purchasing/receipts/'.$receipt->json('data.id').'/confirm')->assertOk()
+            ->assertJsonPath('data.lines.0.receipt_lot_number', 'LOT-000003');
+        DB::table('purchase_receipt_lot_sequence')->where('id', 1)->update(['last_value' => 999999]);
+        $this->assertSame('LOT-1000000', $generator->next());
+    }
+
     public function test_invoice_lines_exclude_receipt_destination_fields_on_create_update_and_reads(): void
     {
         $user = $this->actingWithPurchasingPermissions();
         $s = $this->setupPurchasingStock('food');
         $user->branches()->attach($s['branch']->id);
         foreach (['target_inventory_id', 'target_location'] as $column) {
-            $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('purchase_invoice_lines', $column));
-            $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('purchase_receipt_lines', $column));
+            $this->assertFalse(Schema::hasColumn('purchase_invoice_lines', $column));
+            $this->assertTrue(Schema::hasColumn('purchase_receipt_lines', $column));
         }
         $invoice = $this->createPurchaseInvoice($s)->assertCreated()
             ->assertJsonMissingPath('data.lines.0.target_inventory_id')
@@ -503,8 +563,8 @@ class PurchasingFoundationTest extends TestCase
 
         $item = app(ItemRegistryService::class)->syncFromMaster($master);
 
-        $this->seed(\Database\Seeders\PurchasePaymentCategorySeeder::class);
-        $cashbook = \App\Modules\Financial\Models\Cashbook::create(['branch_id' => $branch->id, 'name' => 'Purchase cash', 'normalized_name' => 'purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01', 'status' => 'active']);
+        $this->seed(PurchasePaymentCategorySeeder::class);
+        $cashbook = Cashbook::create(['branch_id' => $branch->id, 'name' => 'Purchase cash', 'normalized_name' => 'purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01', 'status' => 'active']);
 
         return compact('branch', 'uom', 'supplier', 'inventory', 'master', 'item', 'category', 'cashbook');
     }

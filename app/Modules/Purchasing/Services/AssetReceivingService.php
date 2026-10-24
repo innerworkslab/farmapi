@@ -35,6 +35,13 @@ class AssetReceivingService
         if (floor($quantity) !== $quantity || floor((float) $line->accepted_quantity) !== (float) $line->accepted_quantity || floor((float) $line->accepted_foc_quantity) !== (float) $line->accepted_foc_quantity) {
             $this->invalid('quantity', 'Animals and equipment must be received as whole units.');
         }
+        $units = app(\App\Modules\Setup\Services\FarmReceivingUomService::class)->normalize([
+            'purchase_uom_id' => $line->purchase_uom_id, 'stock_uom_id' => $line->stock_uom_id, 'conversion_factor' => $line->conversion_factor,
+        ]);
+        $line->fill($units);
+        if ($line->isDirty()) {
+            $line->save();
+        }
         if ((float) $line->conversion_factor !== 1.0) {
             $this->invalid('conversion_factor', 'Animals and equipment must use a one-to-one count UOM.');
         }
@@ -46,8 +53,7 @@ class AssetReceivingService
         if ($farm && FarmSetting::query()->where('farm_information_id', $farm->id)->where('status', 'inactive')->exists()) {
             $this->invalid('farm', 'Inactive farms cannot receive animals or equipment.');
         }
-        $inventory = $line->target_inventory_id ? Inventory::query()->findOrFail($line->target_inventory_id) : Inventory::query()
-            ->where('branch_id', $invoice->branch_id)->where('status', 'active')->where('type', 'animal')->first();
+        $inventory = $line->target_inventory_id ? Inventory::query()->find($line->target_inventory_id) : null;
         if (! $inventory || $inventory->status !== 'active') {
             $this->invalid('target_inventory_id', 'Select an active compatible inventory for receiving.');
         }
@@ -119,7 +125,7 @@ class AssetReceivingService
             if ($animal->tracking_type === 'individual' && $existing->isNotEmpty()) {
                 $this->invalid('rfid', 'This RFID has already been received.');
             }
-            if ($existing->contains(fn ($b) => (float) $b->on_hand_quantity > 0 && ((int) $b->farm_information_id !== $farm->id || (int) $b->inventory_id !== $inventory->id || $b->location !== ($line->target_location ?: 'MAIN')))) {
+            if ($existing->contains(fn ($b) => (float) $b->on_hand_quantity > 0 && ((int) $b->farm_information_id !== $farm->id || (int) $b->inventory_id !== $inventory->id))) {
                 $this->invalid('farm', 'An animal identity cannot belong to multiple current locations.');
             }
             $balance = $this->balance($line, $item->id, $inventory, $farm, null);
@@ -172,7 +178,7 @@ class AssetReceivingService
             }
             $instance = EquipmentInstance::query()->create([
                 'equipment_id' => $master->id, 'branch_id' => $inventory->branch_id, 'inventory_id' => $inventory->id,
-                'farm_information_id' => $farm?->id, 'location' => $line->target_location ?: 'MAIN',
+                'farm_information_id' => $farm?->id, 'location' => 'MAIN',
                 'serial_number' => $serial ?: null, 'asset_tag' => $asset ?: null,
                 'condition' => $unit['condition'] ?? 'good', 'lifecycle_status' => $farm ? 'assigned' : 'available',
                 'source_reference' => $receipt->receipt_number,
@@ -187,8 +193,21 @@ class AssetReceivingService
     {
         $identity = ['category' => $line->category, 'item_type' => $line->category, 'item_id' => $itemId,
             'branch_id' => $inventory->branch_id, 'inventory_id' => $inventory->id, 'farm_information_id' => $farm?->id,
-            'location' => $line->target_location ?: 'MAIN', 'stock_uom_id' => $line->stock_uom_id,
+            'location' => 'MAIN', 'stock_uom_id' => $line->stock_uom_id,
             'stock_lot_id' => null, 'equipment_instance_id' => $instanceId];
+        $warehouseIdentity = $identity;
+        unset($warehouseIdentity['location']);
+        $existing = InventoryBalance::query()->where($warehouseIdentity)->lockForUpdate()->get();
+        $occupied = $existing->filter(fn ($balance) => (float) $balance->on_hand_quantity > 0 || (float) $balance->reserved_quantity > 0);
+        if ($occupied->count() > 1) {
+            $this->invalid('target_inventory_id', 'Consolidate the existing stock buckets in this warehouse before receiving this item.');
+        }
+        if ($occupied->isNotEmpty()) {
+            return $occupied->first();
+        }
+        if ($existing->isNotEmpty()) {
+            return $existing->first();
+        }
         $balance = InventoryBalance::query()->firstOrCreate(['identity_key' => $this->identities->key($identity)], $identity);
 
         return InventoryBalance::query()->lockForUpdate()->findOrFail($balance->id);

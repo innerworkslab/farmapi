@@ -27,7 +27,7 @@ class PurchasePaymentService
 
     public function __construct(private readonly CashbookTransactionService $cash, private readonly FinancialControlService $controls) {}
 
-    /** The initial row also preserves the selected cashbook when paid amount is zero. */
+    /** Store the initial payment amount without choosing or posting to a cashbook. */
     public function syncInitial(PurchaseInvoice $invoice, array $data, User $actor): void
     {
         $key = self::initialKey($invoice->id);
@@ -36,44 +36,58 @@ class PurchasePaymentService
             if ((int) $existing->purchase_invoice_id !== (int) $invoice->id) {
                 throw ValidationException::withMessages(['cashbook_id' => 'Invalid original payment reference.']);
             }
-            if ((int) $existing->branch_id !== (int) $invoice->branch_id || $existing->currency_code !== $invoice->currency_code) {
-                throw ValidationException::withMessages(['cashbook_id' => 'Keep the original purchase branch and currency.']);
+            if ((int) $existing->branch_id !== (int) $invoice->branch_id || $existing->currency_code !== 'MMK') {
+                throw ValidationException::withMessages(['paid_amount' => 'Initial payment details do not match this purchase.']);
             }
-            if ((isset($data['cashbook_id']) && (int) $data['cashbook_id'] !== (int) $existing->cashbook_id)
-                || (isset($data['paid_amount']) && Money::minor($data['paid_amount']) !== Money::minor($existing->amount))) {
-                throw ValidationException::withMessages(['paid_amount' => 'The original cashbook and paid amount cannot be changed. Settle the payable through invoice payments.']);
+            if ($existing->state !== 'draft') {
+                throw ValidationException::withMessages(['paid_amount' => 'The purchase payment has already been confirmed.']);
             }
-            return;
         }
-        $book = Cashbook::query()->find($data['cashbook_id'] ?? null);
-        if (! $book || $book->status !== 'active' || (int) $book->branch_id !== (int) $invoice->branch_id) {
-            throw ValidationException::withMessages(['cashbook_id' => 'Select an active cashbook in the purchase branch.']);
-        }
-        app(CashbookService::class)->find($book, $actor);
-        if ($invoice->currency_code && $invoice->currency_code !== $book->currency_code) {
-            throw ValidationException::withMessages(['cashbook_id' => 'Cashbook and purchase currencies must match.']);
-        }
-        $amount = Money::minor($data['paid_amount'] ?? 0);
+        $amount = Money::minor($data['paid_amount'] ?? $existing?->amount ?? 0);
         if ($amount < 0 || $amount > Money::minor($invoice->total_amount)) {
             throw ValidationException::withMessages(['paid_amount' => 'Paid amount must be between zero and the purchase total.']);
-        }
-        if ($amount > 0) {
-            abort_unless($actor->can('purchasing.payments.create'), 403, 'You cannot post purchase payments.');
         }
         $category = CashLedgerCategory::where('normalized_name', 'purchases')->where('direction', 'out')->where('status', 'active')->first();
         if (! $category) {
             throw ValidationException::withMessages(['paid_amount' => 'Configure the active Purchases cash-out category.']);
         }
-        $invoice->currency_code = $book->currency_code;
-        $invoice->save();
-        $payment = PurchasePayment::create(['purchase_invoice_id' => $invoice->id, 'branch_id' => $invoice->branch_id,
-            'cashbook_id' => $book->id, 'category_id' => $category->id, 'reference' => 'PPAY-'.Str::upper((string) Str::ulid()),
-            'idempotency_key' => $key, 'currency_code' => $book->currency_code, 'business_date' => $invoice->invoice_date->toDateString(),
-            'amount' => Money::decimal($amount), 'description' => 'Initial payment for '.$invoice->invoice_number,
-            'created_by_id' => $actor->id, 'state' => $amount > 0 ? 'draft' : 'confirmed']);
-        if ($amount > 0) {
-            $this->confirm($payment, $actor);
+        if ($amount === 0) {
+            if ($existing?->state === 'draft') {
+                $existing->update(['state' => 'cancelled']);
+            }
+            $invoice->status = PurchaseInvoice::STATUS_CONFIRMED;
+            $invoice->save();
+            return;
         }
+
+        $invoice->status = PurchaseInvoice::STATUS_OPEN;
+        $invoice->save();
+        PurchasePayment::updateOrCreate(['idempotency_key' => $key], [
+            'purchase_invoice_id' => $invoice->id, 'branch_id' => $invoice->branch_id,
+            'cashbook_id' => null, 'category_id' => $category->id, 'reference' => $existing?->reference ?? 'PPAY-'.Str::upper((string) Str::ulid()),
+            'currency_code' => 'MMK', 'business_date' => $invoice->invoice_date->toDateString(),
+            'amount' => Money::decimal($amount), 'description' => 'Initial payment for '.$invoice->invoice_number,
+            'created_by_id' => $actor->id, 'state' => 'draft',
+        ]);
+    }
+
+    public function confirmInitial(PurchaseInvoice $invoice, int $cashbookId, User $actor): PurchasePayment
+    {
+        $payment = PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)
+            ->where('idempotency_key', self::initialKey($invoice->id))->lockForUpdate()->first();
+        if (! $payment || $payment->state !== 'draft' || Money::minor($payment->amount) <= 0) {
+            throw ValidationException::withMessages(['invoice' => 'Only purchases with an unpaid initial amount can be confirmed with a cashbook.']);
+        }
+        abort_unless($actor->can('purchasing.payments.create'), 403, 'You cannot post purchase payments.');
+        $book = Cashbook::query()->find($cashbookId);
+        if (! $book || $book->status !== 'active' || (int) $book->branch_id !== (int) $invoice->branch_id || $book->currency_code !== 'MMK') {
+            throw ValidationException::withMessages(['cashbook_id' => 'Select an active MMK cashbook in the purchase branch.']);
+        }
+        app(CashbookService::class)->find($book, $actor);
+        $payment->cashbook_id = $book->id;
+        $payment->save();
+
+        return $this->confirm($payment, $actor);
     }
 
     public function create(PurchaseInvoice $invoice, array $data, User $actor): PurchasePayment
@@ -82,21 +96,25 @@ class PurchasePaymentService
             $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
             BranchAccess::authorize($actor, (int) $invoice->branch_id);
             $original = PurchasePayment::where('purchase_invoice_id', $invoice->id)->where('idempotency_key', self::initialKey($invoice->id))->first();
-            if (! $original) {
-                throw ValidationException::withMessages(['cashbook_id' => 'The purchase has no original cashbook selection.']);
+            $data['cashbook_id'] = $data['cashbook_id'] ?? $original?->cashbook_id;
+            if (! $data['cashbook_id']) {
+                throw ValidationException::withMessages(['cashbook_id' => 'Select a cashbook for this payable settlement.']);
             }
-            if (isset($data['cashbook_id']) && (int) $data['cashbook_id'] !== (int) $original->cashbook_id) {
-                throw ValidationException::withMessages(['cashbook_id' => 'Settlement must use the cashbook selected on purchase creation.']);
-            }
-            $data['cashbook_id'] = $original->cashbook_id;
-            $data['category_id'] = $original->category_id;
-            $data['invoice_currency_code'] = $original->currency_code;
+            $data['invoice_currency_code'] = $invoice->currency_code ?? 'MMK';
             $data['description'] = $data['description'] ?? 'Payable settlement for '.$invoice->invoice_number;
             $book = Cashbook::query()->findOrFail($data['cashbook_id']);
             app(CashbookService::class)->find($book, $actor);
             if ($book->branch_id !== $invoice->branch_id || $book->status !== 'active') {
                 throw ValidationException::withMessages(['cashbook_id' => 'Choose an active cashbook in the invoice branch.']);
             }
+            if ($book->currency_code !== 'MMK') {
+                throw ValidationException::withMessages(['cashbook_id' => 'Purchase settlements use an MMK cashbook.']);
+            }
+            $category = CashLedgerCategory::where('normalized_name', 'purchases')->where('direction', 'out')->where('status', 'active')->first();
+            if (! $category) {
+                throw ValidationException::withMessages(['cashbook_id' => 'Configure the active Purchases cash-out category.']);
+            }
+            $data['category_id'] = $category->id;
             $amount = Money::minor($data['amount']);
             if ($amount <= 0) {
                 throw ValidationException::withMessages(['amount' => 'Payment must be positive.']);

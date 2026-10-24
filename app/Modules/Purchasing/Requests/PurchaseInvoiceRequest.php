@@ -26,7 +26,7 @@ class PurchaseInvoiceRequest extends FormRequest
             'invoice_number' => ['sometimes', 'string', 'max:100', Rule::unique('purchase_invoices', 'invoice_number')->ignore($this->route('invoice')?->id)],
             'invoice_date' => ['required', 'date'],
             'currency_code' => ['nullable', 'in:MMK'],
-            'cashbook_id' => [Rule::requiredIf(fn () => ! $this->route('invoice')), 'nullable', 'integer', Rule::exists('cashbooks', 'id')->where('branch_id', $this->input('branch_id'))->where('status', 'active')->whereNull('deleted_at')],
+            'cashbook_id' => ['prohibited'],
             'paid_amount' => ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,16}(?:\.\d{1,2})?$/'],
             'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],

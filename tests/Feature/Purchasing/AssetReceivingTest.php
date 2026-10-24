@@ -17,10 +17,66 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class AssetReceivingTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_setup_seeds_the_standard_count_unit_idempotently(): void
+    {
+        $this->seed(\Database\Seeders\Demo\DemoSetupSeeder::class);
+        $first = Uom::where('code', 'HEAD-FARM')->firstOrFail();
+        $this->assertSame('Animal / equipment count', $first->name);
+        $this->assertSame('unit', $first->symbol);
+        $this->assertSame('active', $first->status);
+        $this->seed(\Database\Seeders\Demo\DemoSetupSeeder::class);
+        $this->assertSame($first->id, Uom::where('code', 'HEAD-FARM')->sole()->id);
+    }
+
+    public static function receivingModes(): array
+    {
+        return [['batch', false], ['individual', false], ['equipment', true], ['equipment', false]];
+    }
+
+    #[DataProvider('receivingModes')]
+    public function test_receiving_defaults_count_uom_and_uses_warehouse_without_target_location(string $type, bool $serial): void
+    {
+        $s = $this->fixture($type, true);
+        $unit = Uom::where('code', 'HEAD-FARM')->sole();
+        $this->getJson('/api/v1/purchasing/invoices/'.$s['invoice'])->assertOk()
+            ->assertJsonPath('data.lines.0.purchase_uom_id', $unit->id)->assertJsonPath('data.lines.0.stock_uom_id', $unit->id)
+            ->assertJsonPath('data.lines.0.conversion_factor', 1);
+        $metadata = match ($type) {
+            'batch' => ['batch_number' => 'DEFAULT-COUNT-BATCH'],
+            'individual' => ['animals' => [['rfid' => 'DEFAULT-COUNT-RFID']]],
+            default => $serial ? ['units' => [['serial_number' => 'DEFAULT-COUNT-SERIAL']]] : ['tracking_mode' => 'quantity'],
+        };
+        $receipt = $this->receipt($s, 1, 0, $metadata);
+        $this->getJson('/api/v1/purchasing/receipts/'.$receipt)->assertOk()
+            ->assertJsonPath('data.lines.0.stock_uom_id', $unit->id)
+            ->assertJsonPath('data.lines.0.target_inventory_id', $s['inventory']->id)
+            ->assertJsonMissingPath('data.lines.0.target_location');
+        $this->postJson('/api/v1/purchasing/receipts/'.$receipt.'/confirm')->assertOk();
+        $this->assertDatabaseHas('inventory_balances', ['inventory_id' => $s['inventory']->id, 'stock_uom_id' => $unit->id, 'location' => 'MAIN', 'on_hand_quantity' => 1]);
+    }
+
+    public function test_farm_receiving_rejects_target_location_missing_warehouse_and_invalid_count_units(): void
+    {
+        $s = $this->fixture('equipment', true);
+        $line = ['purchase_invoice_line_id' => $s['line'], 'target_inventory_id' => $s['inventory']->id, 'accepted_quantity' => 1];
+        $body = ['purchase_invoice_id' => $s['invoice'], 'receipt_date' => now()->toDateString(), 'lines' => [$line + ['target_location' => 'Extra pen']]];
+        $this->postJson('/api/v1/purchasing/receipts', $body)->assertUnprocessable()->assertJsonValidationErrors('lines.0.target_location');
+        unset($line['target_inventory_id']);
+        $body['lines'] = [$line];
+        $this->postJson('/api/v1/purchasing/receipts', $body)->assertUnprocessable()->assertJsonValidationErrors('lines.0.target_inventory_id');
+        $weight = Uom::create(['code' => 'BAD-WEIGHT', 'name' => 'Weight', 'symbol' => 'kg', 'category' => 'weight', 'status' => 'active']);
+        $purchase = ['invoice_date' => now()->toDateString(), 'branch_id' => $s['branch']->id, 'supplier_id' => $s['supplier']->id, 'cashbook_id' => $s['cashbook']->id, 'paid_amount' => 0,
+            'lines' => [['category' => 'equipment', 'item_id' => $s['item']->id, 'quantity' => 1, 'unit_price' => 10, 'purchase_uom_id' => $weight->id, 'stock_uom_id' => $weight->id]]];
+        $this->postJson('/api/v1/purchasing/invoices', $purchase)->assertUnprocessable()->assertJsonValidationErrors('stock_uom_id');
+        $this->assertDatabaseCount('purchase_receipts', 0);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+    }
 
     public function test_batch_receiving_partial_foc_and_repeat_confirmation(): void
     {
@@ -84,10 +140,10 @@ class AssetReceivingTest extends TestCase
 
     private function receipt(array $s, float $paid, float $foc, array $metadata): int
     {
-        return $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $s['invoice'], 'receipt_date' => now()->toDateString(), 'lines' => [['purchase_invoice_line_id' => $s['line'], 'target_inventory_id' => $s['inventory']->id, 'target_location' => 'Pen', 'accepted_quantity' => $paid, 'accepted_foc_quantity' => $foc, 'metadata' => $metadata]]])->assertCreated()->json('data.id');
+        return $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $s['invoice'], 'receipt_date' => now()->toDateString(), 'lines' => [['purchase_invoice_line_id' => $s['line'], 'target_inventory_id' => $s['inventory']->id, 'accepted_quantity' => $paid, 'accepted_foc_quantity' => $foc, 'metadata' => $metadata]]])->assertCreated()->json('data.id');
     }
 
-    private function fixture(string $type): array
+    private function fixture(string $type, bool $omitUnits = false): array
     {
         $user = $this->actingWithPurchasingPermissions();
         $branch = Branch::query()->create(['code' => 'B', 'name' => 'Branch', 'status' => 'active']);
@@ -105,11 +161,15 @@ class AssetReceivingTest extends TestCase
         $category = $type === 'equipment' ? 'equipment' : 'animal';
         $this->seed(\Database\Seeders\PurchasePaymentCategorySeeder::class);
         $cashbook = \App\Modules\Financial\Models\Cashbook::create(['branch_id' => $branch->id, 'name' => 'Purchase cash', 'normalized_name' => 'purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01', 'status' => 'active']);
-        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'cashbook_id' => $cashbook->id, 'paid_amount' => 0, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]])->assertCreated();
+        $purchaseLine = ['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'target_farm_information_id' => $farm->id];
+        if (! $omitUnits) {
+            $purchaseLine += ['purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1];
+        }
+        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'cashbook_id' => $cashbook->id, 'paid_amount' => 0, 'lines' => [$purchaseLine]])->assertCreated();
         $invoice = $response->json('data.id');
         $line = $response->json('data.lines.0.id');
 
-        return compact('branch', 'farm', 'inventory', 'invoice', 'line');
+        return compact('branch', 'farm', 'inventory', 'invoice', 'line', 'supplier', 'cashbook', 'item', 'uom');
     }
 
     private function actingWithPurchasingPermissions(): User

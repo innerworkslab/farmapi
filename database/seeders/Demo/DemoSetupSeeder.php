@@ -10,6 +10,7 @@ class DemoSetupSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(\Database\Seeders\FarmReceivingUomSeeder::class);
         $branches = [
             [
                 'code' => 'BR-YGN',

@@ -137,6 +137,24 @@ class PurchaseInvoiceService
         });
     }
 
+    /** Confirm the invoice and post its initial paid amount using the selected cashbook. */
+    public function confirm(PurchaseInvoice $invoice, int $cashbookId, User $actor): PurchaseInvoice
+    {
+        return DB::transaction(function () use ($invoice, $cashbookId, $actor): PurchaseInvoice {
+            $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
+            $this->authorizeAccess($invoice, $actor);
+            if ($invoice->status !== PurchaseInvoice::STATUS_OPEN) {
+                throw ValidationException::withMessages(['invoice' => 'Only open purchases can be confirmed with an initial payment.']);
+            }
+
+            app(PurchasePaymentService::class)->confirmInitial($invoice, $cashbookId, $actor);
+            $invoice->fill(['status' => PurchaseInvoice::STATUS_CONFIRMED, 'version' => $invoice->version + 1])->save();
+            app(PurchasePayableService::class)->sync($invoice, $actor);
+
+            return $invoice->refresh()->load(['supplier', 'lines.item', 'payments']);
+        });
+    }
+
     /** @param list<array<string, mixed>> $lines */
     private function replaceLines(PurchaseInvoice $invoice, array $lines, User $actor): void
     {
@@ -188,6 +206,10 @@ class PurchaseInvoiceService
             }
 
             $conversion = $line['conversion_factor'] ?? $item->uom_conversion ?? 1;
+            if (in_array($category, ['animal', 'equipment'], true)) {
+                $line = app(\App\Modules\Setup\Services\FarmReceivingUomService::class)->normalize($line);
+                $conversion = 1;
+            }
             if (in_array($category, ['food', 'medicine'], true)) {
                 $conversion = app(ItemUomService::class)->purchaseToStock($item);
                 foreach (['purchase_uom_id' => $item->purchase_uom_id, 'stock_uom_id' => $item->stock_uom_id] as $field => $expected) {

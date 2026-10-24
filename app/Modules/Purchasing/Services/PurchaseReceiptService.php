@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class PurchaseReceiptService
 {
-    public function __construct(private readonly InventoryPostingService $posting, private readonly AssetReceivingService $assets) {}
+    public function __construct(private readonly InventoryPostingService $posting, private readonly AssetReceivingService $assets, private readonly ReceiptLotNumberService $lotNumbers) {}
 
     public function authorizeAccess(PurchaseReceipt $receipt, User $actor): void
     {
@@ -76,6 +76,12 @@ class PurchaseReceiptService
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($receipt->purchase_invoice_id);
             $this->authorizeInvoice($invoice, $actor);
             $this->assertReceivable($invoice);
+            foreach ($receipt->lines as $line) {
+                if (! $line->receipt_lot_number) {
+                    $line->receipt_lot_number = $this->lotNumbers->next();
+                    $line->save();
+                }
+            }
             $this->validateReceiptLinesAgainstRemaining($receipt, $invoice);
 
             $postingBatchId = 'PRB-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
@@ -161,8 +167,17 @@ class PurchaseReceiptService
                 throw ValidationException::withMessages(["lines.{$index}.purchase_invoice_line_id" => 'Receipt line must reference this invoice.']);
             }
 
-            if (in_array($invoiceLine->category, ['food', 'medicine'], true) && empty($line['target_inventory_id'])) {
+            if (empty($line['target_inventory_id'])) {
                 throw ValidationException::withMessages(["lines.{$index}.target_inventory_id" => 'Select the destination inventory on the receipt line.']);
+            }
+
+            $asset = in_array($invoiceLine->category, ['animal', 'equipment'], true);
+            if ($asset && filled($line['target_location'] ?? null)) {
+                throw ValidationException::withMessages(["lines.{$index}.target_location" => 'Farm receiving uses the receiving warehouse; omit target_location.']);
+            }
+            $units = ['purchase_uom_id' => $invoiceLine->purchase_uom_id, 'stock_uom_id' => $invoiceLine->stock_uom_id, 'conversion_factor' => $invoiceLine->conversion_factor];
+            if ($asset) {
+                $units = app(\App\Modules\Setup\Services\FarmReceivingUomService::class)->normalize($units);
             }
 
             BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id);
@@ -188,12 +203,12 @@ class PurchaseReceiptService
                 'rejection_reason' => $line['rejection_reason'] ?? null,
                 'target_inventory_id' => $line['target_inventory_id'] ?? null,
                 'target_farm_information_id' => $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id,
-                'target_location' => $line['target_location'] ?? 'MAIN',
-                'purchase_uom_id' => $invoiceLine->purchase_uom_id,
-                'stock_uom_id' => $invoiceLine->stock_uom_id,
-                'conversion_factor' => $invoiceLine->conversion_factor,
+                'target_location' => $asset ? 'MAIN' : ($line['target_location'] ?? 'MAIN'),
+                'purchase_uom_id' => $units['purchase_uom_id'],
+                'stock_uom_id' => $units['stock_uom_id'],
+                'conversion_factor' => $units['conversion_factor'],
                 'supplier_batch_number' => $line['supplier_batch_number'] ?? null,
-                'receipt_lot_number' => $line['receipt_lot_number'] ?? null,
+                'receipt_lot_number' => filled($line['receipt_lot_number'] ?? null) ? $line['receipt_lot_number'] : $this->lotNumbers->next(),
                 'manufacturing_date' => $line['manufacturing_date'] ?? null,
                 'expiry_date' => $line['expiry_date'] ?? null,
                 'cold_chain_required' => $line['cold_chain_required'] ?? false,
