@@ -14,9 +14,9 @@ class FinancialSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'default_currency' => ['required', 'regex:/^[A-Z]{3}$/'],
+            'default_currency' => ['required', 'in:MMK'],
             'enabled_currencies' => ['required', 'array', 'min:1'],
-            'enabled_currencies.*' => ['required', 'distinct', 'regex:/^[A-Z]{3}$/'],
+            'enabled_currencies.*' => ['required', 'distinct', 'in:MMK'],
             'timezone' => ['required', 'timezone:all'],
             'require_open_period' => ['required', 'boolean'],
             'require_approval_limit' => ['required', 'boolean'],

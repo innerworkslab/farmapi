@@ -20,6 +20,7 @@ class CashbookService
     public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
         $query = Cashbook::query()
+            ->where('currency_code', 'MMK')
             ->with('branch')
             ->select('cashbooks.*')
             ->selectSub(
@@ -68,7 +69,10 @@ class CashbookService
             $controls = app(FinancialControlService::class);
             $controls->assertDate((int) $branch->id, $data['effective_date'], $actor, false);
             $settings = FinancialBranchSetting::query()->where('branch_id', $branch->id)->first();
-            $currency = strtoupper($data['currency_code'] ?? $settings?->default_currency ?? '');
+            $currency = strtoupper($data['currency_code'] ?? 'MMK');
+            if ($currency !== 'MMK') {
+                throw ValidationException::withMessages(['currency_code' => 'Only MMK is supported.']);
+            }
             if (! preg_match('/^[A-Z]{3}$/', $currency) || ($settings && ! in_array($currency, $settings->enabled_currencies, true))) {
                 throw ValidationException::withMessages(['currency_code' => 'Choose an enabled branch currency or provide a currency code for an unconfigured branch.']);
             }

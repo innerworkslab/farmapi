@@ -22,6 +22,22 @@ use Illuminate\Validation\ValidationException;
 
 class FinancialControlService
 {
+    private function ensureSettings(int $branchId): FinancialBranchSetting
+    {
+        $settings = FinancialBranchSetting::withTrashed()->where('branch_id', $branchId)->lockForUpdate()->first();
+        if ($settings) {
+            if ($settings->trashed()) {
+                $settings->restore();
+            }
+            if ($settings->default_currency !== 'MMK' || $settings->enabled_currencies !== ['MMK']) {
+                $settings->update(['default_currency' => 'MMK', 'enabled_currencies' => ['MMK']]);
+            }
+            return $settings;
+        }
+        return FinancialBranchSetting::create(['branch_id' => $branchId, 'default_currency' => 'MMK', 'enabled_currencies' => ['MMK'],
+            'timezone' => 'Asia/Yangon', 'require_open_period' => false, 'require_approval_limit' => false]);
+    }
+
     public function settings(int $branchId, User $actor): ?FinancialBranchSetting
     {
         BranchAccess::authorize($actor, $branchId);
@@ -52,7 +68,7 @@ class FinancialControlService
 
     public function businessDate(int $branchId): string
     {
-        $timezone = FinancialBranchSetting::query()->where('branch_id', $branchId)->value('timezone') ?? config('app.timezone');
+        $timezone = FinancialBranchSetting::query()->where('branch_id', $branchId)->value('timezone') ?? 'Asia/Yangon';
 
         return CarbonImmutable::now($timezone)->toDateString();
     }
@@ -62,6 +78,7 @@ class FinancialControlService
     {
         BranchAccess::authorize($actor, $branchId);
         Branch::query()->lockForUpdate()->findOrFail($branchId);
+        $settings = $this->ensureSettings($branchId);
         $today = $this->businessDate($branchId);
         if ($date > $today) {
             throw ValidationException::withMessages(['business_date' => 'Future business dates cannot be posted.']);
@@ -72,10 +89,6 @@ class FinancialControlService
         $period = FinancialPeriod::query()->where('branch_id', $branchId)->whereDate('from_date', '<=', $date)->whereDate('to_date', '>=', $date)->lockForUpdate()->first();
         if ($period?->state === 'closed') {
             throw ValidationException::withMessages(['business_date' => 'The financial period is closed. Reopen it through the authorized workflow first.']);
-        }
-        $settings = FinancialBranchSetting::query()->where('branch_id', $branchId)->lockForUpdate()->first();
-        if (! $settings) {
-            throw ValidationException::withMessages(['financial_settings' => 'Configure branch currency, timezone, period and approval policy before posting financial movements.']);
         }
         if ($settings?->require_open_period && ! $period) {
             throw ValidationException::withMessages(['business_date' => 'Create an open financial period covering this business date.']);
@@ -91,10 +104,10 @@ class FinancialControlService
 
     public function assertApproval(int $branchId, string $currency, string $amount, int $creatorId, User $actor): void
     {
-        $settings = FinancialBranchSetting::query()->where('branch_id', $branchId)->lockForUpdate()->first();
-        if (! $settings) {
-            throw ValidationException::withMessages(['financial_settings' => 'Configure the branch financial policy before posting.']);
+        if ($currency !== 'MMK') {
+            throw ValidationException::withMessages(['currency_code' => 'Only MMK is supported.']);
         }
+        $settings = $this->ensureSettings($branchId);
         if ($settings && ! in_array($currency, $settings->enabled_currencies, true)) {
             throw ValidationException::withMessages(['currency_code' => 'Currency is not enabled for this branch.']);
         }
@@ -115,11 +128,11 @@ class FinancialControlService
         return DB::transaction(function () use ($branchId, $data, $actor) {
             BranchAccess::authorize($actor, $branchId);
             Branch::query()->lockForUpdate()->findOrFail($branchId);
+            if ($data['default_currency'] !== 'MMK' || array_values($data['enabled_currencies']) !== ['MMK']) {
+                throw ValidationException::withMessages(['currency_code' => 'Only MMK is supported.']);
+            }
             if (! in_array($data['default_currency'], $data['enabled_currencies'], true)) {
                 throw ValidationException::withMessages(['default_currency' => 'Default currency must be enabled.']);
-            }
-            if (Cashbook::query()->where('branch_id', $branchId)->whereNotIn('currency_code', $data['enabled_currencies'])->exists()) {
-                throw ValidationException::withMessages(['enabled_currencies' => 'Keep every existing cashbook currency enabled.']);
             }
 
             return FinancialBranchSetting::query()->updateOrCreate(['branch_id' => $branchId], $data);

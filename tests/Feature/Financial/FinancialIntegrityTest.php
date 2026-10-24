@@ -57,7 +57,7 @@ class FinancialIntegrityTest extends TestCase
         $in = CashLedgerCategory::query()->create(['name' => 'Receipts', 'normalized_name' => 'receipts', 'direction' => 'in', 'report_treatment' => 'income', 'reversal_category_id' => $out->id, 'status' => 'active']);
         $out->update(['reversal_category_id' => $in->id]);
         $period = app(FinancialControlService::class)->createPeriod(['branch_id' => $branch->id, 'name' => '2026', 'from_date' => '2026-01-01', 'to_date' => '2026-10-09'], $user);
-        app(FinancialControlService::class)->configure($branch->id, ['default_currency' => 'MMK', 'enabled_currencies' => ['MMK', 'USD'], 'timezone' => 'Asia/Yangon', 'require_open_period' => true, 'require_approval_limit' => true], $user);
+        app(FinancialControlService::class)->configure($branch->id, ['default_currency' => 'MMK', 'enabled_currencies' => ['MMK'], 'timezone' => 'Asia/Yangon', 'require_open_period' => true, 'require_approval_limit' => true], $user);
         $limit = app(FinancialControlService::class)->setLimit($branch->id, ['user_id' => $user->id, 'currency_code' => 'MMK', 'maximum_amount' => '1000.00', 'allow_self_approval' => true], $user);
         $book = app(CashbookService::class)->create(['branch_id' => $branch->id, 'name' => 'Finance cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => '1000.00', 'effective_date' => '2026-01-01'], $user);
         $this->s = compact('user', 'branch', 'book', 'in', 'out', 'period', 'limit');
@@ -139,19 +139,16 @@ class FinancialIntegrityTest extends TestCase
         $this->assertDatabaseMissing('cashbook_ledger_entries', ['cashbook_transaction_id' => $next]);
     }
 
-    public function test_currency_reports_are_separate_and_unclassified_cash_never_produces_a_final_net(): void
+    public function test_only_mmk_is_accepted_and_unclassified_cash_does_not_produce_a_final_net(): void
     {
-        $book = app(CashbookService::class)->create(['branch_id' => $this->s['branch']->id, 'name' => 'USD', 'type' => 'bank', 'currency_code' => 'USD', 'opening_balance' => '0.00', 'effective_date' => '2026-10-09'], $this->s['user']);
-        app(FinancialControlService::class)->setLimit($this->s['branch']->id, ['user_id' => $this->s['user']->id, 'currency_code' => 'USD', 'maximum_amount' => '100', 'allow_self_approval' => true], $this->s['user']);
+        $this->postJson('/api/v1/financial/cashbooks', ['branch_id' => $this->s['branch']->id, 'name' => 'USD', 'type' => 'bank', 'currency_code' => 'USD', 'effective_date' => '2026-10-09'])->assertUnprocessable()->assertJsonValidationErrors('currency_code');
         $this->s['in']->update(['report_treatment' => 'unclassified']);
-        $this->confirm($this->draft('12.34', 'in', ['cashbook_id' => $book->id]))->assertOk();
+        $this->confirm($this->draft('12.34'))->assertOk();
         $this->s['in']->update(['report_treatment' => 'income']);
         $this->confirm($this->draft('1.23'))->assertOk();
-        $report = $this->getJson('/api/v1/financial/reports/cash-result')->assertOk()->assertJsonPath('data.is_complete', false)->json('data.currencies');
-        $groups = collect($report)->keyBy('currency_code');
-        $this->assertSame('1.23', $groups['MMK']['income']);
-        $this->assertNull($groups['USD']['net_cash_result']);
-        $this->assertSame('12.34', $groups['USD']['unclassified_in']);
+        $this->getJson('/api/v1/financial/reports/cash-result')->assertOk()->assertJsonPath('data.is_complete', false)
+            ->assertJsonPath('data.currencies.0.currency_code', 'MMK')->assertJsonPath('data.currencies.0.income', '1.23')
+            ->assertJsonPath('data.currencies.0.unclassified_in', '12.34')->assertJsonPath('data.currencies.0.net_cash_result', null);
     }
 
     public function test_scope_and_action_permissions_protect_controls_and_detail_exports(): void
@@ -357,14 +354,23 @@ class FinancialIntegrityTest extends TestCase
         $this->postJson('/api/v1/financial/periods/'.$this->s['period']->id.'/close', ['reason' => 'Verified and classified'])->assertOk();
     }
 
-    public function test_missing_branch_policy_blocks_posting_and_drafts_can_be_cancelled_with_audited_reason(): void
+    public function test_missing_branch_policy_is_initialized_with_mmk_defaults(): void
     {
+        FinancialBranchSetting::query()->where('branch_id', $this->s['branch']->id)->forceDelete();
         $id = $this->draft('2.00');
-        FinancialBranchSetting::query()->where('branch_id', $this->s['branch']->id)->delete();
-        $this->confirm($id)->assertUnprocessable()->assertJsonValidationErrors('financial_settings');
-        $this->postJson('/api/v1/financial/cashbook-transactions/'.$id.'/cancel', ['reason' => 'Duplicate draft'])->assertOk()->assertJsonPath('data.status', 'cancelled');
-        $this->assertDatabaseCount('cashbook_ledger_entries', 1);
-        $this->assertDatabaseHas('activity_log', ['description' => 'cash_draft_cancelled']);
-        $this->confirm($id)->assertUnprocessable();
+        $this->confirm($id)->assertOk();
+        $this->assertDatabaseHas('financial_branch_settings', ['branch_id' => $this->s['branch']->id, 'default_currency' => 'MMK', 'timezone' => 'Asia/Yangon', 'require_open_period' => false, 'require_approval_limit' => false]);
+        $this->assertDatabaseHas('cashbook_ledger_entries', ['cashbook_transaction_id' => $id, 'amount' => '2.00']);
+    }
+
+    public function test_purchase_posts_without_manual_branch_policy_setup_and_defaults_to_mmk(): void
+    {
+        $body = $this->purchaseWithInitialPayment('40');
+        $body['currency_code'] = null;
+        FinancialBranchSetting::where('branch_id', $this->s['branch']->id)->forceDelete();
+        FinancialPeriod::where('branch_id', $this->s['branch']->id)->delete();
+        $this->postJson('/api/v1/purchasing/invoices', $body)->assertCreated()->assertJsonPath('data.currency_code', 'MMK')
+            ->assertJsonPath('data.paid_amount', '40.00')->assertJsonPath('data.outstanding_amount', '60.00');
+        $this->assertDatabaseCount('cashbook_transactions', 1);
     }
 }

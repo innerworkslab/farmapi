@@ -3,8 +3,6 @@
 namespace App\Modules\Purchasing\Services;
 
 use App\Models\User;
-use App\Modules\Financial\Models\Cashbook;
-use App\Modules\Financial\Models\FinancialBranchSetting;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Services\InventoryItemResolver;
 use App\Modules\Inventory\Services\ItemUomService;
@@ -299,15 +297,8 @@ class PurchaseInvoiceService
         return 'PINV-'.now()->format('YmdHis').'-'.Str::upper(Str::random(5));
     }
 
-    private function defaultCurrency(int $branchId): ?string
+    private function defaultCurrency(int $branchId): string
     {
-        $configured = FinancialBranchSetting::query()->where('branch_id', $branchId)->value('default_currency');
-        if ($configured) {
-            return $configured;
-        }
-
-        $currencies = Cashbook::query()->where('branch_id', $branchId)->where('status', 'active')->distinct()->pluck('currency_code')->filter()->values();
-
-        return $currencies->count() === 1 ? $currencies->first() : null;
+        return 'MMK';
     }
 }

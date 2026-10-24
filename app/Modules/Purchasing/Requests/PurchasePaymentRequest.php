@@ -16,7 +16,7 @@ class PurchasePaymentRequest extends FormRequest
         return [
             'cashbook_id' => ['sometimes', 'integer', 'exists:cashbooks,id'],
             'category_id' => ['sometimes', 'integer', 'exists:cash_ledger_categories,id'],
-            'invoice_currency_code' => ['sometimes', 'regex:/^[A-Z]{3}$/'],
+            'invoice_currency_code' => ['nullable', 'in:MMK'],
             'business_date' => ['sometimes', 'date_format:Y-m-d'],
             'amount' => ['required', 'numeric', 'gt:0', 'regex:/^\\d{1,16}(?:\\.\\d{1,2})?$/'],
             'description' => ['sometimes', 'string', 'min:1', 'max:1000'],

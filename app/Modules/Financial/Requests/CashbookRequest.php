@@ -22,7 +22,7 @@ class CashbookRequest extends FormRequest
             'type' => [$creating ? 'required' : 'prohibited', Rule::in(['cash', 'bank'])],
             'name' => [$creating ? 'required' : 'sometimes', 'string', 'max:255'],
             'bank_reference' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'currency_code' => [$creating ? 'sometimes' : 'prohibited', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
+            'currency_code' => [$creating ? 'sometimes' : 'prohibited', Rule::in(['MMK'])],
             'opening_balance' => [$creating ? 'sometimes' : 'prohibited', 'numeric', 'min:0', 'max:9999999999999999.99'],
             'effective_date' => [$creating ? 'required' : 'prohibited', 'date', 'before_or_equal:today'],
         ];
