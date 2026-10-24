@@ -35,9 +35,7 @@ class PurchaseInvoiceLineResource extends JsonResource
             'received_quantity' => $this->received_quantity,
             'received_foc_quantity' => $this->received_foc_quantity,
             'remaining_quantity' => max(0, (float) $this->total_expected_quantity - (float) $this->received_quantity - (float) $this->received_foc_quantity),
-            'target_inventory_id' => $this->target_inventory_id,
             'target_farm_information_id' => $this->target_farm_information_id,
-            'target_location' => $this->target_location,
             'metadata' => $this->metadata,
         ];
     }

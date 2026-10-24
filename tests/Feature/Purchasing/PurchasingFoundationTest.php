@@ -27,6 +27,58 @@ class PurchasingFoundationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_invoice_lines_exclude_receipt_destination_fields_on_create_update_and_reads(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $s = $this->setupPurchasingStock('food');
+        $user->branches()->attach($s['branch']->id);
+        foreach (['target_inventory_id', 'target_location'] as $column) {
+            $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('purchase_invoice_lines', $column));
+            $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('purchase_receipt_lines', $column));
+        }
+        $invoice = $this->createPurchaseInvoice($s)->assertCreated()
+            ->assertJsonMissingPath('data.lines.0.target_inventory_id')
+            ->assertJsonMissingPath('data.lines.0.target_location');
+        $id = $invoice->json('data.id');
+        $body = ['invoice_date' => '2026-09-18', 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id,
+            'lines' => [['category' => 'food', 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => 2]]];
+        $this->postJson('/api/v1/purchasing/invoices/'.$id, $body)->assertOk()
+            ->assertJsonPath('data.total_amount', '4.00')
+            ->assertJsonMissingPath('data.lines.0.target_inventory_id')->assertJsonMissingPath('data.lines.0.target_location');
+        $this->getJson('/api/v1/purchasing/invoices/'.$id)->assertOk()
+            ->assertJsonMissingPath('data.lines.0.target_inventory_id')->assertJsonMissingPath('data.lines.0.target_location');
+        $this->getJson('/api/v1/purchasing/invoices')->assertOk()
+            ->assertJsonMissingPath('data.0.lines.0.target_inventory_id')->assertJsonMissingPath('data.0.lines.0.target_location');
+        $body['lines'][0] += ['target_inventory_id' => $s['inventory']->id, 'target_location' => 'OLD'];
+        $this->postJson('/api/v1/purchasing/invoices', $body)->assertUnprocessable()
+            ->assertJsonValidationErrors(['lines.0.target_inventory_id', 'lines.0.target_location']);
+        $this->postJson('/api/v1/purchasing/invoices/'.$id, $body)->assertUnprocessable()
+            ->assertJsonValidationErrors(['lines.0.target_inventory_id', 'lines.0.target_location']);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+    }
+
+    public function test_stock_receipts_require_their_own_inventory_and_default_location_to_main(): void
+    {
+        $user = $this->actingWithPurchasingPermissions();
+        $s = $this->setupPurchasingStock('food');
+        $user->branches()->attach($s['branch']->id);
+        $invoice = $this->createPurchaseInvoice($s)->assertCreated();
+        $body = ['purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1,
+                'receipt_lot_number' => 'RECEIPT-DESTINATION', 'expiry_date' => '2099-01-01']]];
+        $this->postJson('/api/v1/purchasing/receipts', $body)->assertUnprocessable()->assertJsonValidationErrors('lines.0.target_inventory_id');
+        $this->assertDatabaseCount('purchase_receipts', 0);
+        $this->assertDatabaseCount('inventory_ledger_entries', 0);
+        $destination = Inventory::create(['code' => 'SECOND', 'name' => 'Selected receiving store', 'branch_id' => $s['branch']->id, 'type' => 'feed', 'status' => 'active']);
+        $body['lines'][0]['target_inventory_id'] = $destination->id;
+        $receipt = $this->postJson('/api/v1/purchasing/receipts', $body)->assertCreated()
+            ->assertJsonPath('data.lines.0.target_inventory_id', $destination->id)
+            ->assertJsonPath('data.lines.0.target_location', 'MAIN')->json('data.id');
+        $this->postJson('/api/v1/purchasing/receipts/'.$receipt.'/confirm')->assertOk();
+        $this->assertDatabaseHas('inventory_balances', ['inventory_id' => $destination->id, 'location' => 'MAIN', 'on_hand_quantity' => 1]);
+        $this->assertDatabaseMissing('inventory_balances', ['inventory_id' => $s['inventory']->id]);
+    }
+
     public function test_receipt_confirmation_rechecks_destination_ownership(): void
     {
         $user = $this->actingWithPurchasingPermissions();
@@ -35,7 +87,7 @@ class PurchasingFoundationTest extends TestCase
         $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
         $receipt = $this->postJson('/api/v1/purchasing/receipts', [
             'purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
-            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1, 'receipt_lot_number' => 'DESTINATION-LOT', 'manufacturing_date' => '2026-09-01', 'expiry_date' => '2027-09-01']],
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $setup['inventory']->id, 'accepted_quantity' => 1, 'receipt_lot_number' => 'DESTINATION-LOT', 'manufacturing_date' => '2026-09-01', 'expiry_date' => '2027-09-01']],
         ])->assertCreated()->json('data.id');
         $other = Branch::query()->create(['code' => 'MOVED', 'name' => 'Moved', 'status' => 'active']);
         $setup['inventory']->update(['branch_id' => $other->id]);
@@ -54,7 +106,7 @@ class PurchasingFoundationTest extends TestCase
         $payload = [
             'purchase_invoice_id' => $id,
             'receipt_date' => '2026-09-18',
-            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1]],
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $setup['inventory']->id, 'accepted_quantity' => 1]],
         ];
         $receipt = $this->postJson('/api/v1/purchasing/receipts', $payload)->assertCreated()->json('data.id');
         $this->getJson('/api/v1/purchasing/invoices')->assertOk()->assertJsonCount(1, 'data');
@@ -89,9 +141,6 @@ class PurchasingFoundationTest extends TestCase
         $invoice = $this->createPurchaseInvoice($setup)->assertCreated();
         $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
         $foreign = Inventory::query()->create(['code' => 'OTHER', 'name' => 'Other store', 'type' => 'feed', 'branch_id' => $other->id, 'status' => 'active']);
-        $badSetup = $setup;
-        $badSetup['inventory'] = $foreign;
-        $this->createPurchaseInvoice($badSetup, ['invoice_number' => 'DENIED-DESTINATION'])->assertForbidden();
         $payload = [
             'purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => '2026-09-18',
             'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 1, 'target_inventory_id' => $foreign->id]],
@@ -110,7 +159,7 @@ class PurchasingFoundationTest extends TestCase
         $user->branches()->attach($setup['branch']->id);
         $invoice = $this->createPurchaseInvoice($setup)->assertCreated()->json('data.id');
         $payload = ['invoice_date' => '2026-09-18', 'supplier_id' => $setup['supplier']->id, 'branch_id' => $setup['branch']->id,
-            'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'quantity' => 1, 'unit_price' => 1, 'target_inventory_id' => $setup['inventory']->id]]];
+            'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'quantity' => 1, 'unit_price' => 1]]];
         $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
         $this->postJson('/api/v1/purchasing/invoices/'.$invoice, array_replace($payload, ['branch_id' => $other->id]))->assertForbidden();
         $user->branches()->sync([$other->id]);
@@ -150,7 +199,7 @@ class PurchasingFoundationTest extends TestCase
             'receipt_date' => '2026-09-18',
             'idempotency_key' => 'receipt-food-001',
             'lines' => [[
-                'purchase_invoice_line_id' => $invoiceLineId,
+                'purchase_invoice_line_id' => $invoiceLineId, 'target_inventory_id' => $setup['inventory']->id,
                 'accepted_quantity' => 100,
                 'accepted_foc_quantity' => 10,
                 'target_location' => 'RACK-A',
@@ -228,7 +277,7 @@ class PurchasingFoundationTest extends TestCase
             'receipt_date' => '2026-09-18',
             'idempotency_key' => 'receipt-over-001',
             'lines' => [[
-                'purchase_invoice_line_id' => $invoice->json('data.lines.0.id'),
+                'purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $setup['inventory']->id,
                 'accepted_quantity' => 26,
                 'accepted_foc_quantity' => 0,
                 'receipt_lot_number' => 'LOT-OVER-001',
@@ -261,7 +310,7 @@ class PurchasingFoundationTest extends TestCase
             'receipt_date' => '2026-09-18',
             'idempotency_key' => 'receipt-med-001',
             'lines' => [[
-                'purchase_invoice_line_id' => $invoice->json('data.lines.0.id'),
+                'purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $setup['inventory']->id,
                 'accepted_quantity' => 12,
                 'accepted_foc_quantity' => 0,
                 'target_location' => 'COLD-ROOM',
@@ -327,7 +376,7 @@ class PurchasingFoundationTest extends TestCase
         app(ItemRegistryService::class)->syncFromMaster($s['master']);
         $factor = $stockInUsage ? 1000 : 1;
         $payload = ['invoice_date' => now()->toDateString(), 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id,
-            'lines' => [['category' => $category, 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => '10.00', 'target_inventory_id' => $s['inventory']->id]]];
+            'lines' => [['category' => $category, 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => '10.00']]];
         foreach ([['conversion_factor' => 7], ['purchase_uom_id' => $usage->id], ['stock_uom_id' => $stockInUsage ? $s['uom']->id : $usage->id]] as $override) {
             $bad = $payload;
             $bad['lines'][0] = array_replace($bad['lines'][0], $override);
@@ -345,7 +394,7 @@ class PurchasingFoundationTest extends TestCase
             $this->assertArrayHasKey('uom_conversion', $exception->errors());
         }
         $receipt = $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $invoice->json('data.id'), 'receipt_date' => now()->toDateString(), 'idempotency_key' => 'uom-receive',
-            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'accepted_quantity' => 2, 'receipt_lot_number' => 'UOM-LOT', 'expiry_date' => '2099-01-01', 'cold_chain_status' => 'compliant', 'observed_temperature' => 4]]])->assertCreated();
+            'lines' => [['purchase_invoice_line_id' => $invoice->json('data.lines.0.id'), 'target_inventory_id' => $s['inventory']->id, 'accepted_quantity' => 2, 'receipt_lot_number' => 'UOM-LOT', 'expiry_date' => '2099-01-01', 'cold_chain_status' => 'compliant', 'observed_temperature' => 4]]])->assertCreated();
         $url = '/api/v1/purchasing/receipts/'.$receipt->json('data.id').'/confirm';
         $this->postJson($url)->assertOk();
         $this->postJson($url)->assertOk();
@@ -374,8 +423,6 @@ class PurchasingFoundationTest extends TestCase
                 'foc_type' => $overrides['foc_type'] ?? null,
                 'foc_value' => $overrides['foc_value'] ?? 0,
                 'tax_rate' => $overrides['tax_rate'] ?? 0,
-                'target_inventory_id' => $setup['inventory']->id,
-                'target_location' => $overrides['target_location'] ?? 'MAIN',
             ]],
         ]);
     }

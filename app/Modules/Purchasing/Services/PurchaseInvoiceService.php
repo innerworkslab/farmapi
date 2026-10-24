@@ -131,7 +131,7 @@ class PurchaseInvoiceService
         $supplier = $invoice->supplier ?: Supplier::query()->findOrFail($invoice->supplier_id);
 
         foreach (array_values($lines) as $index => $line) {
-            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? null);
+            BranchAccess::locations($actor, (int) $invoice->branch_id, null, $line['target_farm_information_id'] ?? null);
             $category = strtolower($line['category']);
             $item = Item::query()->lockForUpdate()->findOrFail($line['item_id']);
             if ($item->category !== $category) {
@@ -171,10 +171,6 @@ class PurchaseInvoiceService
             $tax = $taxBase->multipliedBy($taxRate)->dividedBy(100, 2, RoundingMode::HalfUp);
             $focQuantity = $this->focQuantity($quantity, $line['foc_type'] ?? null, (float) ($line['foc_value'] ?? 0), ! $item->divisible_quantity);
 
-            $requiresInventory = in_array($category, ['food', 'medicine', 'equipment'], true);
-            if ($requiresInventory && empty($line['target_inventory_id'])) {
-                throw ValidationException::withMessages(["lines.{$index}.target_inventory_id" => 'Target inventory is required for stock purchases.']);
-            }
             if ($category === 'animal' && empty($line['target_farm_information_id'])) {
                 throw ValidationException::withMessages(["lines.{$index}.target_farm_information_id" => 'Target farm is required for animal purchases.']);
             }
@@ -213,9 +209,7 @@ class PurchaseInvoiceService
                 'tax_amount' => $this->money($tax),
                 'total_amount' => $this->money($taxBase->plus($tax)),
                 'total_expected_quantity' => round($quantity + $focQuantity, 6),
-                'target_inventory_id' => $line['target_inventory_id'] ?? null,
                 'target_farm_information_id' => $line['target_farm_information_id'] ?? null,
-                'target_location' => $line['target_location'] ?? 'MAIN',
                 'metadata' => $line['metadata'] ?? null,
             ]);
         }

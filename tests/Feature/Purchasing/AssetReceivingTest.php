@@ -84,7 +84,7 @@ class AssetReceivingTest extends TestCase
 
     private function receipt(array $s, float $paid, float $foc, array $metadata): int
     {
-        return $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $s['invoice'], 'receipt_date' => now()->toDateString(), 'lines' => [['purchase_invoice_line_id' => $s['line'], 'accepted_quantity' => $paid, 'accepted_foc_quantity' => $foc, 'metadata' => $metadata]]])->assertCreated()->json('data.id');
+        return $this->postJson('/api/v1/purchasing/receipts', ['purchase_invoice_id' => $s['invoice'], 'receipt_date' => now()->toDateString(), 'lines' => [['purchase_invoice_line_id' => $s['line'], 'target_inventory_id' => $s['inventory']->id, 'target_location' => 'Pen', 'accepted_quantity' => $paid, 'accepted_foc_quantity' => $foc, 'metadata' => $metadata]]])->assertCreated()->json('data.id');
     }
 
     private function fixture(string $type): array
@@ -103,7 +103,7 @@ class AssetReceivingTest extends TestCase
         }
         $item = app(ItemRegistryService::class)->syncFromMaster($master);
         $category = $type === 'equipment' ? 'equipment' : 'animal';
-        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_inventory_id' => $inventory->id, 'target_farm_information_id' => $farm->id, 'target_location' => 'Pen']]])->assertCreated();
+        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]])->assertCreated();
         $invoice = $response->json('data.id');
         $line = $response->json('data.lines.0.id');
 

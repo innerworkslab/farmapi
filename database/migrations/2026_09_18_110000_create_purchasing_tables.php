@@ -60,15 +60,12 @@ return new class extends Migration
             $table->decimal('total_expected_quantity', 18, 6)->default(0);
             $table->decimal('received_quantity', 18, 6)->default(0);
             $table->decimal('received_foc_quantity', 18, 6)->default(0);
-            $table->foreignId('target_inventory_id')->nullable()->constrained('inventories')->restrictOnDelete();
             $table->foreignId('target_farm_information_id')->nullable()->constrained('farm_information')->restrictOnDelete();
-            $table->string('target_location')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
 
             $table->unique(['purchase_invoice_id', 'line_number'], 'pur_inv_lines_inv_line_unique');
             $table->index(['category', 'item_id'], 'pur_inv_lines_cat_item_idx');
-            $table->index(['target_inventory_id', 'target_location'], 'pur_inv_lines_inv_loc_idx');
         });
 
         Schema::create('purchase_receipts', function (Blueprint $table): void {

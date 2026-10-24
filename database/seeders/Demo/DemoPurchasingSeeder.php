@@ -64,8 +64,6 @@ class DemoPurchasingSeeder extends Seeder
                     'foc_type' => 'quantity',
                     'foc_value' => 2,
                     'tax_rate' => 0,
-                    'target_inventory_id' => $inventory->id,
-                    'target_location' => 'R2',
                 ]],
             ], $actor);
         }
@@ -78,6 +76,7 @@ class DemoPurchasingSeeder extends Seeder
             'notes' => 'Demo confirmed feed receipt.',
             'lines' => [[
                 'purchase_invoice_line_id' => $invoice->lines()->firstOrFail()->id,
+                'target_inventory_id' => $inventory->id,
                 'accepted_quantity' => 20,
                 'accepted_foc_quantity' => 2,
                 'target_location' => 'R2',
@@ -123,8 +122,6 @@ class DemoPurchasingSeeder extends Seeder
                     'foc_type' => 'quantity',
                     'foc_value' => 3,
                     'tax_rate' => 0,
-                    'target_inventory_id' => $inventory->id,
-                    'target_location' => 'MED-R2',
                 ]],
             ], $actor);
         }
@@ -137,6 +134,7 @@ class DemoPurchasingSeeder extends Seeder
             'notes' => 'Demo confirmed medicine receipt.',
             'lines' => [[
                 'purchase_invoice_line_id' => $invoice->lines()->firstOrFail()->id,
+                'target_inventory_id' => $inventory->id,
                 'accepted_quantity' => 30,
                 'accepted_foc_quantity' => 3,
                 'target_location' => 'MED-R2',

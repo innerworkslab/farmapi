@@ -16,7 +16,7 @@ class PurchaseInvoiceLine extends Model
         'stock_uom_id', 'conversion_factor', 'quantity', 'unit_price', 'gross_amount', 'discount_type',
         'discount_value', 'discount_amount', 'foc_type', 'foc_value', 'foc_quantity', 'tax_rate',
         'tax_amount', 'total_amount', 'total_expected_quantity', 'received_quantity', 'received_foc_quantity',
-        'target_inventory_id', 'target_farm_information_id', 'target_location', 'metadata',
+        'target_farm_information_id', 'metadata',
     ];
 
     public function invoice(): BelongsTo

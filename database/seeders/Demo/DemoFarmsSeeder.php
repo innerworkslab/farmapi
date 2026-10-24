@@ -51,12 +51,12 @@ class DemoFarmsSeeder extends Seeder
             $invoice = PurchaseInvoice::query()->where('invoice_number', 'PINV-FARM-FINAL-'.$index)->first();
             if (! $invoice) {
                 $invoice = app(PurchaseInvoiceService::class)->create(['invoice_number' => 'PINV-FARM-FINAL-'.$index, 'invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id,
-                    'lines' => [['category' => $item->category, 'item_id' => $item->id, 'quantity' => $quantity, 'unit_price' => 100, 'purchase_uom_id' => $stockUom->id, 'stock_uom_id' => $stockUom->id, 'conversion_factor' => 1, 'target_inventory_id' => $inventory->id, 'target_farm_information_id' => $farm->id, 'target_location' => 'Demo Pen']]], $actor);
+                    'lines' => [['category' => $item->category, 'item_id' => $item->id, 'quantity' => $quantity, 'unit_price' => 100, 'purchase_uom_id' => $stockUom->id, 'stock_uom_id' => $stockUom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]], $actor);
             }
             $receipt = PurchaseReceipt::query()->where('receipt_number', 'PREC-FARM-FINAL-'.$index)->first();
             if (! $receipt) {
                 $receipt = app(PurchaseReceiptService::class)->create(['receipt_number' => 'PREC-FARM-FINAL-'.$index, 'purchase_invoice_id' => $invoice->id, 'receipt_date' => now()->toDateString(),
-                    'lines' => [['purchase_invoice_line_id' => $invoice->lines()->firstOrFail()->id, 'accepted_quantity' => $quantity, 'receipt_lot_number' => $index >= 3 ? 'LOT-FARM-FINAL-'.$index : null, 'cold_chain_required' => false, 'cold_chain_status' => 'compliant', 'manufacturing_date' => now()->subMonth()->toDateString(), 'expiry_date' => now()->addYear()->toDateString(), 'metadata' => $index === 2 ? ['units' => [['serial_number' => 'FINAL-EQUIPMENT-001', 'asset_tag' => 'FINAL-ASSET-001']]] : []]]], $actor);
+                    'lines' => [['purchase_invoice_line_id' => $invoice->lines()->firstOrFail()->id, 'target_inventory_id' => $inventory->id, 'target_location' => 'Demo Pen', 'accepted_quantity' => $quantity, 'receipt_lot_number' => $index >= 3 ? 'LOT-FARM-FINAL-'.$index : null, 'cold_chain_required' => false, 'cold_chain_status' => 'compliant', 'manufacturing_date' => now()->subMonth()->toDateString(), 'expiry_date' => now()->addYear()->toDateString(), 'metadata' => $index === 2 ? ['units' => [['serial_number' => 'FINAL-EQUIPMENT-001', 'asset_tag' => 'FINAL-ASSET-001']]] : []]]], $actor);
             }
             if ($receipt->status === 'draft') {
                 app(PurchaseReceiptService::class)->confirm($receipt, $actor);

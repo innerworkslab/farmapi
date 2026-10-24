@@ -36,9 +36,9 @@ class PurchaseInvoiceRequest extends FormRequest
             'lines.*.foc_type' => ['nullable', 'string', Rule::in(['percentage', 'quantity'])],
             'lines.*.foc_value' => ['nullable', 'numeric', 'min:0'],
             'lines.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:9999.9999', 'decimal:0,4'],
-            'lines.*.target_inventory_id' => ['nullable', 'integer', 'exists:inventories,id'],
+            'lines.*.target_inventory_id' => ['prohibited'],
             'lines.*.target_farm_information_id' => ['nullable', 'integer', 'exists:farm_information,id'],
-            'lines.*.target_location' => ['nullable', 'string', 'max:100'],
+            'lines.*.target_location' => ['prohibited'],
             'lines.*.metadata' => ['nullable', 'array'],
         ];
     }

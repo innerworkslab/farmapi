@@ -161,7 +161,11 @@ class PurchaseReceiptService
                 throw ValidationException::withMessages(["lines.{$index}.purchase_invoice_line_id" => 'Receipt line must reference this invoice.']);
             }
 
-            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? $invoiceLine->target_inventory_id, $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id);
+            if (in_array($invoiceLine->category, ['food', 'medicine'], true) && empty($line['target_inventory_id'])) {
+                throw ValidationException::withMessages(["lines.{$index}.target_inventory_id" => 'Select the destination inventory on the receipt line.']);
+            }
+
+            BranchAccess::locations($actor, (int) $invoice->branch_id, $line['target_inventory_id'] ?? null, $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id);
 
             if ((float) ($line['rejected_quantity'] ?? 0) > 0 && empty($line['rejection_reason'])) {
                 throw ValidationException::withMessages(['rejection_reason' => 'Rejected units require a reason.']);
@@ -182,9 +186,9 @@ class PurchaseReceiptService
                 'accepted_foc_quantity' => $acceptedFoc,
                 'rejected_quantity' => $rejected,
                 'rejection_reason' => $line['rejection_reason'] ?? null,
-                'target_inventory_id' => $line['target_inventory_id'] ?? $invoiceLine->target_inventory_id,
+                'target_inventory_id' => $line['target_inventory_id'] ?? null,
                 'target_farm_information_id' => $line['target_farm_information_id'] ?? $invoiceLine->target_farm_information_id,
-                'target_location' => $line['target_location'] ?? $invoiceLine->target_location ?? 'MAIN',
+                'target_location' => $line['target_location'] ?? 'MAIN',
                 'purchase_uom_id' => $invoiceLine->purchase_uom_id,
                 'stock_uom_id' => $invoiceLine->stock_uom_id,
                 'conversion_factor' => $invoiceLine->conversion_factor,
