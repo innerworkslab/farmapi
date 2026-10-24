@@ -158,6 +158,40 @@ class PurchaseReceiptService
         });
     }
 
+    /** @param array<string, mixed> $data */
+    public function update(PurchaseReceipt $receipt, array $data, User $actor): PurchaseReceipt
+    {
+        return DB::transaction(function () use ($receipt, $data, $actor): PurchaseReceipt {
+            $receipt = PurchaseReceipt::query()->with(['invoice.lines', 'lines'])->lockForUpdate()->findOrFail($receipt->id);
+            $this->authorizeAccess($receipt, $actor);
+            if ($receipt->status !== PurchaseReceipt::STATUS_DRAFT) {
+                throw ValidationException::withMessages(['receipt' => 'Only draft receipts can be updated.']);
+            }
+
+            if (isset($data['purchase_invoice_id']) && (int) $data['purchase_invoice_id'] !== (int) $receipt->purchase_invoice_id) {
+                throw ValidationException::withMessages(['purchase_invoice_id' => 'A receipt cannot be moved to another purchase invoice.']);
+            }
+            $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($receipt->purchase_invoice_id);
+            $this->authorizeInvoice($invoice, $actor);
+            $this->assertReceivable($invoice);
+
+            $receipt->fill([
+                'receipt_number' => $data['receipt_number'] ?? $receipt->receipt_number,
+                'receipt_date' => $data['receipt_date'] ?? $receipt->receipt_date,
+                'idempotency_key' => $data['idempotency_key'] ?? $receipt->idempotency_key,
+                'notes' => $data['notes'] ?? $receipt->notes,
+                'version' => $receipt->version + 1,
+            ])->save();
+
+            if (isset($data['lines'])) {
+                $receipt->lines()->delete();
+                $this->replaceLines($receipt, $invoice, $data['lines'], $actor);
+            }
+
+            return $receipt->refresh()->load(['invoice.supplier', 'lines.item']);
+        });
+    }
+
     /** @param list<array<string, mixed>> $lines */
     private function replaceLines(PurchaseReceipt $receipt, PurchaseInvoice $invoice, array $lines, User $actor): void
     {

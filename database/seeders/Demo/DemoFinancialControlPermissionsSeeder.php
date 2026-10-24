@@ -14,6 +14,7 @@ class DemoFinancialControlPermissionsSeeder extends Seeder
         'financial.reconciliation.view', 'financial.transactions.backdate', 'financial.reports.detail', 'financial.reports.export',
         'purchasing.payments.view', 'purchasing.payments.create', 'purchasing.payments.confirm', 'purchasing.payments.reverse',
         'purchasing.invoices.confirm',
+        'purchasing.receipts.update',
         'financial.payroll-recoveries.create', 'financial.payroll-recoveries.confirm', 'financial.payroll-recoveries.reverse',
         'financial.transfers.view', 'financial.transfers.create', 'financial.transfers.confirm', 'financial.transfers.reverse',
         'financial.reports.classify',
@@ -26,6 +27,7 @@ class DemoFinancialControlPermissionsSeeder extends Seeder
             Permission::findOrCreate($name, 'web');
         }
         Role::query()->where('name', 'super-admin')->where('guard_name', 'web')->first()?->givePermissionTo(self::PERMISSIONS);
+        Role::query()->where('name', 'admin')->where('guard_name', 'web')->first()?->givePermissionTo('purchasing.receipts.update');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

@@ -343,6 +343,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('receipts', [PurchaseReceiptController::class, 'index'])->middleware('permission:purchasing.receipts.view');
             Route::post('receipts', [PurchaseReceiptController::class, 'store'])->middleware('permission:purchasing.receipts.create');
             Route::get('receipts/{receipt}', [PurchaseReceiptController::class, 'show'])->middleware('permission:purchasing.receipts.view');
+            Route::post('receipts/{receipt}', [PurchaseReceiptController::class, 'update'])->middleware('permission:purchasing.receipts.update');
             Route::post('receipts/{receipt}/confirm', [PurchaseReceiptController::class, 'confirm'])->middleware('permission:purchasing.receipts.confirm');
         });
     });

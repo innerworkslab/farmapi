@@ -31,6 +31,11 @@ class PurchaseReceiptController extends Controller
         return new PurchaseReceiptResource($receipt->load(['invoice.supplier', 'lines.item']));
     }
 
+    public function update(PurchaseReceiptRequest $request, PurchaseReceipt $receipt): PurchaseReceiptResource
+    {
+        return new PurchaseReceiptResource($this->receipts->update($receipt, $request->validated(), $request->user()));
+    }
+
     public function confirm(Request $request, PurchaseReceipt $receipt): PurchaseReceiptResource
     {
         return new PurchaseReceiptResource($this->receipts->confirm($receipt, $request->user()));
