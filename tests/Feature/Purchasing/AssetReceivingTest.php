@@ -103,7 +103,9 @@ class AssetReceivingTest extends TestCase
         }
         $item = app(ItemRegistryService::class)->syncFromMaster($master);
         $category = $type === 'equipment' ? 'equipment' : 'animal';
-        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]])->assertCreated();
+        $this->seed(\Database\Seeders\PurchasePaymentCategorySeeder::class);
+        $cashbook = \App\Modules\Financial\Models\Cashbook::create(['branch_id' => $branch->id, 'name' => 'Purchase cash', 'normalized_name' => 'purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01', 'status' => 'active']);
+        $response = $this->postJson('/api/v1/purchasing/invoices', ['invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'cashbook_id' => $cashbook->id, 'paid_amount' => 0, 'lines' => [['category' => $category, 'item_id' => $item->id, 'quantity' => 5, 'unit_price' => 100, 'foc_type' => 'quantity', 'foc_value' => 1, 'purchase_uom_id' => $uom->id, 'stock_uom_id' => $uom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]])->assertCreated();
         $invoice = $response->json('data.id');
         $line = $response->json('data.lines.0.id');
 

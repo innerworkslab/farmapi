@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Financial\Models\Cashbook;
 use App\Modules\Financial\Models\CashbookTransaction;
 use App\Modules\Financial\Models\FinancialBranchSetting;
+use App\Modules\Financial\Models\CashLedgerCategory;
 use App\Modules\Financial\Services\CashbookService;
 use App\Modules\Financial\Services\CashbookTransactionService;
 use App\Modules\Financial\Services\FinancialControlService;
@@ -19,13 +20,78 @@ use Illuminate\Validation\ValidationException;
 
 class PurchasePaymentService
 {
+    public static function initialKey(int $invoiceId): string
+    {
+        return 'purchase-invoice-initial-'.$invoiceId;
+    }
+
     public function __construct(private readonly CashbookTransactionService $cash, private readonly FinancialControlService $controls) {}
+
+    /** The initial row also preserves the selected cashbook when paid amount is zero. */
+    public function syncInitial(PurchaseInvoice $invoice, array $data, User $actor): void
+    {
+        $key = self::initialKey($invoice->id);
+        $existing = PurchasePayment::where('idempotency_key', $key)->lockForUpdate()->first();
+        if ($existing) {
+            if ((int) $existing->purchase_invoice_id !== (int) $invoice->id) {
+                throw ValidationException::withMessages(['cashbook_id' => 'Invalid original payment reference.']);
+            }
+            if ((int) $existing->branch_id !== (int) $invoice->branch_id || $existing->currency_code !== $invoice->currency_code) {
+                throw ValidationException::withMessages(['cashbook_id' => 'Keep the original purchase branch and currency.']);
+            }
+            if ((isset($data['cashbook_id']) && (int) $data['cashbook_id'] !== (int) $existing->cashbook_id)
+                || (isset($data['paid_amount']) && Money::minor($data['paid_amount']) !== Money::minor($existing->amount))) {
+                throw ValidationException::withMessages(['paid_amount' => 'The original cashbook and paid amount cannot be changed. Settle the payable through invoice payments.']);
+            }
+            return;
+        }
+        $book = Cashbook::query()->find($data['cashbook_id'] ?? null);
+        if (! $book || $book->status !== 'active' || (int) $book->branch_id !== (int) $invoice->branch_id) {
+            throw ValidationException::withMessages(['cashbook_id' => 'Select an active cashbook in the purchase branch.']);
+        }
+        app(CashbookService::class)->find($book, $actor);
+        if ($invoice->currency_code && $invoice->currency_code !== $book->currency_code) {
+            throw ValidationException::withMessages(['cashbook_id' => 'Cashbook and purchase currencies must match.']);
+        }
+        $amount = Money::minor($data['paid_amount'] ?? 0);
+        if ($amount < 0 || $amount > Money::minor($invoice->total_amount)) {
+            throw ValidationException::withMessages(['paid_amount' => 'Paid amount must be between zero and the purchase total.']);
+        }
+        if ($amount > 0) {
+            abort_unless($actor->can('purchasing.payments.create'), 403, 'You cannot post purchase payments.');
+        }
+        $category = CashLedgerCategory::where('normalized_name', 'purchases')->where('direction', 'out')->where('status', 'active')->first();
+        if (! $category) {
+            throw ValidationException::withMessages(['paid_amount' => 'Configure the active Purchases cash-out category.']);
+        }
+        $invoice->currency_code = $book->currency_code;
+        $invoice->save();
+        $payment = PurchasePayment::create(['purchase_invoice_id' => $invoice->id, 'branch_id' => $invoice->branch_id,
+            'cashbook_id' => $book->id, 'category_id' => $category->id, 'reference' => 'PPAY-'.Str::upper((string) Str::ulid()),
+            'idempotency_key' => $key, 'currency_code' => $book->currency_code, 'business_date' => $invoice->invoice_date->toDateString(),
+            'amount' => Money::decimal($amount), 'description' => 'Initial payment for '.$invoice->invoice_number,
+            'created_by_id' => $actor->id, 'state' => $amount > 0 ? 'draft' : 'confirmed']);
+        if ($amount > 0) {
+            $this->confirm($payment, $actor);
+        }
+    }
 
     public function create(PurchaseInvoice $invoice, array $data, User $actor): PurchasePayment
     {
         return DB::transaction(function () use ($invoice, $data, $actor) {
             $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
             BranchAccess::authorize($actor, (int) $invoice->branch_id);
+            $original = PurchasePayment::where('purchase_invoice_id', $invoice->id)->where('idempotency_key', self::initialKey($invoice->id))->first();
+            if (! $original) {
+                throw ValidationException::withMessages(['cashbook_id' => 'The purchase has no original cashbook selection.']);
+            }
+            if (isset($data['cashbook_id']) && (int) $data['cashbook_id'] !== (int) $original->cashbook_id) {
+                throw ValidationException::withMessages(['cashbook_id' => 'Settlement must use the cashbook selected on purchase creation.']);
+            }
+            $data['cashbook_id'] = $original->cashbook_id;
+            $data['category_id'] = $original->category_id;
+            $data['invoice_currency_code'] = $original->currency_code;
+            $data['description'] = $data['description'] ?? 'Payable settlement for '.$invoice->invoice_number;
             $book = Cashbook::query()->findOrFail($data['cashbook_id']);
             app(CashbookService::class)->find($book, $actor);
             if ($book->branch_id !== $invoice->branch_id || $book->status !== 'active') {
@@ -49,17 +115,19 @@ class PurchasePaymentService
                     throw ValidationException::withMessages(['idempotency_key' => 'This key was used for different purchase payment data.']);
                 }
 
-                return $existing;
+                return $existing->state === 'draft' ? $this->confirm($existing, $actor) : $existing;
             }
             $this->assertInvoice($invoice, $amount);
 
-            return PurchasePayment::query()->create([
+            $payment = PurchasePayment::query()->create([
                 'purchase_invoice_id' => $invoice->id, 'branch_id' => $invoice->branch_id,
                 'cashbook_id' => $book->id, 'category_id' => $data['category_id'],
                 'reference' => 'PPAY-'.Str::upper((string) Str::ulid()), 'idempotency_key' => $data['idempotency_key'],
                 'currency_code' => $currency, 'business_date' => $date, 'amount' => Money::decimal($amount),
                 'description' => trim($data['description']), 'created_by_id' => $actor->id, 'state' => 'draft',
             ]);
+
+            return $this->confirm($payment, $actor);
         });
     }
 
@@ -96,6 +164,9 @@ class PurchasePaymentService
             $invoice->currency_code = $payment->currency_code;
             $invoice->save();
             $payment->fill(['state' => 'confirmed', 'cashbook_transaction_id' => $posting->id, 'confirmed_by_id' => $actor->id, 'confirmed_at' => now()])->save();
+            if ($payment->idempotency_key !== self::initialKey($invoice->id)) {
+                app(PurchasePayableService::class)->append($invoice, -Money::minor($payment->amount), 'invoice_settlement', 'payment-'.$payment->id, $actor, $payment->business_date->toDateString());
+            }
 
             return $payment->refresh();
         });
@@ -104,17 +175,18 @@ class PurchasePaymentService
     public function reverse(PurchasePayment $payment, string $reason, User $actor): PurchasePayment
     {
         return DB::transaction(function () use ($payment, $reason, $actor) {
-            PurchaseInvoice::query()->lockForUpdate()->findOrFail($payment->purchase_invoice_id);
+            $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($payment->purchase_invoice_id);
             $payment = PurchasePayment::query()->lockForUpdate()->findOrFail($payment->id);
             BranchAccess::authorize($actor, (int) $payment->branch_id);
             if ($payment->state === 'reversed') {
                 return $payment;
             }
-            if ($payment->state !== 'confirmed') {
-                throw ValidationException::withMessages(['payment' => 'Only confirmed payments can be reversed.']);
+            if ($payment->state !== 'confirmed' || ! $payment->cashbook_transaction_id || Money::minor($payment->amount) <= 0) {
+                throw ValidationException::withMessages(['payment' => 'Only posted positive payments can be reversed.']);
             }
             $this->cash->reverseForModule(CashbookTransaction::query()->findOrFail($payment->cashbook_transaction_id), 'purchase_payment', $reason, $actor);
             $payment->fill(['state' => 'reversed', 'reversal_reason' => trim($reason)])->save();
+            app(PurchasePayableService::class)->append($invoice, Money::minor($payment->amount), 'invoice_payment_reversal', 'reverse-'.$payment->id, $actor);
 
             return $payment->refresh();
         });
@@ -123,6 +195,7 @@ class PurchasePaymentService
     public function cancel(PurchasePayment $payment, User $actor): PurchasePayment
     {
         return DB::transaction(function () use ($payment, $actor) {
+            PurchaseInvoice::query()->lockForUpdate()->findOrFail($payment->purchase_invoice_id);
             $payment = PurchasePayment::query()->lockForUpdate()->findOrFail($payment->id);
             BranchAccess::authorize($actor, (int) $payment->branch_id);
             if ($payment->state !== 'draft') {
@@ -139,6 +212,7 @@ class PurchasePaymentService
     {
         BranchAccess::authorize($actor, (int) $invoice->branch_id);
         $paid = $this->paid($invoice);
+        $original = PurchasePayment::where('purchase_invoice_id', $invoice->id)->where('idempotency_key', self::initialKey($invoice->id))->first();
         $currency = $invoice->currency_code ?? FinancialBranchSetting::query()->where('branch_id', $invoice->branch_id)->value('default_currency');
         if (! $currency) {
             $currencies = Cashbook::query()->where('branch_id', $invoice->branch_id)->where('status', 'active')->distinct()->pluck('currency_code')->filter()->values();
@@ -147,10 +221,11 @@ class PurchasePaymentService
             }
         }
         $cashbooks = Cashbook::query()->where('branch_id', $invoice->branch_id)->where('status', 'active')
+            ->when($original, fn ($query) => $query->whereKey($original->cashbook_id))
             ->when($currency, fn ($query, string $effectiveCurrency) => $query->where('currency_code', $effectiveCurrency))
             ->orderBy('name')->get(['id', 'name', 'type', 'currency_code', 'branch_id']);
 
-        return ['invoice_id' => $invoice->id, 'currency_code' => $currency, 'total_amount' => Money::decimal(Money::minor($invoice->total_amount)),
+        return ['invoice_id' => $invoice->id, 'cashbook_id' => $original?->cashbook_id, 'currency_code' => $currency, 'total_amount' => Money::decimal(Money::minor($invoice->total_amount)),
             'paid_amount' => Money::decimal($paid), 'outstanding_amount' => Money::decimal($invoice->status === 'cancelled' ? 0 : Money::minor($invoice->total_amount) - $paid),
             'payments' => PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->orderBy('id')->get(),
             'eligible_cashbooks' => $cashbooks];
@@ -163,8 +238,8 @@ class PurchasePaymentService
 
     private function assertInvoice(PurchaseInvoice $invoice, int $amount): void
     {
-        if ($invoice->status !== 'open') {
-            throw ValidationException::withMessages(['invoice' => 'Only open invoices can receive payments.']);
+        if (! in_array($invoice->status, [PurchaseInvoice::STATUS_OPEN, PurchaseInvoice::STATUS_CONFIRMED], true)) {
+            throw ValidationException::withMessages(['invoice' => 'Cancelled invoices cannot receive payments.']);
         }
         if ($amount > Money::minor($invoice->total_amount) - $this->paid($invoice)) {
             throw ValidationException::withMessages(['amount' => 'Payment exceeds the invoice outstanding amount.']);

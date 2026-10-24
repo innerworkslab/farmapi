@@ -33,7 +33,7 @@ class PurchaseInvoiceService
     public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
         return BranchAccess::scope(PurchaseInvoice::query(), $actor)
-            ->with(['supplier', 'lines.item'])
+            ->with(['supplier', 'lines.item', 'payments'])
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where('invoice_number', 'like', "%{$search}%");
             })
@@ -67,8 +67,10 @@ class PurchaseInvoiceService
 
             $this->replaceLines($invoice, $data['lines'], $actor);
             $this->recalculate($invoice);
+            app(PurchasePaymentService::class)->syncInitial($invoice, $data, $actor);
+            app(PurchasePayableService::class)->sync($invoice, $actor);
 
-            return $invoice->refresh()->load(['supplier', 'lines.item']);
+            return $invoice->refresh()->load(['supplier', 'lines.item', 'payments']);
         });
     }
 
@@ -79,6 +81,10 @@ class PurchaseInvoiceService
             $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($invoice->id);
             $this->authorizeAccess($invoice, $actor);
             $this->assertEditable($invoice);
+            if ($invoice->payments()->where('idempotency_key', PurchasePaymentService::initialKey($invoice->id))->exists()
+                && isset($data['supplier_id']) && (int) $data['supplier_id'] !== (int) $invoice->supplier_id) {
+                throw ValidationException::withMessages(['supplier_id' => 'Keep the original supplier; cancel and recreate an incorrect purchase.']);
+            }
 
             if (isset($data['supplier_id'])) {
                 $supplier = Supplier::query()->findOrFail($data['supplier_id']);
@@ -100,8 +106,10 @@ class PurchaseInvoiceService
                 $this->replaceLines($invoice, $data['lines'], $actor);
             }
             $this->recalculate($invoice);
+            app(PurchasePaymentService::class)->syncInitial($invoice, $data, $actor);
+            app(PurchasePayableService::class)->sync($invoice, $actor);
 
-            return $invoice->refresh()->load(['supplier', 'lines.item']);
+            return $invoice->refresh()->load(['supplier', 'lines.item', 'payments']);
         });
     }
 
@@ -112,6 +120,12 @@ class PurchaseInvoiceService
             $this->authorizeAccess($invoice, $actor);
             $this->assertEditable($invoice, true);
 
+            $initial = PurchasePayment::where('purchase_invoice_id', $invoice->id)->where('idempotency_key', PurchasePaymentService::initialKey($invoice->id))->where('state', 'draft')->lockForUpdate()->first();
+            if ($initial) {
+                $initial->update(['state' => 'cancelled']);
+            }
+
+            app(PurchasePayableService::class)->cancel($invoice, $actor);
             $invoice->fill([
                 'status' => PurchaseInvoice::STATUS_CANCELLED,
                 'delivery_status' => PurchaseInvoice::DELIVERY_CANCELLED,
@@ -121,7 +135,7 @@ class PurchaseInvoiceService
                 'version' => $invoice->version + 1,
             ])->save();
 
-            return $invoice->refresh()->load(['supplier', 'lines.item']);
+            return $invoice->refresh()->load(['supplier', 'lines.item', 'payments']);
         });
     }
 
@@ -245,10 +259,14 @@ class PurchaseInvoiceService
 
     private function assertEditable(PurchaseInvoice $invoice, bool $cancelling = false): void
     {
-        if (! $cancelling && PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->whereNotNull('confirmed_at')->exists()) {
+        if (! $cancelling && $invoice->status === PurchaseInvoice::STATUS_CONFIRMED) {
+            throw ValidationException::withMessages(['invoice' => 'Confirmed purchase terms cannot be edited.']);
+        }
+        if (! $cancelling && PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->where('amount', '>', 0)->whereNotNull('confirmed_at')->exists()) {
             throw ValidationException::withMessages(['invoice' => 'Financial terms are immutable after a payment has been confirmed. Reverse the payments and cancel the invoice if it was entered incorrectly.']);
         }
-        if (PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->whereIn('state', ['draft', 'confirmed'])->exists()) {
+        if (PurchasePayment::query()->where('purchase_invoice_id', $invoice->id)->where('amount', '>', 0)->whereIn('state', ['draft', 'confirmed'])
+            ->where(fn ($q) => $q->where('state', 'confirmed')->orWhereNull('idempotency_key')->orWhere('idempotency_key', '<>', PurchasePaymentService::initialKey($invoice->id)))->exists()) {
             throw ValidationException::withMessages(['invoice' => 'Cancel draft payments and reverse confirmed payments before editing or cancelling the invoice.']);
         }
         if ($invoice->status === PurchaseInvoice::STATUS_CANCELLED || $invoice->delivery_status !== PurchaseInvoice::DELIVERY_NOT_RECEIVED) {

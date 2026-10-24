@@ -43,6 +43,7 @@ class FinancialIntegrityTest extends TestCase
             'financial.advance-repayments.create', 'financial.advance-repayments.confirm', 'financial.advance-repayments.reverse',
             'financial.categories.update', 'financial.cashbooks.create', 'financial.depreciations.create', 'financial.depreciations.activate',
             'financial.depreciations.post', 'financial.depreciations.reverse', 'purchasing.invoices.update', 'purchasing.invoices.cancel',
+            'purchasing.invoices.create', 'purchasing.invoices.view',
         ]);
         foreach ($permissions as $permission) {
             Permission::findOrCreate($permission, 'web');
@@ -165,26 +166,87 @@ class FinancialIntegrityTest extends TestCase
         $this->postJson('/api/v1/financial/periods/'.$this->s['period']->id.'/reopen', ['reason' => 'Unauthorized correction'])->assertForbidden();
     }
 
-    public function test_purchase_payments_post_once_reject_overpayment_and_reverse_through_the_owner(): void
+    public function test_purchase_create_posts_cash_and_records_only_the_unpaid_payable(): void
     {
-        $supplier = Supplier::query()->create(['code' => 'SUP-FIN', 'type' => 'business', 'name' => 'Supplier', 'phone_number' => '0912345', 'status' => 'active']);
-        $invoice = PurchaseInvoice::query()->create(['invoice_number' => 'PINV-FIN', 'invoice_date' => '2026-10-09', 'supplier_id' => $supplier->id, 'branch_id' => $this->s['branch']->id, 'status' => 'open', 'delivery_status' => 'not_received', 'total_amount' => '100.00', 'created_by_id' => $this->s['user']->id]);
-        $url = '/api/v1/purchasing/invoices/'.$invoice->id.'/payments';
-        $this->getJson($url)->assertOk()->assertJsonPath('data.currency_code', 'MMK')->assertJsonPath('data.eligible_cashbooks.0.id', $this->s['book']->id);
-        $data = ['cashbook_id' => $this->s['book']->id, 'category_id' => $this->s['out']->id, 'invoice_currency_code' => 'MMK', 'amount' => '60.00', 'description' => 'Supplier payment', 'idempotency_key' => 'purchase-1'];
-        $id = $this->postJson($url, $data)->assertCreated()->json('data.id');
-        $this->postJson($url, $data)->assertCreated()->assertJsonPath('data.id', $id);
-        $this->postJson('/api/v1/purchasing/payments/'.$id.'/confirm')->assertOk();
-        $this->postJson('/api/v1/purchasing/payments/'.$id.'/confirm')->assertOk();
+        $body = $this->purchaseWithInitialPayment('40.00');
+        $response = $this->postJson('/api/v1/purchasing/invoices', $body)->assertCreated()
+            ->assertJsonPath('data.paid_amount', '40.00')->assertJsonPath('data.outstanding_amount', '60.00')
+            ->assertJsonPath('data.cashbook_id', $this->s['book']->id)->assertJsonPath('data.payments.0.state', 'confirmed');
+        $id = $response->json('data.id');
         $this->assertDatabaseCount('cashbook_transactions', 1);
-        $this->getJson($url)->assertOk()->assertJsonPath('data.outstanding_amount', '40.00');
-        $this->postJson($url, array_merge($data, ['idempotency_key' => 'purchase-2', 'amount' => '41.00']))->assertUnprocessable();
-        $this->postJson('/api/v1/purchasing/invoices/'.$invoice->id.'/cancel', ['reason' => 'Invalid invoice'])->assertUnprocessable();
-        $txn = CashbookTransaction::query()->first();
-        $this->postJson('/api/v1/financial/cashbook-transactions/'.$txn->id.'/reverse', ['reason' => 'Bypass owner'])->assertUnprocessable();
-        $this->postJson('/api/v1/purchasing/payments/'.$id.'/reverse', ['reason' => 'Payment correction'])->assertOk();
-        $this->getJson($url)->assertOk()->assertJsonPath('data.outstanding_amount', '100.00');
+        $this->assertDatabaseHas('cashbook_ledger_entries', ['direction' => 'out', 'amount' => '40.00', 'running_balance' => '960.00']);
+        $this->assertDatabaseHas('supplier_payable_entries', ['entry_type' => 'invoice_payable', 'amount' => '60.00', 'reference' => $response->json('data.invoice_number')]);
+        $this->postJson('/api/v1/purchasing/invoices/'.$id.'/confirm')->assertNotFound();
+        $this->postJson('/api/v1/purchasing/invoices/'.$id, $body)->assertUnprocessable();
+    }
+
+    public function test_zero_paid_purchase_retains_cashbook_and_settles_immediately_using_that_book(): void
+    {
+        $body = $this->purchaseWithInitialPayment('0');
+        $response = $this->postJson('/api/v1/purchasing/invoices', $body)->assertCreated()
+            ->assertJsonPath('data.cashbook_id', $this->s['book']->id)->assertJsonPath('data.paid_amount', '0.00')->assertJsonPath('data.outstanding_amount', '100.00');
+        $id = $response->json('data.id');
+        $this->assertDatabaseCount('cashbook_transactions', 0);
+        $this->assertDatabaseHas('supplier_payable_entries', ['entry_type' => 'invoice_payable', 'amount' => '100.00']);
+        $url = '/api/v1/purchasing/invoices/'.$id.'/payments';
+        $payment = ['amount' => '30.00', 'idempotency_key' => 'settle-1'];
+        $paid = $this->postJson($url, $payment)->assertCreated()->assertJsonPath('data.state', 'confirmed')->assertJsonPath('data.cashbook_id', $this->s['book']->id)->json('data.id');
+        $this->postJson($url, $payment)->assertCreated()->assertJsonPath('data.id', $paid);
+        $this->assertDatabaseCount('cashbook_transactions', 1);
+        $this->getJson('/api/v1/purchasing/invoices/'.$id)->assertOk()->assertJsonPath('data.paid_amount', '30.00')->assertJsonPath('data.outstanding_amount', '70.00');
+        $this->postJson($url, ['amount' => '71.00', 'idempotency_key' => 'overpay'])->assertUnprocessable();
+        $other = app(CashbookService::class)->create(['branch_id' => $this->s['branch']->id, 'name' => 'Other', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01'], $this->s['user']);
+        $this->postJson($url, ['cashbook_id' => $other->id, 'amount' => 1, 'idempotency_key' => 'wrong-book'])->assertUnprocessable()->assertJsonValidationErrors('cashbook_id');
+        $entries = \App\Modules\Setup\Models\SupplierPayableEntry::get();
+        $this->assertSame(7000, $entries->sum(fn ($entry) => \App\Modules\Financial\Support\Money::minor($entry->amount)));
+        Permission::findOrCreate('setup.suppliers.view', 'web');
+        $this->s['user']->givePermissionTo('setup.suppliers.view');
+        $this->getJson('/api/v1/setup/suppliers/'.$body['supplier_id'].'/payables')->assertOk()->assertJsonPath('data.balances.0.outstanding_amount', '70.00');
         $this->getJson('/api/v1/financial/reconciliation')->assertOk()->assertJsonPath('data.passed', true);
+    }
+
+    public function test_purchase_cash_failure_and_invalid_payment_roll_back_all_records(): void
+    {
+        $body = $this->purchaseWithInitialPayment();
+        foreach ([['cashbook_id' => null, 'paid_amount' => 0], ['paid_amount' => -1], ['paid_amount' => 101], ['paid_amount' => '1.001']] as $bad) {
+            $this->postJson('/api/v1/purchasing/invoices', array_replace($body, $bad))->assertUnprocessable();
+        }
+        FinancialPeriod::whereKey($this->s['period']->id)->update(['state' => 'closed']);
+        $this->postJson('/api/v1/purchasing/invoices', $body)->assertUnprocessable();
+        FinancialPeriod::whereKey($this->s['period']->id)->update(['state' => 'open']);
+        $body['lines'][0]['unit_price'] = 1000;
+        $body['paid_amount'] = 1200;
+        FinancialPostingLimit::whereKey($this->s['limit']->id)->update(['maximum_amount' => 5000]);
+        $this->postJson('/api/v1/purchasing/invoices', $body)->assertUnprocessable();
+        $this->assertDatabaseCount('purchase_invoices', 0);
+        $this->assertDatabaseCount('purchase_payments', 0);
+        $this->assertDatabaseCount('supplier_payable_entries', 0);
+        $this->assertDatabaseCount('cashbook_transactions', 0);
+        $this->assertDatabaseCount('cashbook_ledger_entries', 1);
+    }
+
+    public function test_fully_paid_purchase_has_no_payable_until_reversal_and_cancellation_clears_it(): void
+    {
+        $body = $this->purchaseWithInitialPayment('100');
+        $response = $this->postJson('/api/v1/purchasing/invoices', $body)->assertCreated()->assertJsonPath('data.outstanding_amount', '0.00');
+        $this->assertDatabaseCount('supplier_payable_entries', 0);
+        $id = $response->json('data.id');
+        $payment = $response->json('data.payments.0.id');
+        $this->postJson('/api/v1/purchasing/payments/'.$payment.'/reverse', ['reason' => 'Correction'])->assertOk();
+        $this->getJson('/api/v1/purchasing/invoices/'.$id)->assertOk()->assertJsonPath('data.outstanding_amount', '100.00');
+        $this->postJson('/api/v1/purchasing/invoices/'.$id.'/cancel', ['reason' => 'Correction'])->assertOk();
+        $this->assertSame(0, \App\Modules\Setup\Models\SupplierPayableEntry::get()->sum(fn ($e) => \App\Modules\Financial\Support\Money::minor($e->amount)));
+    }
+
+    private function purchaseWithInitialPayment(string $amount = '40.00'): array
+    {
+        $supplier = Supplier::create(['code' => 'INLINE-SUP', 'name' => 'Inline supplier', 'type' => 'business', 'phone_number' => '123', 'status' => 'active']);
+        $equipment = \App\Modules\Setup\Models\Equipment::create(['code' => 'INLINE-EQ', 'name' => 'Inline item', 'category' => 'farm']);
+        $item = app(\App\Modules\Inventory\Services\ItemRegistryService::class)->syncFromMaster($equipment);
+
+        return ['invoice_date' => '2026-10-09', 'supplier_id' => $supplier->id, 'branch_id' => $this->s['branch']->id,
+            'currency_code' => 'MMK', 'cashbook_id' => $this->s['book']->id, 'paid_amount' => $amount,
+            'lines' => [['category' => 'equipment', 'item_id' => $item->id, 'quantity' => 2, 'unit_price' => 50]]];
     }
 
     public function test_payroll_recovery_reduces_loan_without_cash_and_requires_evidence_verification(): void

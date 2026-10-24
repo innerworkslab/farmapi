@@ -148,6 +148,11 @@ class FinancialReconciliationService
                 $add('sale_cash_received', 'sale', $sale->id, $sale->status === 'confirmed' ? Money::minor($sale->paid_amount) : 0, $cashNet);
             }
             foreach ($scope(PurchasePayment::query())->whereIn('state', ['confirmed', 'reversed'])->get() as $payment) {
+                // A zero initial row stores the purchase's chosen cashbook without a cash movement.
+                if ($payment->state === 'confirmed' && Money::minor($payment->amount) === 0 && ! $payment->cashbook_transaction_id
+                    && $payment->idempotency_key === \App\Modules\Purchasing\Services\PurchasePaymentService::initialKey($payment->purchase_invoice_id)) {
+                    continue;
+                }
                 $cash = $cashTransactions->get($payment->cashbook_transaction_id);
                 $valid = $cash && $cash->source_type === 'purchase_payment' && $cash->direction === 'out'
                     && $cash->status === $payment->state && (int) $cash->cashbook_id === (int) $payment->cashbook_id

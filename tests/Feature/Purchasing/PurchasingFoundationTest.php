@@ -40,7 +40,7 @@ class PurchasingFoundationTest extends TestCase
             ->assertJsonMissingPath('data.lines.0.target_inventory_id')
             ->assertJsonMissingPath('data.lines.0.target_location');
         $id = $invoice->json('data.id');
-        $body = ['invoice_date' => '2026-09-18', 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id,
+        $body = ['invoice_date' => '2026-09-18', 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id, 'cashbook_id' => $s['cashbook']->id, 'paid_amount' => 0,
             'lines' => [['category' => 'food', 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => 2]]];
         $this->postJson('/api/v1/purchasing/invoices/'.$id, $body)->assertOk()
             ->assertJsonPath('data.total_amount', '4.00')
@@ -69,7 +69,7 @@ class PurchasingFoundationTest extends TestCase
         $this->postJson('/api/v1/purchasing/receipts', $body)->assertUnprocessable()->assertJsonValidationErrors('lines.0.target_inventory_id');
         $this->assertDatabaseCount('purchase_receipts', 0);
         $this->assertDatabaseCount('inventory_ledger_entries', 0);
-        $destination = Inventory::create(['code' => 'SECOND', 'name' => 'Selected receiving store', 'branch_id' => $s['branch']->id, 'type' => 'feed', 'status' => 'active']);
+        $destination = Inventory::create(['code' => 'SECOND', 'name' => 'Selected receiving store', 'branch_id' => $s['branch']->id, 'cashbook_id' => $s['cashbook']->id, 'paid_amount' => 0, 'type' => 'feed', 'status' => 'active']);
         $body['lines'][0]['target_inventory_id'] = $destination->id;
         $receipt = $this->postJson('/api/v1/purchasing/receipts', $body)->assertCreated()
             ->assertJsonPath('data.lines.0.target_inventory_id', $destination->id)
@@ -158,7 +158,7 @@ class PurchasingFoundationTest extends TestCase
         $setup = $this->setupPurchasingStock('food');
         $user->branches()->attach($setup['branch']->id);
         $invoice = $this->createPurchaseInvoice($setup)->assertCreated()->json('data.id');
-        $payload = ['invoice_date' => '2026-09-18', 'supplier_id' => $setup['supplier']->id, 'branch_id' => $setup['branch']->id,
+        $payload = ['invoice_date' => '2026-09-18', 'supplier_id' => $setup['supplier']->id, 'branch_id' => $setup['branch']->id, 'cashbook_id' => $setup['cashbook']->id, 'paid_amount' => 0,
             'lines' => [['category' => 'food', 'item_id' => $setup['item']->id, 'quantity' => 1, 'unit_price' => 1]]];
         $other = Branch::query()->create(['code' => 'OTHER', 'name' => 'Other', 'status' => 'active']);
         $this->postJson('/api/v1/purchasing/invoices/'.$invoice, array_replace($payload, ['branch_id' => $other->id]))->assertForbidden();
@@ -375,7 +375,7 @@ class PurchasingFoundationTest extends TestCase
         $s['master']->update(['stock_uom_id' => $stockId, $category === 'food' ? 'consumption_uom_id' : 'usage_uom_id' => $usage->id, 'uom_conversion' => 1000]);
         app(ItemRegistryService::class)->syncFromMaster($s['master']);
         $factor = $stockInUsage ? 1000 : 1;
-        $payload = ['invoice_date' => now()->toDateString(), 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id,
+        $payload = ['invoice_date' => now()->toDateString(), 'supplier_id' => $s['supplier']->id, 'branch_id' => $s['branch']->id, 'cashbook_id' => $s['cashbook']->id, 'paid_amount' => 0,
             'lines' => [['category' => $category, 'item_id' => $s['item']->id, 'quantity' => 2, 'unit_price' => '10.00']]];
         foreach ([['conversion_factor' => 7], ['purchase_uom_id' => $usage->id], ['stock_uom_id' => $stockInUsage ? $s['uom']->id : $usage->id]] as $override) {
             $bad = $payload;
@@ -409,7 +409,7 @@ class PurchasingFoundationTest extends TestCase
             'invoice_number' => $overrides['invoice_number'] ?? 'PINV-TEST-001',
             'invoice_date' => '2026-09-18',
             'supplier_id' => $setup['supplier']->id,
-            'branch_id' => $setup['branch']->id,
+            'branch_id' => $setup['branch']->id, 'cashbook_id' => $setup['cashbook']->id, 'paid_amount' => 0,
             'lines' => [[
                 'category' => $setup['category'],
                 'item_id' => $setup['item']->id,
@@ -503,7 +503,10 @@ class PurchasingFoundationTest extends TestCase
 
         $item = app(ItemRegistryService::class)->syncFromMaster($master);
 
-        return compact('branch', 'uom', 'supplier', 'inventory', 'master', 'item', 'category');
+        $this->seed(\Database\Seeders\PurchasePaymentCategorySeeder::class);
+        $cashbook = \App\Modules\Financial\Models\Cashbook::create(['branch_id' => $branch->id, 'name' => 'Purchase cash', 'normalized_name' => 'purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => '2026-01-01', 'status' => 'active']);
+
+        return compact('branch', 'uom', 'supplier', 'inventory', 'master', 'item', 'category', 'cashbook');
     }
 
     private function actingWithPurchasingPermissions(): User

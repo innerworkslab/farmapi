@@ -17,6 +17,8 @@ class PurchaseInvoice extends Model
 
     public const STATUS_OPEN = 'open';
 
+    public const STATUS_CONFIRMED = 'confirmed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const DELIVERY_NOT_RECEIVED = 'not_received';
@@ -42,6 +44,11 @@ class PurchaseInvoice extends Model
     public function receipts(): HasMany
     {
         return $this->hasMany(PurchaseReceipt::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchasePayment::class)->orderBy('id');
     }
 
     public function supplier(): BelongsTo

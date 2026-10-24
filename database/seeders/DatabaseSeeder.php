@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             AnimalClassificationSeeder::class,
             DemoFinancialCategoryPermissionsSeeder::class,
             DemoFinancialControlPermissionsSeeder::class,
+            PurchasePaymentCategorySeeder::class,
             DemoStaffPermissionsSeeder::class,
             DemoStaffAdvancePermissionsSeeder::class,
             DemoDepreciationPermissionsSeeder::class,

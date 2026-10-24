@@ -20,6 +20,7 @@ class DemoPurchasingSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(\Database\Seeders\PurchasePaymentCategorySeeder::class);
         $actor = User::query()->where('email', 'admin@example.com')->firstOrFail();
         $invoiceService = app(PurchaseInvoiceService::class);
         $receiptService = app(PurchaseReceiptService::class);
@@ -50,6 +51,7 @@ class DemoPurchasingSeeder extends Seeder
                 'invoice_date' => now()->toDateString(),
                 'supplier_id' => $supplier->id,
                 'branch_id' => $branch->id,
+                'cashbook_id' => self::cashbookForBranch($branch->id)->id, 'paid_amount' => 0,
                 'notes' => 'Demo feed purchase for purchase-to-inventory ledger testing.',
                 'lines' => [[
                     'category' => 'food',
@@ -110,6 +112,7 @@ class DemoPurchasingSeeder extends Seeder
                 'invoice_date' => now()->toDateString(),
                 'supplier_id' => $supplier->id,
                 'branch_id' => $branch->id,
+                'cashbook_id' => self::cashbookForBranch($branch->id)->id, 'paid_amount' => 0,
                 'notes' => 'Demo medicine purchase for purchase-to-inventory ledger testing.',
                 'lines' => [[
                     'category' => 'medicine',
@@ -149,4 +152,10 @@ class DemoPurchasingSeeder extends Seeder
 
         $receiptService->confirm($receipt, $actor);
     }
+    public static function cashbookForBranch(int $branchId): \App\Modules\Financial\Models\Cashbook
+    {
+        return \App\Modules\Financial\Models\Cashbook::where('branch_id', $branchId)->where('status', 'active')->first()
+            ?? \App\Modules\Financial\Models\Cashbook::create(['branch_id' => $branchId, 'name' => 'Demo purchase cash', 'normalized_name' => 'demo purchase cash', 'type' => 'cash', 'currency_code' => 'MMK', 'opening_balance' => 0, 'effective_date' => now()->toDateString(), 'status' => 'active']);
+    }
+
 }

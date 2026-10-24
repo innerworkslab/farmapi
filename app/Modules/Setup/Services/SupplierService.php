@@ -89,7 +89,7 @@ class SupplierService extends BusinessMasterService
     public function payableSummary(Supplier $supplier, User $actor): array
     {
         $entries = BranchAccess::scope(SupplierPayableEntry::query()->where('supplier_id', $supplier->id), $actor)->orderBy('business_date')->get();
-        $invoices = BranchAccess::scope(PurchaseInvoice::query(), $actor)->where('supplier_id', $supplier->id)->where('status', 'open')->get();
+        $invoices = BranchAccess::scope(PurchaseInvoice::query(), $actor)->where('supplier_id', $supplier->id)->whereIn('status', [PurchaseInvoice::STATUS_OPEN, PurchaseInvoice::STATUS_CONFIRMED])->get();
         $payments = $invoices->isEmpty() ? collect() : PurchasePayment::query()->whereIn('purchase_invoice_id', $invoices->pluck('id'))->where('state', 'confirmed')->get();
         $balances = [];
         $bucket = function (?string $currency) use (&$balances): array {
@@ -98,6 +98,9 @@ class SupplierService extends BusinessMasterService
             return $balances[$key] ??= ['currency_code' => $currency, 'opening_balance' => 0, 'invoice_amount' => 0, 'paid_amount' => 0, 'outstanding_amount' => 0];
         };
         foreach ($entries as $entry) {
+            if (str_starts_with($entry->entry_type, 'invoice_')) {
+                continue;
+            }
             $key = $entry->currency_code ?? 'UNSPECIFIED';
             $balances[$key] = $bucket($entry->currency_code);
             $balances[$key]['opening_balance'] += Money::minor($entry->amount);
@@ -127,6 +130,7 @@ class SupplierService extends BusinessMasterService
             'supplier_id' => $supplier->id,
             'entries' => $entries->map(fn (SupplierPayableEntry $entry): array => [
                 'id' => $entry->id, 'branch_id' => $entry->branch_id, 'entry_type' => $entry->entry_type,
+                'purchase_invoice_id' => preg_match('/^purchase-invoice-(\d+)-/', $entry->idempotency_key ?? '', $match) ? (int) $match[1] : null,
                 'amount' => $entry->amount, 'currency_code' => $entry->currency_code, 'business_date' => $entry->business_date->toDateString(), 'reference' => $entry->reference,
             ])->all(),
             'balances' => $balances,

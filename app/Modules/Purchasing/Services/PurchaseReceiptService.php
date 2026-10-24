@@ -253,7 +253,7 @@ class PurchaseReceiptService
 
     private function assertReceivable(PurchaseInvoice $invoice): void
     {
-        if ($invoice->status !== PurchaseInvoice::STATUS_OPEN || $invoice->delivery_status === PurchaseInvoice::DELIVERY_CANCELLED || $invoice->delivery_status === PurchaseInvoice::DELIVERY_FULLY_RECEIVED) {
+        if (! in_array($invoice->status, [PurchaseInvoice::STATUS_OPEN, PurchaseInvoice::STATUS_CONFIRMED], true) || $invoice->delivery_status === PurchaseInvoice::DELIVERY_CANCELLED || $invoice->delivery_status === PurchaseInvoice::DELIVERY_FULLY_RECEIVED) {
             throw ValidationException::withMessages(['invoice' => 'Purchase invoice is not eligible for receiving.']);
         }
     }

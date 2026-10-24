@@ -4,11 +4,19 @@ namespace App\Modules\Purchasing\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Support\BranchAccess;
 
 class PurchaseInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if ($invoice = $this->route('invoice')) {
+            BranchAccess::authorize($this->user(), (int) $invoice->branch_id);
+        }
+        $branchId = filter_var($this->input('branch_id'), FILTER_VALIDATE_INT);
+        if ($branchId && $branchId > 0) {
+            BranchAccess::authorize($this->user(), $branchId);
+        }
         return true;
     }
 
@@ -18,6 +26,8 @@ class PurchaseInvoiceRequest extends FormRequest
             'invoice_number' => ['sometimes', 'string', 'max:100', Rule::unique('purchase_invoices', 'invoice_number')->ignore($this->route('invoice')?->id)],
             'invoice_date' => ['required', 'date'],
             'currency_code' => ['sometimes', 'regex:/^[A-Z]{3}$/'],
+            'cashbook_id' => [Rule::requiredIf(fn () => ! $this->route('invoice')), 'nullable', 'integer', Rule::exists('cashbooks', 'id')->where('branch_id', $this->input('branch_id'))->where('status', 'active')->whereNull('deleted_at')],
+            'paid_amount' => ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,16}(?:\.\d{1,2})?$/'],
             'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'notes' => ['nullable', 'string', 'max:4000'],

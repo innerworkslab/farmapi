@@ -28,6 +28,7 @@ class DemoFarmsSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(\Database\Seeders\PurchasePaymentCategorySeeder::class);
         $this->call(AnimalClassificationSeeder::class);
         $actor = User::query()->where('email', 'admin@example.com')->firstOrFail();
         $branch = Branch::query()->where('code', 'BR-YGN')->firstOrFail();
@@ -50,7 +51,7 @@ class DemoFarmsSeeder extends Seeder
             $stockUom = $index === 3 ? $kg : ($index === 4 ? $dose : $uom);
             $invoice = PurchaseInvoice::query()->where('invoice_number', 'PINV-FARM-FINAL-'.$index)->first();
             if (! $invoice) {
-                $invoice = app(PurchaseInvoiceService::class)->create(['invoice_number' => 'PINV-FARM-FINAL-'.$index, 'invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id,
+                $invoice = app(PurchaseInvoiceService::class)->create(['invoice_number' => 'PINV-FARM-FINAL-'.$index, 'invoice_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'branch_id' => $branch->id, 'cashbook_id' => DemoPurchasingSeeder::cashbookForBranch($branch->id)->id, 'paid_amount' => 0,
                     'lines' => [['category' => $item->category, 'item_id' => $item->id, 'quantity' => $quantity, 'unit_price' => 100, 'purchase_uom_id' => $stockUom->id, 'stock_uom_id' => $stockUom->id, 'conversion_factor' => 1, 'target_farm_information_id' => $farm->id]]], $actor);
             }
             $receipt = PurchaseReceipt::query()->where('receipt_number', 'PREC-FARM-FINAL-'.$index)->first();

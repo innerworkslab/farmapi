@@ -29,7 +29,7 @@ class PurchaseInvoiceController extends Controller
     {
         $this->invoices->authorizeAccess($invoice, $request->user());
 
-        return new PurchaseInvoiceResource($invoice->load(['supplier', 'lines.item']));
+        return new PurchaseInvoiceResource($invoice->load(['supplier', 'lines.item', 'payments']));
     }
 
     public function update(PurchaseInvoiceRequest $request, PurchaseInvoice $invoice): PurchaseInvoiceResource
@@ -41,4 +41,5 @@ class PurchaseInvoiceController extends Controller
     {
         return new PurchaseInvoiceResource($this->invoices->cancel($invoice, $request->validated('reason'), $request->user()));
     }
+
 }
