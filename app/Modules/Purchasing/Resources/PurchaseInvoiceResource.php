@@ -11,8 +11,9 @@ class PurchaseInvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         $payments = $this->relationLoaded('payments') ? $this->payments : collect();
-        $paid = $payments->where('state', 'confirmed')->sum(fn ($p) => Money::minor($p->amount));
+        $postedPaid = $payments->where('state', 'confirmed')->sum(fn ($p) => Money::minor($p->amount));
         $pending = $payments->where('state', 'draft')->sum(fn ($p) => Money::minor($p->amount));
+        $paid = $postedPaid + $pending;
 
         return [
             'id' => $this->id,
@@ -29,8 +30,9 @@ class PurchaseInvoiceResource extends JsonResource
             'total_amount' => $this->total_amount,
             'cashbook_id' => $this->whenLoaded('payments', fn () => $payments->firstWhere('idempotency_key', \App\Modules\Purchasing\Services\PurchasePaymentService::initialKey($this->id))?->cashbook_id),
             'paid_amount' => $this->whenLoaded('payments', fn () => Money::decimal($paid)),
+            'posted_paid_amount' => $this->whenLoaded('payments', fn () => Money::decimal($postedPaid)),
             'pending_paid_amount' => $this->whenLoaded('payments', fn () => Money::decimal($pending)),
-            'outstanding_amount' => $this->whenLoaded('payments', fn () => Money::decimal($this->status === 'cancelled' ? 0 : Money::minor($this->total_amount) - $paid)),
+            'outstanding_amount' => $this->whenLoaded('payments', fn () => Money::decimal($this->status === 'cancelled' ? 0 : Money::minor($this->total_amount) - $postedPaid)),
             'payments' => $this->whenLoaded('payments', fn () => $payments->map(fn ($p) => [
                 'id' => $p->id, 'cashbook_id' => $p->cashbook_id, 'amount' => $p->amount, 'state' => $p->state,
                 'cashbook_transaction_id' => $p->cashbook_transaction_id, 'confirmed_at' => $p->confirmed_at?->toISOString(),
