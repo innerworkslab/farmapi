@@ -31,7 +31,8 @@ class AnimalRequest extends FormRequest
             'animal_breed_id' => ['required', 'integer', Rule::exists('animal_breeds', 'id')->where('animal_type_id', $typeId)->where('status', 'active')->whereNull('deleted_at')],
             'gender' => ['required', 'string', 'max:50'],
             'color_marking' => ['nullable', 'string', 'max:255'],
-            'photo_path' => ['nullable', 'string', 'max:500'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'photo_path' => ['prohibited'],
         ];
     }
 

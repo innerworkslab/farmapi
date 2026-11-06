@@ -4,6 +4,7 @@ namespace App\Modules\Setup\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class AnimalResource extends JsonResource
 {
@@ -20,7 +21,9 @@ class AnimalResource extends JsonResource
             'animal_type' => new AnimalClassificationResource($this->whenLoaded('animalType')),
             'animal_category' => new AnimalClassificationResource($this->whenLoaded('animalCategory')),
             'animal_breed' => new AnimalClassificationResource($this->whenLoaded('animalBreed')),
-            'gender' => $this->gender, 'color_marking' => $this->color_marking, 'photo_path' => $this->photo_path,
+            'gender' => $this->gender, 'color_marking' => $this->color_marking,
+            'photo_path' => $this->photo_path,
+            'photo_url' => $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null,
             'version' => $this->version,
             'created_at' => $this->created_at?->toISOString(), 'updated_at' => $this->updated_at?->toISOString(),
         ];
