@@ -11,6 +11,7 @@ use App\Modules\Setup\Models\Branch;
 use App\Modules\Setup\Models\SupplierPayableEntry;
 use App\Modules\Setup\Repositories\SupplierRepository;
 use App\Support\BranchAccess;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +20,49 @@ class SupplierService extends BusinessMasterService
     public function __construct(SupplierRepository $repository)
     {
         parent::__construct($repository);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function paginate(array $filters, ?User $actor = null): LengthAwarePaginator
+    {
+        $paginator = parent::paginate($filters, $actor);
+        $suppliers = $paginator->getCollection();
+        if ($suppliers->isEmpty()) {
+            return $paginator;
+        }
+
+        $supplierIds = $suppliers->modelKeys();
+        $otherEntries = SupplierPayableEntry::query()
+            ->whereIn('supplier_id', $supplierIds)
+            ->whereRaw('SUBSTRING(entry_type, 1, 8) <> ?', ['invoice_'])
+            ->selectRaw('supplier_id, SUM(amount) as amount')
+            ->groupBy('supplier_id')
+            ->pluck('amount', 'supplier_id');
+
+        $confirmedPayments = PurchasePayment::query()
+            ->where('state', 'confirmed')
+            ->select('purchase_invoice_id')
+            ->selectRaw('SUM(amount) as paid_amount')
+            ->groupBy('purchase_invoice_id');
+        $invoicePayables = PurchaseInvoice::query()
+            ->leftJoinSub($confirmedPayments, 'confirmed_payments', fn ($join) => $join->on('confirmed_payments.purchase_invoice_id', '=', 'purchase_invoices.id'))
+            ->whereIn('purchase_invoices.supplier_id', $supplierIds)
+            ->whereIn('purchase_invoices.status', [PurchaseInvoice::STATUS_OPEN, PurchaseInvoice::STATUS_CONFIRMED])
+            ->selectRaw('purchase_invoices.supplier_id, SUM(purchase_invoices.total_amount - COALESCE(confirmed_payments.paid_amount, 0)) as amount')
+            ->groupBy('purchase_invoices.supplier_id')
+            ->pluck('amount', 'supplier_id');
+
+        $suppliers->each(function (Supplier $supplier) use ($otherEntries, $invoicePayables): void {
+            $netMinor = Money::minor((string) ($otherEntries[$supplier->id] ?? '0'))
+                + Money::minor((string) ($invoicePayables[$supplier->id] ?? '0'));
+            $totalCreditMinor = max($netMinor, 0);
+            $availableCreditMinor = max(Money::minor((string) $supplier->credit_limit) - $totalCreditMinor, 0);
+
+            $supplier->setAttribute('total_credit', Money::decimal($totalCreditMinor));
+            $supplier->setAttribute('available_credit', Money::decimal($availableCreditMinor));
+        });
+
+        return $paginator;
     }
 
     public function createWithOpeningBalance(array $data, User $actor): Supplier
