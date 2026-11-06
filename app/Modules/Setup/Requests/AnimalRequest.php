@@ -18,7 +18,7 @@ class AnimalRequest extends FormRequest
         $typeId = filter_var($this->input('animal_type_id'), FILTER_VALIDATE_INT) ?: 0;
 
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('animals', 'code')->ignore($recordId)],
+            'code' => ['prohibited'],
             'tracking_type' => ['required', 'string', Rule::in(['batch', 'individual'])],
             'ear_tag_rfid_number' => ['nullable', 'required_if:tracking_type,individual', 'string', 'max:100', Rule::unique('animals', 'ear_tag_rfid_number')->ignore($recordId)],
             'batch_flock_number' => ['nullable', 'required_if:tracking_type,batch', 'string', 'max:100', Rule::unique('animals', 'batch_flock_number')->ignore($recordId)],
@@ -38,7 +38,6 @@ class AnimalRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'code' => is_string($this->code) ? trim($this->code) : $this->code,
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
         ]);
     }

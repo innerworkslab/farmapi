@@ -6,6 +6,7 @@ use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Setup\Repositories\AnimalRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AnimalService extends BusinessMasterService
 {
@@ -19,7 +20,10 @@ class AnimalService extends BusinessMasterService
     {
         return DB::transaction(function () use ($data): Model {
             app(AnimalClassificationService::class)->validateAnimalSelection($data);
+            $data['code'] = 'TMP-'.Str::uuid();
             $animal = $this->repository->create($data);
+            $animal->code = 'ANI-'.$animal->id;
+            $animal->save();
             $this->items->syncFromMaster($animal);
 
             return $animal->refresh()->load('item');
