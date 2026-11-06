@@ -17,7 +17,7 @@ class MedicineRequest extends FormRequest
         $recordId = $this->route('medicine')?->id;
 
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('medicines', 'code')->ignore($recordId)],
+            'code' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'generic_name' => ['nullable', 'string', 'max:255'],
             'type' => ['required', 'string', 'max:100'],

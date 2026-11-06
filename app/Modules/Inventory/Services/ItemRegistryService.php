@@ -24,6 +24,12 @@ class ItemRegistryService
             $data
         );
 
+        if (str_starts_with((string) $master->code, 'TMP-')) {
+            $generatedCode = 'ITM-'.$item->id;
+            $master->forceFill(['code' => $generatedCode])->save();
+            $item->forceFill(['code' => $generatedCode])->save();
+        }
+
         if ($item->trashed() && ($data['status'] ?? null) === 'active') {
             $item->restore();
         }

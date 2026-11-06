@@ -16,11 +16,9 @@ class StaffRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $staff = $this->route('staff');
-        $staffId = $staff instanceof Staff ? $staff->id : null;
         return [
-            'staff_code' => ['required', 'string', 'max:50'],
-            'normalized_staff_code' => ['required', 'string', 'max:50', Rule::unique('staff', 'normalized_staff_code')->ignore($staffId)],
+            'staff_code' => ['prohibited'],
+            'normalized_staff_code' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'phone_number' => ['nullable', 'string', 'max:50'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
@@ -31,11 +29,6 @@ class StaffRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $data = [];
-        if (is_string($this->input('staff_code'))) {
-            $staffCode = trim($this->input('staff_code'));
-            $data['staff_code'] = $staffCode;
-            $data['normalized_staff_code'] = mb_strtolower($staffCode);
-        }
         if (is_string($this->input('name'))) {
             $data['name'] = trim($this->input('name'));
         }

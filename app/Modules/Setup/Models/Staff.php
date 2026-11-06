@@ -23,7 +23,6 @@ class Staff extends Model
 
     protected $fillable = [
         'staff_code',
-        'normalized_staff_code',
         'name',
         'phone_number',
         'branch_id',

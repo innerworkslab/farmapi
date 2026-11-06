@@ -17,7 +17,7 @@ class EquipmentRequest extends FormRequest
         $recordId = $this->route('equipment')?->id;
 
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('equipment', 'code')->ignore($recordId)],
+            'code' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:100'],
             'brand' => ['nullable', 'string', 'max:255'],

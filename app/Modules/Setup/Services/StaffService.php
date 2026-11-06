@@ -35,7 +35,12 @@ class StaffService
             $branch = Branch::query()->lockForUpdate()->findOrFail($data['branch_id']);
             $this->assertBranchAccess($branch, $actor, true);
 
-            return $this->staff->create($this->payload($data));
+            $data['staff_code'] = 'TMP-'.\Illuminate\Support\Str::uuid();
+            $staff = $this->staff->create($this->payload($data));
+            $staff->staff_code = 'STF-'.$staff->id;
+            $staff->save();
+
+            return $staff->refresh()->load('branch');
         });
     }
 
@@ -48,7 +53,7 @@ class StaffService
             $branch = Branch::query()->lockForUpdate()->findOrFail($data['branch_id']);
             $this->assertBranchAccess($branch, $actor, true);
 
-            return $this->staff->update($staff, $this->payload($data));
+            return $this->staff->update($staff, $this->payload($data, $staff->staff_code));
         });
     }
 
@@ -68,11 +73,10 @@ class StaffService
     /** @param array<string, mixed> $data
      *  @return array<string, mixed>
      */
-    private function payload(array $data): array
+    private function payload(array $data, ?string $existingCode = null): array
     {
         return [
-            'staff_code' => trim($data['staff_code']),
-            'normalized_staff_code' => mb_strtolower(trim($data['staff_code'])),
+            'staff_code' => $data['staff_code'] ?? $existingCode,
             'name' => trim($data['name']),
             'phone_number' => isset($data['phone_number']) && trim($data['phone_number']) !== '' ? trim($data['phone_number']) : null,
             'branch_id' => $data['branch_id'],

@@ -3,7 +3,6 @@
 namespace App\Modules\Setup\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class FoodRequest extends FormRequest
 {
@@ -14,10 +13,8 @@ class FoodRequest extends FormRequest
 
     public function rules(): array
     {
-        $recordId = $this->route('food')?->id;
-
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('foods', 'code')->ignore($recordId)],
+            'code' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:100'],
             'type' => ['nullable', 'string', 'max:100'],

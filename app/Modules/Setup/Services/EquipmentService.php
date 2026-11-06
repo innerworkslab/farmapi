@@ -2,6 +2,7 @@
 
 namespace App\Modules\Setup\Services;
 
+use App\Modules\Inventory\Services\ItemCodeGenerator;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Setup\Repositories\EquipmentRepository;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ class EquipmentService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            $data['code'] = 'TMP-'.\Illuminate\Support\Str::uuid();
             $equipment = $this->repository->create($data);
             $this->items->syncFromMaster($equipment);
 

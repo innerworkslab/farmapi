@@ -2,6 +2,7 @@
 
 namespace App\Modules\Setup\Services;
 
+use App\Modules\Inventory\Services\ItemCodeGenerator;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Setup\Repositories\FoodRepository;
@@ -19,6 +20,7 @@ class FoodService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            $data['code'] = 'TMP-'.\Illuminate\Support\Str::uuid();
             app(ItemUomService::class)->validateMaster($data, 'consumption_uom_id');
             $food = $this->repository->create($data);
             $this->items->syncFromMaster($food);

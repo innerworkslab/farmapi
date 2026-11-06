@@ -2,6 +2,7 @@
 
 namespace App\Modules\Setup\Services;
 
+use App\Modules\Inventory\Services\ItemCodeGenerator;
 use App\Modules\Inventory\Services\ItemRegistryService;
 use App\Modules\Inventory\Services\ItemUomService;
 use App\Modules\Setup\Repositories\MedicineRepository;
@@ -19,6 +20,7 @@ class MedicineService extends BusinessMasterService
     public function create(array $data): Model
     {
         return DB::transaction(function () use ($data): Model {
+            $data['code'] = 'TMP-'.\Illuminate\Support\Str::uuid();
             app(AnimalClassificationService::class)->validateOptionalAnimalType($data['animal_type_id'] ?? null);
             app(ItemUomService::class)->validateMaster($data, 'usage_uom_id');
             $medicine = $this->repository->create($data);

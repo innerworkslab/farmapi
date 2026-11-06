@@ -18,7 +18,7 @@ class BranchMasterCodeGenerator
             throw ValidationException::withMessages(['preferred_branch_id' => 'Select an active branch with a branch code.']);
         }
 
-        // The branch row serializes code allocation for both master types in this branch.
+        // The branch row serializes code allocation for both customer and supplier codes.
         $prefix = $branch->code.'-'.$kind.'-';
         $pattern = '/^'.preg_quote($prefix, '/').'([0-9]+)$/';
         $last = DB::table($table)->where('code', 'like', $prefix.'%')->pluck('code')
