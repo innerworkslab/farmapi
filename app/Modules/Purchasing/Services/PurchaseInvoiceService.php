@@ -161,6 +161,8 @@ class PurchaseInvoiceService
         $supplier = $invoice->supplier ?: Supplier::query()->findOrFail($invoice->supplier_id);
 
         foreach (array_values($lines) as $index => $line) {
+            // UOMs and conversion are catalog-derived snapshots, never client inputs.
+            unset($line['purchase_uom_id'], $line['stock_uom_id'], $line['conversion_factor']);
             BranchAccess::locations($actor, (int) $invoice->branch_id, null, $line['target_farm_information_id'] ?? null);
             $category = strtolower($line['category']);
             $item = Item::query()->lockForUpdate()->findOrFail($line['item_id']);
@@ -205,21 +207,13 @@ class PurchaseInvoiceService
                 throw ValidationException::withMessages(["lines.{$index}.target_farm_information_id" => 'Target farm is required for animal purchases.']);
             }
 
-            $conversion = $line['conversion_factor'] ?? $item->uom_conversion ?? 1;
+            $conversion = $item->uom_conversion ?? 1;
             if (in_array($category, ['animal', 'equipment'], true)) {
                 $line = app(\App\Modules\Setup\Services\FarmReceivingUomService::class)->normalize($line);
                 $conversion = 1;
             }
             if (in_array($category, ['food', 'medicine'], true)) {
                 $conversion = app(ItemUomService::class)->purchaseToStock($item);
-                foreach (['purchase_uom_id' => $item->purchase_uom_id, 'stock_uom_id' => $item->stock_uom_id] as $field => $expected) {
-                    if (isset($line[$field]) && (int) $line[$field] !== (int) $expected) {
-                        throw ValidationException::withMessages(["lines.{$index}.{$field}" => 'Use the configured item UOM.']);
-                    }
-                }
-                if (isset($line['conversion_factor']) && ! BigDecimal::of((string) $line['conversion_factor'])->isEqualTo($conversion)) {
-                    throw ValidationException::withMessages(["lines.{$index}.conversion_factor" => 'Purchase-to-stock conversion is derived from the item unit definition.']);
-                }
             }
 
             $invoice->lines()->create([
