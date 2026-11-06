@@ -15,8 +15,8 @@ class SupplierPayableAdjustmentRequest extends FormRequest
     {
         return [
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'currency_code' => ['required', 'regex:/^[A-Z]{3}$/'],
-            'amount' => ['required', 'numeric', 'decimal:0,2', 'not_in:0'],
+            'currency_code' => ['prohibited'],
+            'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
             'reason' => ['required', 'string', 'max:500'],
             'idempotency_key' => ['required', 'string', 'max:150'],
         ];

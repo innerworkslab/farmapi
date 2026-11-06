@@ -187,24 +187,71 @@ class SupplierService extends BusinessMasterService
 
     public function adjustPayable(Supplier $supplier, array $data, User $actor): SupplierPayableEntry
     {
-        BranchAccess::authorize($actor, (int) $data['branch_id']);
-        $existing = SupplierPayableEntry::query()->where('idempotency_key', $data['idempotency_key'])->first();
-        if ($existing) {
-            if ((int) $existing->supplier_id !== (int) $supplier->id || (int) $existing->branch_id !== (int) $data['branch_id'] || $existing->currency_code !== $data['currency_code'] || Money::minor($existing->amount) !== Money::minor($data['amount']) || $existing->reference !== mb_substr($data['reason'], 0, 100)) {
-                throw ValidationException::withMessages(['idempotency_key' => 'This key was used for a different payable adjustment.']);
+        return DB::transaction(function () use ($supplier, $data, $actor): SupplierPayableEntry {
+            $supplier = Supplier::query()->lockForUpdate()->findOrFail($supplier->id);
+            BranchAccess::authorize($actor, (int) $data['branch_id']);
+            $amountMinor = Money::minor((string) $data['amount']);
+            $reference = mb_substr($data['reason'], 0, 100);
+
+            $existing = SupplierPayableEntry::query()->where('idempotency_key', $data['idempotency_key'])->lockForUpdate()->first();
+            if ($existing) {
+                if ((int) $existing->supplier_id !== (int) $supplier->id
+                    || (int) $existing->branch_id !== (int) $data['branch_id']
+                    || $existing->currency_code !== 'MMK'
+                    || Money::minor($existing->amount) !== -$amountMinor
+                    || $existing->reference !== $reference) {
+                    throw ValidationException::withMessages(['idempotency_key' => 'This key was used for a different payable adjustment.']);
+                }
+
+                return $existing;
             }
 
-            return $existing;
-        }
-        $entry = SupplierPayableEntry::query()->create([
-            'supplier_id' => $supplier->id, 'branch_id' => $data['branch_id'], 'entry_type' => 'adjustment',
-            'amount' => $data['amount'], 'currency_code' => $data['currency_code'], 'business_date' => today(),
-            'reference' => mb_substr($data['reason'], 0, 100), 'idempotency_key' => $data['idempotency_key'], 'created_by_id' => $actor->id,
-        ]);
-        activity('setup')->performedOn($supplier)->causedBy($actor)
-            ->withProperties(['entry_id' => $entry->id, 'amount' => $entry->amount, 'currency_code' => $entry->currency_code, 'branch_id' => $entry->branch_id, 'reason' => $data['reason']])
-            ->log('Supplier payable adjusted');
+            $entries = SupplierPayableEntry::query()
+                ->where('supplier_id', $supplier->id)
+                ->where('branch_id', $data['branch_id'])
+                ->whereRaw('SUBSTRING(entry_type, 1, 8) <> ?', ['invoice_'])
+                ->lockForUpdate()
+                ->get();
+            $invoices = PurchaseInvoice::query()
+                ->where('supplier_id', $supplier->id)
+                ->where('branch_id', $data['branch_id'])
+                ->whereIn('status', [PurchaseInvoice::STATUS_OPEN, PurchaseInvoice::STATUS_CONFIRMED])
+                ->lockForUpdate()
+                ->get(['id', 'total_amount']);
+            $paidByInvoice = $invoices->isEmpty()
+                ? collect()
+                : PurchasePayment::query()
+                    ->whereIn('purchase_invoice_id', $invoices->pluck('id'))
+                    ->where('state', 'confirmed')
+                    ->get(['purchase_invoice_id', 'amount'])
+                    ->groupBy('purchase_invoice_id')
+                    ->map(fn ($payments) => $payments->sum(fn (PurchasePayment $payment): int => Money::minor($payment->amount)));
 
-        return $entry;
+            $currentPayable = $entries->sum(fn (SupplierPayableEntry $entry): int => Money::minor($entry->amount));
+            foreach ($invoices as $invoice) {
+                $currentPayable += Money::minor($invoice->total_amount) - (int) ($paidByInvoice[$invoice->id] ?? 0);
+            }
+
+            if ($currentPayable < $amountMinor) {
+                throw ValidationException::withMessages(['amount' => 'Adjustment cannot exceed the current payable balance for this supplier and branch.']);
+            }
+
+            $entry = SupplierPayableEntry::query()->create([
+                'supplier_id' => $supplier->id,
+                'branch_id' => $data['branch_id'],
+                'entry_type' => 'adjustment',
+                'amount' => Money::decimal(-$amountMinor),
+                'currency_code' => 'MMK',
+                'business_date' => today(),
+                'reference' => $reference,
+                'idempotency_key' => $data['idempotency_key'],
+                'created_by_id' => $actor->id,
+            ]);
+            activity('setup')->performedOn($supplier)->causedBy($actor)
+                ->withProperties(['entry_id' => $entry->id, 'amount' => $entry->amount, 'settled_amount' => Money::decimal($amountMinor), 'currency_code' => 'MMK', 'branch_id' => $entry->branch_id, 'reason' => $data['reason']])
+                ->log('Supplier payable settled by adjustment');
+
+            return $entry;
+        });
     }
 }
