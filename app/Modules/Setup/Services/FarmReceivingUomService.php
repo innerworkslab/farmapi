@@ -33,7 +33,7 @@ class FarmReceivingUomService
 
     private function assertCountUnit(?Uom $unit): void
     {
-        if (! $unit || $unit->trashed() || $unit->status !== 'active' || ! in_array($unit->category, ['unit', 'quantity'], true)) {
+        if (! $unit || $unit->trashed() || $unit->status !== 'active' || ! in_array($unit->category, ['unit', 'quantity', 'count'], true)) {
             throw ValidationException::withMessages(['stock_uom_id' => 'Select an active animal/equipment count unit.']);
         }
     }

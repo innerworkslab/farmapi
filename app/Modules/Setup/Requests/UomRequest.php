@@ -20,7 +20,7 @@ class UomRequest extends FormRequest
             'code' => ['required', 'string', 'max:50', Rule::unique('uoms', 'code')->ignore($recordId)],
             'name' => ['required', 'string', 'max:255'],
             'symbol' => ['required', 'string', 'max:50'],
-            'category' => ['required', 'string', Rule::in(['weight', 'volume', 'quantity', 'length'])],
+            'category' => ['required', 'string', 'max:100'],
             'status' => ['sometimes', 'string', Rule::in(['active', 'inactive'])],
         ];
     }
@@ -30,6 +30,7 @@ class UomRequest extends FormRequest
         $this->merge([
             'code' => is_string($this->code) ? trim($this->code) : $this->code,
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
+            'category' => is_string($this->category) ? trim($this->category) : $this->category,
         ]);
     }
 }
