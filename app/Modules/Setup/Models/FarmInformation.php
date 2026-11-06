@@ -7,6 +7,7 @@ use App\Modules\Farms\Models\FarmSetting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
@@ -18,13 +19,9 @@ class FarmInformation extends Model
 
     protected $table = 'farm_information';
 
-    protected $with = ['houseBarn', 'penCagePond'];
-
     protected $fillable = [
         'name',
         'branch_id',
-        'house_barn_id',
-        'pen_cage_pond_id',
         'current_animal_id',
         'responsible_employee_id',
         'version',
@@ -35,14 +32,16 @@ class FarmInformation extends Model
         return $this->hasOne(FarmSetting::class, 'farm_information_id');
     }
 
-    public function houseBarn(): BelongsTo
+    public function houseBarns(): BelongsToMany
     {
-        return $this->belongsTo(HouseBarn::class);
+        return $this->belongsToMany(HouseBarn::class, 'farm_information_house_barn')
+            ->withPivot('branch_id')->withTimestamps();
     }
 
-    public function penCagePond(): BelongsTo
+    public function penCagePonds(): BelongsToMany
     {
-        return $this->belongsTo(PenCagePond::class);
+        return $this->belongsToMany(PenCagePond::class, 'farm_information_pen_cage_pond')
+            ->withPivot('branch_id')->withTimestamps();
     }
 
     public function branch(): BelongsTo

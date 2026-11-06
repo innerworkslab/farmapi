@@ -4,6 +4,7 @@ namespace App\Modules\Setup\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -24,6 +25,12 @@ class PenCagePond extends Model
     public function houseBarn(): BelongsTo
     {
         return $this->belongsTo(HouseBarn::class);
+    }
+
+    public function farms(): BelongsToMany
+    {
+        return $this->belongsToMany(FarmInformation::class, 'farm_information_pen_cage_pond')
+            ->withPivot('branch_id')->withTimestamps();
     }
 
     public function getActivitylogOptions(): LogOptions

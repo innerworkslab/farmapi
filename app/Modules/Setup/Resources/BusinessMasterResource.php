@@ -18,8 +18,10 @@ class BusinessMasterResource extends JsonResource
         $data = parent::toArray($request);
 
         if ($this->resource instanceof \App\Modules\Setup\Models\FarmInformation) {
-            $data['house_barn'] = new FarmLocationResource($this->whenLoaded('houseBarn'));
-            $data['pen_cage_pond'] = new FarmLocationResource($this->whenLoaded('penCagePond'));
+            $data['house_barn_ids'] = $this->whenLoaded('houseBarns', fn () => $this->houseBarns->pluck('id')->values());
+            $data['house_barns'] = $this->whenLoaded('houseBarns', fn () => FarmLocationResource::collection($this->houseBarns));
+            $data['pen_cage_pond_ids'] = $this->whenLoaded('penCagePonds', fn () => $this->penCagePonds->pluck('id')->values());
+            $data['pen_cage_ponds'] = $this->whenLoaded('penCagePonds', fn () => FarmLocationResource::collection($this->penCagePonds));
         }
 
         if ($this->resource instanceof Supplier) {

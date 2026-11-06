@@ -175,13 +175,15 @@ class DemoBusinessMasterSeeder extends Seeder
             'purchase_cost' => 1200000,
         ]);
 
-        FarmInformation::query()->updateOrCreate([
+        $farm = FarmInformation::query()->updateOrCreate([
             'branch_id' => $yangon->id,
             'name' => 'Yangon Barn A',
-            ...\Database\Seeders\FarmLocationSeeder::references($yangon->id, 'Barn A', 'Pen 1'),
         ], [
             'current_animal_id' => $animal->id,
             'responsible_employee_id' => User::query()->where('email', 'admin@example.com')->value('id'),
         ]);
+        $locations = \Database\Seeders\FarmLocationSeeder::references($yangon->id, 'Barn A', 'Pen 1');
+        $farm->houseBarns()->sync(array_fill_keys($locations['house_barn_ids'], ['branch_id' => $yangon->id]));
+        $farm->penCagePonds()->sync(array_fill_keys($locations['pen_cage_pond_ids'], ['branch_id' => $yangon->id]));
     }
 }

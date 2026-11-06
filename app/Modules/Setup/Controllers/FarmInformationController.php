@@ -54,7 +54,7 @@ class FarmInformationController extends Controller
     {
         BranchAccess::authorize($request->user(), $farmInformation->branch_id);
 
-        return new BusinessMasterResource($farmInformation);
+        return new BusinessMasterResource($farmInformation->load(['houseBarns', 'penCagePonds', 'branch', 'currentAnimal', 'responsibleEmployee']));
     }
 
     public function update(FarmInformationRequest $request, FarmInformation $farmInformation): BusinessMasterResource

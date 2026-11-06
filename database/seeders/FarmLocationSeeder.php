@@ -26,6 +26,6 @@ class FarmLocationSeeder extends Seeder
             throw new \RuntimeException('The demo pen name is already assigned to another barn in this branch.');
         }
 
-        return ['house_barn_id' => $barn->id, 'pen_cage_pond_id' => $pen?->id];
+        return ['house_barn_ids' => [$barn->id], 'pen_cage_pond_ids' => $pen ? [$pen->id] : []];
     }
 }

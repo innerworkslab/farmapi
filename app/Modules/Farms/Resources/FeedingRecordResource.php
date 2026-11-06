@@ -21,10 +21,10 @@ class FeedingRecordResource extends JsonResource
             'farm' => $this->farmInformation ? [
                 'id' => $this->farmInformation->id,
                 'name' => $this->farmInformation->name,
-                'house_barn_id' => $this->farmInformation->house_barn_id,
-                'house_barn' => $this->farmInformation->houseBarn ? new \App\Modules\Setup\Resources\FarmLocationResource($this->farmInformation->houseBarn) : null,
-                'pen_cage_pond_id' => $this->farmInformation->pen_cage_pond_id,
-                'pen_cage_pond' => $this->farmInformation->penCagePond ? new \App\Modules\Setup\Resources\FarmLocationResource($this->farmInformation->penCagePond) : null,
+                'house_barn_ids' => $this->farmInformation->houseBarns->pluck('id')->values(),
+                'house_barns' => \App\Modules\Setup\Resources\FarmLocationResource::collection($this->farmInformation->houseBarns),
+                'pen_cage_pond_ids' => $this->farmInformation->penCagePonds->pluck('id')->values(),
+                'pen_cage_ponds' => \App\Modules\Setup\Resources\FarmLocationResource::collection($this->farmInformation->penCagePonds),
             ] : null,
             'target' => [
                 'animal_balance_id' => $this->animal_balance_id,

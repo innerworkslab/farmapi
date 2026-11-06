@@ -3,11 +3,11 @@
 namespace App\Modules\Setup\Repositories;
 
 use App\Models\User;
-use App\Modules\Setup\Models\FarmInformation;
 use App\Modules\Setup\Models\HouseBarn;
 use App\Modules\Setup\Models\PenCagePond;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class FarmLocationRepository
 {
@@ -38,7 +38,10 @@ class FarmLocationRepository
 
     public function isReferenced(string $kind, int $id): bool
     {
-        return FarmInformation::withTrashed()->where($kind === 'house-barns' ? 'house_barn_id' : 'pen_cage_pond_id', $id)->exists()
+        $pivot = $kind === 'house-barns' ? 'farm_information_house_barn' : 'farm_information_pen_cage_pond';
+        $column = $kind === 'house-barns' ? 'house_barn_id' : 'pen_cage_pond_id';
+
+        return DB::table($pivot)->where($column, $id)->exists()
             || ($kind === 'house-barns' && PenCagePond::withTrashed()->where('house_barn_id', $id)->exists());
     }
 }

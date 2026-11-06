@@ -41,7 +41,7 @@ class FeedingService
     public function paginate(array $filters, User $actor): LengthAwarePaginator
     {
         return BranchAccess::scope(FeedingRecord::query(), $actor)
-            ->with(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation'])
+            ->with(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation'])
             ->when($filters['farm_information_id'] ?? null, fn (Builder $query, string $farmId) => $query->where('farm_information_id', $farmId))
             ->when($filters['animal_balance_id'] ?? null, fn (Builder $query, string $animalBalanceId) => $query->where(fn ($q) => $q->where('animal_balance_id', $animalBalanceId)->orWhereIn('id', FeedingTarget::query()->where('animal_balance_id', $animalBalanceId)->select('feeding_id'))))
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
@@ -92,7 +92,7 @@ class FeedingService
             $this->assertLiveTargets($record, $actor);
             $this->replaceLines($record, $data['lines']);
 
-            return $record->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $record->refresh()->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -141,7 +141,7 @@ class FeedingService
             $feeding->lines()->delete();
             $this->replaceLines($feeding, $data['lines']);
 
-            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -196,7 +196,7 @@ class FeedingService
                 ],
             ]);
 
-            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -210,7 +210,7 @@ class FeedingService
             }
 
             if ($feeding->status === FeedingRecord::STATUS_CONFIRMED) {
-                return $feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+                return $feeding->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
             }
             if ($feeding->status !== FeedingRecord::STATUS_SUBMITTED) {
                 throw ValidationException::withMessages(['status' => 'Only submitted feeding records can be confirmed.']);
@@ -243,7 +243,7 @@ class FeedingService
                 'version' => $feeding->version + 1,
             ])->save();
 
-            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -283,7 +283,7 @@ class FeedingService
                 'version' => $feeding->version + 1,
             ])->save();
 
-            return $feeding->refresh()->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->refresh()->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 
@@ -307,7 +307,7 @@ class FeedingService
             $feeding->save();
             activity('farms')->performedOn($feeding)->causedBy($actor)->withProperties(['reason' => $reason])->log('Feeding reversed');
 
-            return $feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
+            return $feeding->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']);
         });
     }
 

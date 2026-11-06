@@ -110,25 +110,6 @@ class FarmLocationService
         });
     }
 
-    public function validateSelection(array $data): void
-    {
-        Validator::make($data, [
-            'branch_id' => ['required', 'integer'],
-            'house_barn_id' => ['nullable', 'integer', 'required_without:pen_cage_pond_id'],
-            'pen_cage_pond_id' => ['nullable', 'integer', 'required_without:house_barn_id'],
-        ])->validate();
-        $barnId = $data['house_barn_id'] ?? null;
-        if ($barnId) {
-            $this->active('house-barns', (int) $barnId, (int) $data['branch_id']);
-        }
-        if (! empty($data['pen_cage_pond_id'])) {
-            $pen = $this->active('pen-cage-ponds', (int) $data['pen_cage_pond_id'], (int) $data['branch_id']);
-            if ($pen->house_barn_id !== null && (int) $pen->house_barn_id !== (int) $barnId) {
-                throw ValidationException::withMessages(['pen_cage_pond_id' => 'Select a pen belonging to the selected barn.']);
-            }
-        }
-    }
-
     private function active(string $kind, int $id, int $branchId)
     {
         $record = $this->records->query($kind)->whereKey($id)->lockForUpdate()->first();

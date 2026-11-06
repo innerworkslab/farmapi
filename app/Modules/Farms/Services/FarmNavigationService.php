@@ -20,14 +20,14 @@ class FarmNavigationService
     public function paginate(User $user, array $filters): LengthAwarePaginator
     {
         $query = FarmInformation::query()
-            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting'])
+            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting', 'houseBarns', 'penCagePonds'])
             ->select('farm_information.*')
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $inner) use ($search): void {
                     $inner
                         ->where('farm_information.name', 'like', "%{$search}%")
-                        ->orWhereHas('houseBarn', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('penCagePond', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                        ->orWhereHas('houseBarns', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('penCagePonds', fn ($q) => $q->where('name', 'like', "%{$search}%"));
 
                     $numericSearch = preg_replace('/\D+/', '', $search);
 
@@ -37,8 +37,8 @@ class FarmNavigationService
                 });
             })
             ->when($filters['branch_id'] ?? null, fn (Builder $query, string $branchId) => $query->where('farm_information.branch_id', $branchId))
-            ->when($filters['house_barn_id'] ?? null, fn ($q, $id) => $q->where('house_barn_id', $id))
-            ->when($filters['pen_cage_pond_id'] ?? null, fn ($q, $id) => $q->where('pen_cage_pond_id', $id))
+            ->when($filters['house_barn_id'] ?? null, fn ($q, $id) => $q->whereHas('houseBarns', fn ($barns) => $barns->whereKey($id)))
+            ->when($filters['pen_cage_pond_id'] ?? null, fn ($q, $id) => $q->whereHas('penCagePonds', fn ($pens) => $pens->whereKey($id)))
             ->when($filters['animal_type_id'] ?? null, function (Builder $query, $typeId): void {
                 $query->whereHas('currentAnimal', fn (Builder $animal) => $animal->where('animal_type_id', $typeId));
             })
@@ -124,7 +124,7 @@ class FarmNavigationService
     private function findAuthorizedFarm(User $user, FarmInformation $farm): FarmInformation
     {
         $authorizedFarm = $this->authorizedFarmQuery($user)
-            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting'])
+            ->with(['branch', 'currentAnimal', 'responsibleEmployee', 'setting', 'houseBarns', 'penCagePonds'])
             ->find($farm->id);
 
         if (! $authorizedFarm) {
@@ -277,7 +277,7 @@ class FarmNavigationService
     private function animalQuery(FarmInformation $farm, bool $includeInactive = false): Builder
     {
         return InventoryBalance::query()
-            ->with(['profile', 'farmInformation.setting'])
+            ->with(['profile', 'farmInformation.setting', 'farmInformation.houseBarns', 'farmInformation.penCagePonds'])
             ->withCount(['feedings', 'feedingTargets'])
             ->withCount([
                 'farmAlerts as active_mortality_alerts' => fn ($q) => $q->where('type', 'mortality')->where('details->is_active', true),

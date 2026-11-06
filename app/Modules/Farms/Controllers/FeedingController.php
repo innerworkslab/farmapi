@@ -29,7 +29,7 @@ class FeedingController extends Controller
     {
         $this->feedings->authorizeAccess($feeding, $request->user());
 
-        return new FeedingRecordResource($feeding->load(['targets', 'farmInformation', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
+        return new FeedingRecordResource($feeding->load(['targets', 'farmInformation.houseBarns', 'farmInformation.penCagePonds', 'lines.foodItem', 'lines.stockLot', 'confirmation']));
     }
 
     public function update(FeedingRecordRequest $request, FeedingRecord $feeding): FeedingRecordResource

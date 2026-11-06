@@ -35,7 +35,10 @@ class DemoFarmsSeeder extends Seeder
         $uom = app(\App\Modules\Setup\Services\FarmReceivingUomService::class)->defaultUnit();
         $inventory = Inventory::query()->firstOrCreate(['code' => 'INV-FARM-FINAL'], ['name' => 'Farm receiving store', 'type' => 'animal', 'branch_id' => $branch->id, 'allowed_item_categories' => ['animal', 'equipment', 'food', 'medicine'], 'status' => 'active']);
         $supplier = Supplier::query()->firstOrCreate(['code' => 'SUP-FARM-FINAL'], ['name' => 'Farm demo supplier', 'type' => 'animal', 'phone_number' => '09700000000', 'supplied_categories' => ['animal', 'equipment', 'food', 'medicine'], 'status' => 'active']);
-        $farm = FarmInformation::query()->firstOrCreate(['name' => 'Farm management demo'], ['branch_id' => $branch->id, ...\Database\Seeders\FarmLocationSeeder::references($branch->id, 'Demo Barn', 'Demo Pen'), 'responsible_employee_id' => $actor->id]);
+        $farm = FarmInformation::query()->firstOrCreate(['name' => 'Farm management demo'], ['branch_id' => $branch->id, 'responsible_employee_id' => $actor->id]);
+        $locations = \Database\Seeders\FarmLocationSeeder::references($branch->id, 'Demo Barn', 'Demo Pen');
+        $farm->houseBarns()->sync(array_fill_keys($locations['house_barn_ids'], ['branch_id' => $branch->id]));
+        $farm->penCagePonds()->sync(array_fill_keys($locations['pen_cage_pond_ids'], ['branch_id' => $branch->id]));
         $kg = Uom::query()->firstOrCreate(['code' => 'KG-FARM'], ['name' => 'Farm Kilogram', 'symbol' => 'kg', 'category' => 'weight', 'status' => 'active']);
         $dose = Uom::query()->firstOrCreate(['code' => 'DOSE-FARM'], ['name' => 'Farm Dose', 'symbol' => 'dose', 'category' => 'unit', 'status' => 'active']);
         $masters = [
